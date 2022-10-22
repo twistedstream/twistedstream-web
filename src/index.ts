@@ -1,13 +1,12 @@
-// INFO: This should always run first to load the environment
-import "dotenv/config";
+// NOTE: The config import should always run first to load the environment
+import { port } from "./utils/config";
 
 import express, { Express, Request, Response } from "express";
 import expressPino from "express-pino-logger";
 
-import { logger } from "./utils/logger"
+import { logger } from "./utils/logger";
 
 const app: Express = express();
-const port = process.env.PORT;
 
 app.use(expressPino({ logger }));
 

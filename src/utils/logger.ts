@@ -1,7 +1,7 @@
 import pino from "pino";
-const packageJson = require("../../package.json");
+import { packageName, logLevel } from "./config";
 
 export const logger = pino({
-  name: packageJson.name,
-  level: process.env.LOG_LEVEL
+  name: packageName,
+  level: logLevel,
 });
