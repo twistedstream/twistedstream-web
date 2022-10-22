@@ -1,15 +1,20 @@
-import express, { Express, Request, Response } from "express";
-import dotenv from "dotenv";
+// INFO: This should always run first to load the environment
+import "dotenv/config";
 
-dotenv.config();
+import express, { Express, Request, Response } from "express";
+import expressPino from "express-pino-logger";
+
+import { logger } from "./utils/logger"
 
 const app: Express = express();
 const port = process.env.PORT;
+
+app.use(expressPino({ logger }));
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Express + TypeScript Server");
 });
 
 app.listen(port, () => {
-  console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
+  logger.info(`Server is running at http://localhost:${port}`);
 });
