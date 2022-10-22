@@ -8,11 +8,21 @@
     "node": ">=16.18.0",
     "npm": ">=8.19.2"
   },
+  "config": {
+    "docker_repo": "twistedstream"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "nodemon src/index.ts | pino-pretty",
     "format": "prettier --write .",
-    "test": "env $(grep -v '^#' ./.env.test | xargs) tap --ts"
+    "test": "env $(grep -v '^#' ./.env.test | xargs) tap --ts",
+    "image:build": "DOCKER_BUILDKIT=1 docker build --tag \"${npm_package_config_docker_repo}/${npm_package_name}:${npm_package_version}\" .",
+    "image:remove": "docker rmi \"${npm_package_config_docker_repo}/${npm_package_name}:${npm_package_version}\"",
+    "container:run": "docker run --name \"${npm_package_name}\" -d -p 8000:8000 -e LOG_LEVEL=debug \"${npm_package_config_docker_repo}/${npm_package_name}:${npm_package_version}\"",
+    "container:logs": "docker logs -f \"${npm_package_name}\" | pino-pretty",
+    "container:stop": "docker stop \"${npm_package_name}\"",
+    "container:ssh": "docker exec -it \"${npm_package_name}\" /bin/sh",
+    "container:remove": "docker rm -f \"${npm_package_name}\""
   },
   "repository": {
     "type": "git",
