@@ -1,46 +1,57 @@
 import { test } from "tap";
-import sinon from "sinon";
-import request from "supertest";
+import sinon, { SinonSpy } from "sinon";
 
-import { app } from "./index";
+test("server", async (t) => {
+  let serverListenFake: SinonSpy;
+  const httpServer: any = {};
+  let httpCreateServerFake: SinonSpy;
+  const http: any = {};
+  const app = {};
+  let loggerInfoFake: SinonSpy;
+  const logger: any = {};
 
-test("app", async (t) => {
-  const appUseFake = sinon.fake();
-  const appFake = {
-    use: appUseFake,
-    get: sinon.fake(),
+  const mockModule = () => {
+    serverListenFake = sinon.fake();
+    httpServer.listen = serverListenFake;
+    httpCreateServerFake = sinon.fake.returns(httpServer);
+    http.createServer = httpCreateServerFake;
+    loggerInfoFake = sinon.fake();
+    logger.info = loggerInfoFake;
+
+    return t.mock("./index", {
+      "./utils/config": {
+        port: 4224,
+      },
+      http,
+      "./app": app,
+      "./utils/logger": {
+        logger,
+      },
+    });
   };
-  const expressFake = sinon.fake.returns(appFake);
-  const expressPinoResultFake = {};
-  const expressPinoFake = sinon.fake.returns(expressPinoResultFake);
-  const loggerFake = {};
 
-  const { app: mockedApp } = t.mock("./index", {
-    express: expressFake,
-    "express-pino-logger": expressPinoFake,
-    "./utils/logger": {
-      logger: loggerFake,
-    },
+  t.test("is created using HTTP module and the express app", async (t) => {
+    const { server } = mockModule();
+
+    t.ok(httpCreateServerFake.called);
+    t.equal(httpCreateServerFake.firstCall.firstArg, app);
+    t.equal(server, httpServer);
   });
 
-  t.test("is an Express instance", async (t) => {
-    t.ok(expressFake.calledWith());
-    t.equal(mockedApp, appFake);
+  t.test("listens on expected port", async (t) => {
+    mockModule();
+
+    t.ok(serverListenFake.called);
+    t.equal(serverListenFake.firstCall.args[0], 4224);
   });
 
-  t.test("uses express-pino-logger", async (t) => {
-    t.ok(expressPinoFake.called);
-    t.same(expressPinoFake.firstCall.firstArg, { logger: {} });
-    t.equal(expressPinoFake.firstCall.firstArg.logger, loggerFake);
+  t.test("logs when server is ready for requests", async (t) => {
+    mockModule();
 
-    t.ok(appUseFake.called);
-    t.equal(appUseFake.firstCall.firstArg, expressPinoResultFake);
-  });
+    t.ok(serverListenFake.called);
+    const cb = <Function>serverListenFake.firstCall.args[1];
+    cb();
 
-  t.test("GET / returns text", async (t) => {
-    // NOTE: Testing with actual Express app instance
-    const response = await request(app).get("/");
-
-    t.equal(response.status, 200);
+    t.match(loggerInfoFake.firstCall.firstArg, "http://localhost:4224");
   });
 });
