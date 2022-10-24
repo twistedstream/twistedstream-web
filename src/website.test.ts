@@ -1,37 +1,39 @@
 import { test } from "tap";
-import sinon, { SinonSpy } from "sinon";
+import sinon from "sinon";
 
 test("website", async (t) => {
-  let routerFake: SinonSpy;
-  const expressRouter: any = {};
-  let routerUseFake: SinonSpy;
+  const expressRouter = {
+    use: sinon.fake(),
+  };
+  const routerFake = sinon.fake.returns(expressRouter);
   const routes = {};
 
-  const mockModule = () => {
-    routerUseFake = sinon.fake();
-    expressRouter.use = routerUseFake;
-    routerFake = sinon.fake.returns(expressRouter);
+  const importModule = () => {
+    expressRouter.use.resetHistory();
+    routerFake.resetHistory();
 
-    return t.mock("./website", {
+    const { default: website } = t.mock("./website", {
       express: {
         Router: routerFake,
       },
       "./routes": routes,
     });
+
+    return website;
   };
 
   t.test("is an Router instance", async (t) => {
-    // NOTE: syntax to get default export of the module
-    const { default: website } = mockModule();
+    const website = importModule();
 
-    t.ok(routerFake.calledWith());
+    t.ok(routerFake.called);
+    t.equal(routerFake.firstCall.args.length, 0);
     t.equal(website, expressRouter);
   });
 
   t.test("uses routes router", async (t) => {
-    mockModule();
+    importModule();
 
-    t.ok(routerUseFake.called);
-    t.equal(routerUseFake.firstCall.firstArg, routes);
+    t.ok(expressRouter.use.called);
+    t.equal(expressRouter.use.firstCall.firstArg, routes);
   });
 });

@@ -1,5 +1,9 @@
 import "dotenv/config";
 
+// INFO: Constants
+
+export const companyName = "Twisted Stream Technologies";
+
 // INFO: Exported environment variables
 
 export const port = Number(process.env.PORT);

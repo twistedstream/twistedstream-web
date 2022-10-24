@@ -1,20 +1,29 @@
 import { test } from "tap";
 import request from "supertest";
-import express from "express";
 
 import routes from "./index";
+import { createTestExpressApp, ViewRenderArgs } from "../utils/testing";
 
 test("routes", async (t) => {
-  const testApp = express();
-  testApp.use(routes);
-
   t.test("GET /", async (t) => {
     t.test("returns 200 with expected text", async (t) => {
-      const response = await request(testApp).get("/");
+      const renderArgs: ViewRenderArgs = {};
+      const app = createTestExpressApp(renderArgs);
+      app.use(routes);
+
+      const response = await request(app).get("/");
+      const { viewName, options } = renderArgs;
 
       t.equal(response.status, 200);
       t.match(response.headers["content-type"], "text/html");
-      t.same(response.text, "Express + TypeScript Server");
+      t.equal(viewName, "home");
+      t.equal(options.title, "Twisted Stream Technologies");
+      t.ok(Array.isArray(options.poweredBys));
+      t.ok(options.poweredBys.length);
+      for (const pb of options.poweredBys) {
+        t.ok(pb.name);
+        t.ok(pb.url);
+      }
     });
   });
 });

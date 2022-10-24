@@ -1,24 +1,24 @@
 import { test } from "tap";
-import sinon, { SinonSpy } from "sinon";
+import sinon from "sinon";
 
-test("server", async (t) => {
-  let serverListenFake: SinonSpy;
-  const httpServer: any = {};
-  let httpCreateServerFake: SinonSpy;
-  const http: any = {};
+test("index (HTTP server)", async (t) => {
+  const httpServer = {
+    listen: sinon.fake(),
+  };
+  const http = {
+    createServer: sinon.fake.returns(httpServer),
+  };
   const app = {};
-  let loggerInfoFake: SinonSpy;
-  const logger: any = {};
+  const logger = {
+    info: sinon.fake(),
+  };
 
-  const mockModule = () => {
-    serverListenFake = sinon.fake();
-    httpServer.listen = serverListenFake;
-    httpCreateServerFake = sinon.fake.returns(httpServer);
-    http.createServer = httpCreateServerFake;
-    loggerInfoFake = sinon.fake();
-    logger.info = loggerInfoFake;
+  const importModule = () => {
+    httpServer.listen.resetHistory();
+    http.createServer.resetHistory();
+    logger.info.resetHistory();
 
-    return t.mock("./index", {
+    const { default: server } = t.mock("./index", {
       "./utils/config": {
         port: 4224,
       },
@@ -28,30 +28,32 @@ test("server", async (t) => {
         logger,
       },
     });
+
+    return server;
   };
 
   t.test("is created using HTTP module and the express app", async (t) => {
-    const { server } = mockModule();
+    const server = importModule();
 
-    t.ok(httpCreateServerFake.called);
-    t.equal(httpCreateServerFake.firstCall.firstArg, app);
+    t.ok(http.createServer.called);
+    t.equal(http.createServer.firstCall.firstArg, app);
     t.equal(server, httpServer);
   });
 
   t.test("listens on expected port", async (t) => {
-    mockModule();
+    importModule();
 
-    t.ok(serverListenFake.called);
-    t.equal(serverListenFake.firstCall.args[0], 4224);
+    t.ok(httpServer.listen.called);
+    t.equal(httpServer.listen.firstCall.args[0], 4224);
   });
 
   t.test("logs when server is ready for requests", async (t) => {
-    mockModule();
+    importModule();
 
-    t.ok(serverListenFake.called);
-    const cb = <Function>serverListenFake.firstCall.args[1];
+    t.ok(httpServer.listen.called);
+    const cb = <Function>httpServer.listen.firstCall.args[1];
     cb();
 
-    t.match(loggerInfoFake.firstCall.firstArg, "http://localhost:4224");
+    t.match(logger.info.firstCall.firstArg, "http://localhost:4224");
   });
 });

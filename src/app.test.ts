@@ -1,194 +1,122 @@
 import { test } from "tap";
-import sinon, { SinonSpy } from "sinon";
+import sinon from "sinon";
 
 test("app", async (t) => {
-  let appUseFake: SinonSpy;
-  const expressApp: any = {};
-  let expressFake: SinonSpy;
-  const expressPinoResultFake = {};
-  let expressPinoFake: SinonSpy;
-  const logger: any = {};
+  const expressApp = {
+    use: sinon.fake(),
+    set: sinon.fake(),
+    engine: sinon.fake(),
+  };
+  const expressPinoMiddleware = {};
+  const expressPinoFake = sinon.fake.returns(expressPinoMiddleware);
+  const staticMiddleware = {};
+  const expressStaticFactoryFake = sinon.fake.returns(staticMiddleware);
+  const expressFactoryFake: any = sinon.fake.returns(expressApp);
+  expressFactoryFake.static = expressStaticFactoryFake;
+  const handlebarsEngine = {};
+  const handlebarsEngineFake = sinon.fake.returns(handlebarsEngine);
+  const logger = {};
   const website = {};
-  const notFoundErrorResult = {};
-  let notFoundErrorFake: SinonSpy;
+  const errorHandlerFake = sinon.fake();
 
-  const mockModule = () => {
-    appUseFake = sinon.fake();
-    expressApp.use = appUseFake;
-    expressFake = sinon.fake.returns(expressApp);
-    expressPinoFake = sinon.fake.returns(expressPinoResultFake);
-    notFoundErrorFake = sinon.fake.returns(notFoundErrorResult);
-    delete logger.error;
+  const importModule = () => {
+    expressApp.use.resetHistory();
+    expressApp.set.resetHistory();
+    expressApp.engine.resetHistory();
+    expressFactoryFake.resetHistory();
+    expressPinoFake.resetHistory();
+    expressStaticFactoryFake.resetHistory();
+    handlebarsEngineFake.resetHistory();
+    errorHandlerFake.resetHistory();
 
-    return t.mock("./app", {
-      express: expressFake,
+    const { default: app } = t.mock("./app", {
+      express: expressFactoryFake,
       "express-pino-logger": expressPinoFake,
+      "express-handlebars": {
+        engine: handlebarsEngineFake,
+      },
+      "./utils/config": {
+        companyName: "Some Company",
+        packageVersion: "42.1",
+      },
       "./utils/logger": {
         logger,
       },
       "./website": website,
-      "./utils/error": {
-        NotFoundError: notFoundErrorFake,
-      },
+      "./error-handler": errorHandlerFake,
     });
+
+    return app;
   };
 
   t.test("is an Express instance", async (t) => {
-    // NOTE: syntax to get default export of the module
-    const { default: app } = mockModule();
+    const app = importModule();
 
-    t.ok(expressFake.calledWith());
+    t.ok(expressFactoryFake.called);
+    t.equal(expressFactoryFake.firstCall.args.length, 0);
     t.equal(app, expressApp);
   });
 
   t.test("uses express-pino-logger middleware", async (t) => {
-    mockModule();
+    importModule();
 
     t.ok(expressPinoFake.called);
     t.same(expressPinoFake.firstCall.firstArg, { logger: {} });
     t.equal(expressPinoFake.firstCall.firstArg.logger, logger);
 
-    t.ok(appUseFake.called);
-    t.equal(appUseFake.firstCall.firstArg, expressPinoResultFake);
+    t.ok(expressApp.use.called);
+    t.equal(expressApp.use.getCalls()[0].firstArg, expressPinoMiddleware);
+  });
+
+  t.test("uses static middleware", async (t) => {
+    importModule();
+
+    t.ok(expressStaticFactoryFake.called);
+    t.equal(expressStaticFactoryFake.firstCall.firstArg, "public");
+
+    t.ok(expressApp.use.called);
+    t.equal(expressApp.use.getCalls()[1].firstArg, staticMiddleware);
+  });
+
+  t.test("configures the handlebars view engine", async (t) => {
+    t.test("for Express", async (t) => {
+      importModule();
+
+      t.ok(expressApp.set.called);
+      t.equal(expressApp.set.firstCall.args[0], "view engine");
+      t.equal(expressApp.set.firstCall.args[1], "handlebars");
+
+      t.ok(expressApp.engine.called);
+      t.equal(expressApp.engine.firstCall.args[0], "handlebars");
+      t.equal(expressApp.engine.firstCall.args[1], handlebarsEngine);
+
+      t.ok(handlebarsEngineFake.called);
+      t.ok(handlebarsEngineFake.firstCall.firstArg);
+      t.equal(handlebarsEngineFake.firstCall.firstArg.defaultLayout, "main");
+      t.ok(handlebarsEngineFake.firstCall.firstArg.helpers);
+    });
+
+    t.test("with helpers", async (t) => {
+      importModule();
+      const { helpers } = handlebarsEngineFake.firstCall.firstArg;
+
+      t.equal(helpers.company(), "Some Company");
+      t.ok(helpers.year());
+      t.equal(helpers.version(), "42.1");
+    });
   });
 
   t.test("uses website router", async (t) => {
-    mockModule();
+    importModule();
 
-    t.ok(appUseFake.called);
-    t.equal(appUseFake.getCalls()[1].firstArg, website);
+    t.ok(expressApp.use.called);
+    t.equal(expressApp.use.getCalls()[2].firstArg, website);
   });
 
-  t.test("converts unhandled requests to 404 errors", async (t) => {
-    const nextFake = sinon.fake();
+  t.test("configures error handling", async (t) => {
+    const app = importModule();
 
-    mockModule();
-    t.ok(appUseFake.called);
-    const cb = <Function>appUseFake.getCalls()[2].firstArg;
-    cb(undefined, undefined, nextFake);
-
-    t.ok(notFoundErrorFake.calledWith());
-    t.ok(nextFake.called);
-    t.equal(nextFake.firstCall.firstArg, notFoundErrorResult);
-  });
-
-  t.test("error handler middleware", async (t) => {
-    t.test("responds with error status code", async (t) => {
-      t.test("when error.statusCode", async (t) => {
-        const statusFake = sinon.fake();
-        const error = {
-          message: "foo",
-          statusCode: 404,
-        };
-        const res = {
-          status: statusFake,
-          send: sinon.fake(),
-        };
-
-        mockModule();
-        t.ok(appUseFake.called);
-        const cb = <Function>appUseFake.getCalls()[3].firstArg;
-        cb(error, undefined, res, undefined);
-
-        t.ok(statusFake.called);
-        t.equal(statusFake.firstCall.firstArg, 404);
-      });
-
-      t.test("when error.status", async (t) => {
-        const statusFake = sinon.fake();
-        const error = {
-          message: "foo",
-          status: 404,
-        };
-        const res = {
-          status: statusFake,
-          send: sinon.fake(),
-        };
-
-        mockModule();
-        t.ok(appUseFake.called);
-        const cb = <Function>appUseFake.getCalls()[3].firstArg;
-        cb(error, undefined, res, undefined);
-
-        t.ok(statusFake.called);
-        t.equal(statusFake.firstCall.firstArg, 404);
-      });
-    });
-
-    t.test(
-      "responds with 500 status code if no status code in error",
-      async (t) => {
-        const statusFake = sinon.fake();
-        const error = {};
-        const res = {
-          status: statusFake,
-          send: sinon.fake(),
-        };
-
-        mockModule();
-        logger.error = sinon.fake();
-        t.ok(appUseFake.called);
-        const cb = <Function>appUseFake.getCalls()[3].firstArg;
-        cb(error, undefined, res, undefined);
-
-        t.ok(statusFake.called);
-        t.equal(statusFake.firstCall.firstArg, 500);
-      }
-    );
-
-    t.test(
-      "responds with expected message and logs if server error",
-      async (t) => {
-        const sendFake = sinon.fake();
-        const error = {
-          message: "foo",
-        };
-        const res = {
-          status: sinon.fake(),
-          send: sendFake,
-        };
-        const loggerErrorFake = sinon.fake();
-
-        mockModule();
-        logger.error = loggerErrorFake;
-        t.ok(appUseFake.called);
-        const cb = <Function>appUseFake.getCalls()[3].firstArg;
-        cb(error, undefined, res, undefined);
-
-        t.ok(loggerErrorFake.called);
-        t.equal(loggerErrorFake.firstCall.firstArg, error);
-        t.ok(sendFake.called);
-        t.equal(
-          sendFake.firstCall.firstArg,
-          "500 ERROR: Something unexpected happened"
-        );
-      }
-    );
-
-    t.test(
-      "responds with expected message and does not log if not server error",
-      async (t) => {
-        const sendFake = sinon.fake();
-        const error = {
-          message: "foo",
-          statusCode: 404,
-        };
-        const res = {
-          status: sinon.fake(),
-          send: sendFake,
-        };
-        const loggerErrorFake = sinon.fake();
-
-        mockModule();
-        logger.error = loggerErrorFake;
-        t.ok(appUseFake.called);
-        const cb = <Function>appUseFake.getCalls()[3].firstArg;
-        cb(error, undefined, res, undefined);
-
-        t.ok(loggerErrorFake.notCalled);
-        t.ok(sendFake.called);
-        t.equal(sendFake.firstCall.firstArg, "404 ERROR: foo");
-      }
-    );
+    t.ok(errorHandlerFake.called);
+    t.equal(errorHandlerFake.firstCall.firstArg, app);
   });
 });

@@ -1,4 +1,11 @@
 import { StatusCodes, getReasonPhrase } from "http-status-codes";
+import ShortUniqueId from "short-unique-id";
+
+const uid = new ShortUniqueId({ length: 25 });
+
+export const generateCorrelationId = (): string => {
+  return uid();
+};
 
 export class ErrorWithStatusCode extends Error {
   constructor(
