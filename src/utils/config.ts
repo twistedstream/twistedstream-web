@@ -8,6 +8,7 @@ export const logLevel = <string>process.env.LOG_LEVEL;
 
 // INFO: Package configuration
 
+/* istanbul ignore next */
 const packageDir = environment === "production" ? "../" : "../../";
 const packagePath = `${packageDir}package.json`;
 const packageJson = require(packagePath);
