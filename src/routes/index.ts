@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { companyName } from "../utils/config";
+import { companyName, linkedInProfileUrl } from "../utils/config";
 
 const router = Router();
 
@@ -19,6 +19,10 @@ router.get("/", (_req: Request, res: Response) => {
       },
     ],
   });
+});
+
+router.get("/linkedin", (_req: Request, res: Response) => {
+  res.redirect(linkedInProfileUrl);
 });
 
 export default router;

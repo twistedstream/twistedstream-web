@@ -10,6 +10,8 @@ export const port = Number(process.env.PORT);
 export const environment = <string>process.env.NODE_ENV;
 export const logLevel = <string>process.env.LOG_LEVEL;
 
+export const linkedInProfileUrl = <string>process.env.LINKED_IN_PROFILE_URL;
+
 // INFO: Package configuration
 
 /* istanbul ignore next */
