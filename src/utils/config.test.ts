@@ -8,6 +8,7 @@ test("utils/config", async (t) => {
     port,
     logLevel,
     linkedInProfileUrl,
+    twitterProfileUrl,
   } = t.mock("./config", {
     "../../package.json": {
       name: "test-package",
@@ -48,6 +49,12 @@ test("utils/config", async (t) => {
   t.test("linkedInProfileUrl", async (t) => {
     t.test("is expected value", async (t) => {
       t.equal(linkedInProfileUrl, "https://linkedin.com/in/test");
+    });
+  });
+
+  t.test("twitterProfileUrl", async (t) => {
+    t.test("is expected value", async (t) => {
+      t.equal(twitterProfileUrl, "https://twitter.com/test");
     });
   });
 });

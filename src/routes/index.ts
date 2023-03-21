@@ -1,5 +1,9 @@
 import { Router, Request, Response } from "express";
-import { companyName, linkedInProfileUrl } from "../utils/config";
+import {
+  companyName,
+  linkedInProfileUrl,
+  twitterProfileUrl,
+} from "../utils/config";
 
 const router = Router();
 
@@ -23,6 +27,10 @@ router.get("/", (_req: Request, res: Response) => {
 
 router.get("/linkedin", (_req: Request, res: Response) => {
   res.redirect(linkedInProfileUrl);
+});
+
+router.get("/twitter", (_req: Request, res: Response) => {
+  res.redirect(twitterProfileUrl);
 });
 
 export default router;
