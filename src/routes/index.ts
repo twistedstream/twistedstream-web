@@ -3,6 +3,7 @@ import {
   companyName,
   linkedInProfileUrl,
   twitterProfileUrl,
+  githubProfileUrl,
 } from "../utils/config";
 
 const router = Router();
@@ -31,6 +32,10 @@ router.get("/linkedin", (_req: Request, res: Response) => {
 
 router.get("/twitter", (_req: Request, res: Response) => {
   res.redirect(twitterProfileUrl);
+});
+
+router.get("/github", (_req: Request, res: Response) => {
+  res.redirect(githubProfileUrl);
 });
 
 export default router;
