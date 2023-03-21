@@ -19,6 +19,8 @@ WORKDIR /app
 COPY --from=build_stage /app/package.json /app/
 COPY --from=build_stage /app/package-lock.json /app/
 COPY --from=build_stage /app/dist/ /app/
+COPY --from=build_stage /app/public/ /app/public/
+COPY --from=build_stage /app/views/ /app/views/
 RUN npm ci --production
 
 EXPOSE 8000

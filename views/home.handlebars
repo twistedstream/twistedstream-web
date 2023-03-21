@@ -1,0 +1,45 @@
+{{#> main_layout}}
+  {{#*inline "head_scripts"}}
+  {{/inline}}
+
+  {{#*inline "body"}}
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col text-center">
+          <img src="/images/logo.png" class="img-fluid">
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col text-center">
+          <p class="h3">
+            <a href="/linkedin" target="_blank">LinkedIn</a>
+            |
+            <a href="/twitter" target="_blank">Twitter</a>
+            |
+            <a href="/github" target="_blank">GitHub</a>
+            |
+            <a href="/resume" target="_blank">Resume</a>
+            |
+            <a href="/blog" target="_blank">Blog</a>     
+          </p>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col text-center small">
+          <p>
+            powered by:<br>
+            {{#each poweredBys }}
+            <a href="{{ url }}" target="_blank">{{ name }}</a>,
+            {{/each}}
+            and bananas
+          </p>
+        </div>
+      </div>
+    </div>
+  {{/inline}}
+
+  {{#*inline "body_scripts"}}
+  {{/inline}}
+{{/main_layout}}

@@ -1,22 +1,15 @@
 // NOTE: The config import should always run first to load the environment
-import { port, environment } from "./utils/config";
+import { port } from "./utils/config";
 
-import express, { Express, Request, Response } from "express";
-import expressPino from "express-pino-logger";
+import http from "http";
 
+import app from "./app";
 import { logger } from "./utils/logger";
 
-export const app: Express = express();
+const server = http.createServer(app);
 
-app.use(expressPino({ logger }));
-
-app.get("/", (req: Request, res: Response) => {
-  res.send("Express + TypeScript Server");
+server.listen(port, () => {
+  logger.info(`Server is running at http://localhost:${port}`);
 });
 
-/* istanbul ignore next */
-if (environment !== "test") {
-  app.listen(port, () => {
-    logger.info(`Server is running at http://localhost:${port}`);
-  });
-}
+export default server;
