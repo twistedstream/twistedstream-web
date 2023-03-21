@@ -1,15 +1,21 @@
 import { test } from "tap";
 
 test("utils/config", async (t) => {
-  const { environment, packageName, packageVersion, port, logLevel } = t.mock(
-    "./config",
-    {
-      "../../package.json": {
-        name: "test-package",
-        version: "42.0",
-      },
-    }
-  );
+  const {
+    environment,
+    packageName,
+    packageVersion,
+    port,
+    logLevel,
+    linkedInProfileUrl,
+    twitterProfileUrl,
+    githubProfileUrl,
+  } = t.mock("./config", {
+    "../../package.json": {
+      name: "test-package",
+      version: "42.0",
+    },
+  });
 
   t.test("packageName", async (t) => {
     t.test("is expected value", async (t) => {
@@ -38,6 +44,24 @@ test("utils/config", async (t) => {
   t.test("logLevel", async (t) => {
     t.test("is expected value", async (t) => {
       t.equal(logLevel, "debug");
+    });
+  });
+
+  t.test("linkedInProfileUrl", async (t) => {
+    t.test("is expected value", async (t) => {
+      t.equal(linkedInProfileUrl, "https://linkedin.com/in/test");
+    });
+  });
+
+  t.test("twitterProfileUrl", async (t) => {
+    t.test("is expected value", async (t) => {
+      t.equal(twitterProfileUrl, "https://twitter.com/test");
+    });
+  });
+
+  t.test("githubProfileUrl", async (t) => {
+    t.test("is expected value", async (t) => {
+      t.equal(githubProfileUrl, "https://github.com/test");
     });
   });
 });

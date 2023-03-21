@@ -26,4 +26,43 @@ test("routes", async (t) => {
       }
     });
   });
+
+  t.test("GET /linkedin", async (t) => {
+    t.test("returns 302 with expected redirect", async (t) => {
+      const renderArgs: ViewRenderArgs = {};
+      const app = createTestExpressApp(renderArgs);
+      app.use(routes);
+
+      const response = await request(app).get("/linkedin");
+
+      t.equal(response.status, 302);
+      t.equal(response.headers.location, "https://linkedin.com/in/test");
+    });
+  });
+
+  t.test("GET /twitter", async (t) => {
+    t.test("returns 302 with expected redirect", async (t) => {
+      const renderArgs: ViewRenderArgs = {};
+      const app = createTestExpressApp(renderArgs);
+      app.use(routes);
+
+      const response = await request(app).get("/twitter");
+
+      t.equal(response.status, 302);
+      t.equal(response.headers.location, "https://twitter.com/test");
+    });
+  });
+
+  t.test("GET /github", async (t) => {
+    t.test("returns 302 with expected redirect", async (t) => {
+      const renderArgs: ViewRenderArgs = {};
+      const app = createTestExpressApp(renderArgs);
+      app.use(routes);
+
+      const response = await request(app).get("/github");
+
+      t.equal(response.status, 302);
+      t.equal(response.headers.location, "https://github.com/test");
+    });
+  });
 });

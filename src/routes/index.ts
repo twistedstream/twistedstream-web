@@ -1,5 +1,10 @@
 import { Router, Request, Response } from "express";
-import { companyName } from "../utils/config";
+import {
+  companyName,
+  linkedInProfileUrl,
+  twitterProfileUrl,
+  githubProfileUrl,
+} from "../utils/config";
 
 const router = Router();
 
@@ -19,6 +24,18 @@ router.get("/", (_req: Request, res: Response) => {
       },
     ],
   });
+});
+
+router.get("/linkedin", (_req: Request, res: Response) => {
+  res.redirect(linkedInProfileUrl);
+});
+
+router.get("/twitter", (_req: Request, res: Response) => {
+  res.redirect(twitterProfileUrl);
+});
+
+router.get("/github", (_req: Request, res: Response) => {
+  res.redirect(githubProfileUrl);
 });
 
 export default router;
