@@ -3,12 +3,14 @@ import path from "path";
 
 export type ViewRenderArgs = { viewName?: string; options?: any };
 
-export const createTestExpressApp = (renderArgs: ViewRenderArgs): Express => {
+export const createTestExpressApp = (renderArgs?: ViewRenderArgs): Express => {
   const app = express();
   app.set("view engine", "handlebars");
   app.engine("handlebars", (viewPath: string, options: any, cb) => {
-    renderArgs.viewName = path.parse(viewPath).name;
-    renderArgs.options = options;
+    if (renderArgs) {
+      renderArgs.viewName = path.parse(viewPath).name;
+      renderArgs.options = options;
+    }
 
     cb(null, "ignored");
   });
