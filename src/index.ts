@@ -1,5 +1,6 @@
 // NOTE: The config import should always run first to load the environment
 import { port } from "./utils/config";
+import "express-async-errors";
 
 import http from "http";
 
