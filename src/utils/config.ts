@@ -13,6 +13,7 @@ export const logLevel = <string>process.env.LOG_LEVEL;
 export const linkedInProfileUrl = <string>process.env.LINKED_IN_PROFILE_URL;
 export const twitterProfileUrl = <string>process.env.TWITTER_PROFILE_URL;
 export const githubProfileUrl = <string>process.env.GITHUB_PROFILE_URL;
+export const cookieSecret = <string>process.env.COOKIE_SECRET;
 
 // INFO: Package configuration
 
