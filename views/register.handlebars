@@ -1,0 +1,146 @@
+{{#> main_layout}}
+  {{#*inline "head_scripts"}}
+    <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.5/base64.min.js"></script>
+    <script src="/scripts/util.js"></script>
+  {{/inline}}
+
+  {{#*inline "body"}}
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col text-center">
+          <a href="/"><img src="/images/logo.png" class="img-fluid"></a>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col text-center">
+          <h1>Let's create a new account</h1>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <form class="col text-center" id="sign_up_form">
+          <div class="form-row justify-content-center">
+            <div class="col-auto">
+              <label class="sr-only" for="user_name">Username</label>
+              <div class="input-group mb-2">
+                <div class="input-group-prepend">
+                  <div class="input-group-text">@</div>
+                </div>
+                <input type="text" class="form-control" id="user_name" placeholder="Username" required>
+              </div>
+            </div>
+            <div class="col-auto">
+              <label class="sr-only" for="display_name">Name</label>
+              <input type="text" class="form-control mb-2" id="display_name" placeholder="Jane Doe">
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-primary mb-2">Sign Up</button>
+            </div>
+          </div>
+        </form>  
+      </div>    
+    </div>
+
+    <div class="row mt-3">
+      <div class="col text-center">
+        <a href="/login?return_to={{return_to}}">Sign in instead?</a>
+      </div>
+    </div>
+  {{/inline}}
+
+  {{#*inline "body_scripts"}}
+    <script>
+      const signUpForm = document.querySelector("#sign_up_form");
+      const userNameInput = document.querySelector("#user_name");
+      const displayNameInput = document.querySelector("#display_name");
+
+      userNameInput.focus();
+
+      signUpForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        // build registration user
+        const user = {
+          name: userNameInput.value,
+          displayName: displayNameInput.value,
+        };
+
+        // obtain registration challenge from rp
+        const challengeRequest = { 
+          user, 
+          attachment: "platform" 
+        };
+        const challengeResponse = await fetch("/register/challenge", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(challengeRequest)
+        });
+        const challengeResponseJson = await challengeResponse.json();
+        if (!challengeResponse.ok) {
+          return window.alert(challengeResponseJson.message);
+        }
+        console.log("challengeResponseJson:", challengeResponseJson);
+
+        // build credential creation options
+        const credentialCreationOptions = {
+          publicKey: { 
+            ...challengeResponseJson,
+            user: { 
+              ...challengeResponseJson.user, 
+              id: arrayBufferFromBase64Url(challengeResponseJson.user.id),
+            },
+            challenge: arrayBufferFromBase64Url(challengeResponseJson.challenge)
+          }
+        }
+        console.log("credentialCreationOptions:", credentialCreationOptions);
+
+        // create public key credential
+        let attestationResponse;
+        try {
+          attestationResponse = await navigator.credentials
+            .create(credentialCreationOptions);
+        } catch (err) {
+          if (err.name !== "NotAllowedError") {
+            throw err;
+          }
+          return;
+        }
+        console.log("attestationResponse:", attestationResponse);
+
+        // build validate request
+        const validateRequest = {
+          id: attestationResponse.id,
+          rawId: base64UrlFromArrayBuffer(attestationResponse.rawId),
+          response: {
+            clientDataJSON: base64UrlFromArrayBuffer(
+              attestationResponse.response.clientDataJSON),
+            attestationObject: base64UrlFromArrayBuffer(
+              attestationResponse.response.attestationObject),
+          },
+        };
+        console.log("validateRequest:", validateRequest);
+
+        // validate registration with rp
+        const validateResponse = await fetch("/register/validate", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(validateRequest)
+        });
+        const validateResponseJson = await validateResponse.json();
+        if (!validateResponse.ok) {
+          return window.alert(validateResponseJson.message);
+        }
+        console.log("validateResponseJson:", validateResponseJson);
+
+        window.location = validateResponseJson.return_to;
+      });
+    </script>
+  {{/inline}}
+{{/main_layout}}

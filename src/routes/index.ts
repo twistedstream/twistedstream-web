@@ -5,6 +5,9 @@ import {
   twitterProfileUrl,
   githubProfileUrl,
 } from "../utils/config";
+import login from "./login";
+import register from "./register";
+import profile from "./profile";
 
 const router = Router();
 
@@ -37,5 +40,16 @@ router.get("/twitter", (_req: Request, res: Response) => {
 router.get("/github", (_req: Request, res: Response) => {
   res.redirect(githubProfileUrl);
 });
+
+router.get("/logout", (req: Request, res: Response) => {
+  req.session = null;
+  res.redirect("/");
+});
+
+// child routes
+
+router.use("/login", login);
+router.use("/register", register);
+router.use("/profile", profile);
 
 export default router;

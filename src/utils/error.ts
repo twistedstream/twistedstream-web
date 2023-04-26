@@ -22,3 +22,9 @@ export class ErrorWithStatusCode extends Error {
 
 export const NotFoundError = () =>
   new ErrorWithStatusCode(StatusCodes.NOT_FOUND);
+
+export const BadRequestError = (message: string) =>
+  new ErrorWithStatusCode(StatusCodes.BAD_REQUEST, message);
+
+export const UnauthorizedError = () =>
+  new ErrorWithStatusCode(StatusCodes.UNAUTHORIZED);

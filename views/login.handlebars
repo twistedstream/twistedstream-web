@@ -1,0 +1,138 @@
+{{#> main_layout}}
+  {{#*inline "head_scripts"}}
+    <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.5/base64.min.js"></script>
+    <script src="/scripts/util.js"></script>
+  {{/inline}}
+
+  {{#*inline "body"}}
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col text-center">
+          <a href="/"><img src="/images/logo.png" class="img-fluid"></a>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col text-center">
+          <h1>Let's get signed in</h1>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <form class="col text-center" id="sign_in_form">
+          <div class="form-row justify-content-center">
+            <div class="col-auto">
+              <label class="sr-only" for="user_name">Username</label>
+              <div class="input-group mb-2">
+                <div class="input-group-prepend">
+                  <div class="input-group-text">@</div>
+                </div>
+                <input type="text" class="form-control" id="user_name" placeholder="Username" value="{{user_name}}">
+              </div>
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-primary mb-2">Sign in</button>
+            </div>
+          </div>
+        </form>  
+      </div>    
+    </div>
+
+    <div class="row mt-3">
+      <div class="col text-center">
+        <a href="/register?return_to={{return_to}}">Sign up instead?</a>
+      </div>
+    </div>
+  {{/inline}}
+
+  {{#*inline "body_scripts"}}
+    <script>
+      const signInForm = document.querySelector("#sign_in_form");
+      const userNameInput = document.querySelector("#user_name");
+
+      userNameInput.focus();
+
+      signInForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        // build authentication user
+        const user = {
+          name: userNameInput.value,
+        };
+
+        // obtain assertion challenge from rp
+        const challengeRequest = { user }
+        const challengeResponse = await fetch("/login/challenge", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(challengeRequest)
+        });
+        const challengeResponseJson = await challengeResponse.json();
+        if (!challengeResponse.ok) {
+          return window.alert(challengeResponseJson.message);
+        }
+        console.log("challengeResponseJson:", challengeResponseJson);
+
+        // build credential authentication options
+        const credentialGetOptions = {
+          publicKey: { 
+            ...challengeResponseJson,
+            allowCredentials: challengeResponseJson.allowCredentials.map(c => ({
+              ...c,
+              id: arrayBufferFromBase64Url(c.id)
+            })),
+            challenge: arrayBufferFromBase64Url(challengeResponseJson.challenge)
+          }
+        }
+        console.log("credentialGetOptions:", credentialGetOptions);
+
+        // get public key credential
+        let assertionResponse;
+        try { 
+          assertionResponse = await navigator.credentials
+            .get(credentialGetOptions);
+        } catch (err) {
+          throw err;
+        }
+        console.log("assertionResponse:", assertionResponse);
+
+        // build validation request
+        const validateRequest = {
+          id: assertionResponse.id,
+          rawId: base64UrlFromArrayBuffer(assertionResponse.rawId),
+          response: {
+            clientDataJSON: base64UrlFromArrayBuffer(
+              assertionResponse.response.clientDataJSON),
+            authenticatorData: base64UrlFromArrayBuffer(
+              assertionResponse.response.authenticatorData),
+            signature: base64UrlFromArrayBuffer(
+              assertionResponse.response.signature),
+            userHandle: base64UrlFromArrayBuffer(
+              assertionResponse.response.userHandle),
+          },
+        };
+        console.log("validateRequest:", validateRequest);
+
+        // validate authentication with rp
+        const validateResponse = await fetch("/login/validate", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(validateRequest)
+        });
+        const validateResponseJson = await validateResponse.json();
+        if (!validateResponse.ok) {
+          return window.alert(validateResponseJson.message);
+        }
+        console.log("validateResponseJson:", validateResponseJson);
+
+        window.location = validateResponseJson.return_to;
+      });
+    </script>
+  {{/inline}}
+{{/main_layout}}
