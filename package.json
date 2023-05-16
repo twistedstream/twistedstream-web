@@ -36,6 +36,7 @@
   "homepage": "https://github.com/twistedstream/twistedstream-web#readme",
   "dependencies": {
     "@hexagon/base64": "^1.1.26",
+    "@sinclair/typebox": "^0.28.8",
     "body-parser": "^1.20.2",
     "cookie-session": "^2.0.0",
     "dotenv": "^16.0.3",

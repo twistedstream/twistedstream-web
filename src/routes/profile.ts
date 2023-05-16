@@ -1,36 +1,102 @@
-import { Router, Request, Response, NextFunction } from "express";
-import { BadRequestError, UnauthorizedError } from "../utils/error";
-import { fetchUserById } from "../services/users";
-import { AuthenticatedSession } from "../types/session";
+import { Router, Response } from "express";
+import { urlencoded } from "body-parser";
+import { Attachment } from "fido2-lib";
+
+import { BadRequestError } from "../utils/error";
+import {
+  fetchUserById,
+  removeUserCredential,
+  updateUser,
+} from "../services/users";
+import { requiresAuth } from "../utils/auth";
+import {
+  AuthenticatedRequest,
+  AuthenticatedRequestWithTypedBody,
+} from "../types/express";
+import { FullUser } from "../types/user";
 
 const router = Router();
 
-// TODO: authentication middleware
-const requiresAuth =
-  () => (req: Request, _res: Response, next: NextFunction) => {
-    if (req?.session?.authentication?.time) {
-      return next();
-    }
+// helpers
 
-    next(UnauthorizedError());
-  };
-
-// TODO: fetch share middleware
-
-// TODO: authorization middleware
-
-router.get("/", requiresAuth(), async (req: Request, res: Response) => {
-  const authentication: AuthenticatedSession = req?.session?.authentication;
-  // fetch existing user
-  const existingUser = await fetchUserById(authentication.user.id);
-  if (!existingUser) {
-    throw BadRequestError(`No such user with ID ${authentication.user.id}`);
+async function fetchProfile(req: AuthenticatedRequest): Promise<FullUser> {
+  if (!req.user) {
+    throw Error("Request is not authenticated");
   }
 
-  res.render("profile", {
-    title: "Profile",
-    user: existingUser,
-  });
-});
+  const profile = await fetchUserById(req.user.id);
+  if (!profile) {
+    throw BadRequestError(`No such user with ID ${req.user.id}`);
+  }
+
+  return profile;
+}
+
+// endpoints
+
+router.get(
+  "/",
+  requiresAuth(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const profile = await fetchProfile(req);
+
+    const passkeys = [...profile.credentials].map((c) => ({
+      id: c.id,
+      type: c.attachment,
+      created: c.created,
+    }));
+
+    const viewProfile = {
+      ...profile,
+      activePasskey: passkeys.find((p) => p.id === req.credential?.id),
+      otherPasskeys: passkeys.filter((p) => p.id !== req.credential?.id),
+    };
+
+    res.render("profile", {
+      title: "Profile",
+      profile: viewProfile,
+    });
+  }
+);
+
+router.post(
+  "/",
+  requiresAuth(),
+  urlencoded({ extended: false }),
+  async (
+    req: AuthenticatedRequestWithTypedBody<{
+      display_name?: string;
+      update?: string;
+      delete_cred?: string;
+    }>,
+    res: Response
+  ) => {
+    const profile = await fetchProfile(req);
+
+    const { update, display_name } = req.body;
+    if (update === "profile" && display_name) {
+      // update user profile
+      profile.displayName = display_name;
+      await updateUser(profile);
+
+      return res.redirect("back");
+    }
+
+    const { delete_cred } = req.body;
+    if (delete_cred) {
+      if (req.credential?.id === delete_cred) {
+        throw BadRequestError(
+          "Cannot delete credential that was used to sign into the current session"
+        );
+      }
+
+      await removeUserCredential(profile.id, delete_cred);
+
+      return res.redirect("back");
+    }
+
+    throw BadRequestError("Unsupported profile operation");
+  }
+);
 
 export default router;

@@ -5,11 +5,12 @@ import {
   twitterProfileUrl,
   githubProfileUrl,
 } from "../utils/config";
-import login from "./login";
-import register from "./register";
+import fido2 from "./fido2";
 import profile from "./profile";
 
 const router = Router();
+
+// endpoints
 
 router.get("/", (_req: Request, res: Response) => {
   res.render("home", {
@@ -41,6 +42,28 @@ router.get("/github", (_req: Request, res: Response) => {
   res.redirect(githubProfileUrl);
 });
 
+router.get("/register", (req: Request, res: Response) => {
+  req.session = req.session || {};
+  const { return_to } = req.query;
+  req.session.return_to = return_to;
+
+  res.render("register", {
+    title: "Sign up",
+    return_to,
+  });
+});
+
+router.get("/login", (req: Request, res: Response) => {
+  req.session = req.session || {};
+  const { return_to } = req.query;
+  req.session.return_to = return_to;
+
+  res.render("login", {
+    title: "Sign in",
+    return_to,
+  });
+});
+
 router.get("/logout", (req: Request, res: Response) => {
   req.session = null;
   res.redirect("/");
@@ -48,8 +71,7 @@ router.get("/logout", (req: Request, res: Response) => {
 
 // child routes
 
-router.use("/login", login);
-router.use("/register", register);
+router.use("/fido2", fido2);
 router.use("/profile", profile);
 
 export default router;

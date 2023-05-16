@@ -1,52 +1,18 @@
-import { Request } from "express";
-import { IdentifiedUser, NamedUser } from "../types/user";
+import { NextFunction, Request, Response } from "express";
+import querystring from "querystring";
+
+import { UserInfo } from "../types/user";
 import { AuthenticatedSession } from "../types/session";
-import { BadRequestError } from "./error";
-import { PresentedCredential } from "../types/credential";
+import { UnauthorizedError } from "./error";
+import { AuthenticatedRequest } from "../types/express";
+import { ValidatedCredential } from "../types/credential";
+import { StatusCodes } from "http-status-codes";
 
-const USER_NAME_PATTERN = /^[a-zA-Z0-9_\-]{3,100}$/;
-const USER_DISPLAY_NAME_PATTERN = /^[a-zA-Z0-9\- ]{1,200}$/;
-
-export function validateUser<T extends NamedUser>(req: Request): T {
-  const user: T = {
-    ...req.body.user,
-  };
-  if (!user?.name.trim()) {
-    throw BadRequestError("User name: missing");
-  }
-  if (!USER_NAME_PATTERN.test(user.name)) {
-    throw BadRequestError(`User name: Expected format ${USER_NAME_PATTERN}`);
-  }
-  const { displayName } = <any>user;
-  if (displayName && !USER_DISPLAY_NAME_PATTERN.test(displayName)) {
-    throw BadRequestError(
-      `Display name: Expected format ${USER_DISPLAY_NAME_PATTERN}`
-    );
-  }
-
-  return user;
-}
-
-export function validateCredential(req: Request): PresentedCredential {
-  const credential: PresentedCredential = {
-    id: req.body.id,
-    rawId: req.body.rawId,
-    response: req.body.response,
-  };
-  if (!credential?.id.trim()) {
-    throw BadRequestError("Credential ID: missing");
-  }
-  if (!credential?.rawId.trim()) {
-    throw BadRequestError("Credential raw ID: missing");
-  }
-  if (!credential.response) {
-    throw BadRequestError("Credential response: missing");
-  }
-
-  return credential;
-}
-
-export function signIn(req: Request, user: IdentifiedUser): void {
+export function signIn(
+  req: Request,
+  user: UserInfo,
+  credential: ValidatedCredential
+): void {
   req.session = req.session || {};
 
   // update session
@@ -55,6 +21,7 @@ export function signIn(req: Request, user: IdentifiedUser): void {
       id: user.id,
       name: user.name,
     },
+    credential,
     time: Date.now(),
   };
 
@@ -63,13 +30,38 @@ export function signIn(req: Request, user: IdentifiedUser): void {
   delete req.session.return_to;
 }
 
-export function getSessionUser(req: Request): IdentifiedUser | null {
-  req.session = req.session || {};
+// middleware
 
-  const authentication: AuthenticatedSession = req.session.authentication;
-  if (!authentication) {
-    return null;
-  }
+export function auth() {
+  return async (
+    req: AuthenticatedRequest,
+    _res: Response,
+    next: NextFunction
+  ) => {
+    const authentication: AuthenticatedSession = req?.session?.authentication;
 
-  return authentication.user;
+    // FUTURE: only set user if session hasn't expired
+    if (authentication?.time) {
+      req.user = authentication.user;
+      req.credential = authentication.credential;
+    }
+
+    return next();
+  };
+}
+
+export function requiresAuth() {
+  return async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
+    if (!req.user) {
+      // redirect to login page
+      const return_to = req.originalUrl;
+      return res.redirect(`/login?${querystring.stringify({ return_to })}`);
+    }
+
+    return next();
+  };
 }

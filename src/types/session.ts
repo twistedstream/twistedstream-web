@@ -1,18 +1,26 @@
-import { Attachment } from "fido2-lib";
-import { IdentifiedUser, RegisteringUser } from "./user";
+import { UserInfo } from "./user";
+import {
+  AuthenticatorSelectionCriteria,
+  AttestationConveyancePreference,
+  UserVerificationRequirement,
+} from "../schema/fido2-server";
+import { ValidatedCredential } from "./credential";
 
 export interface RegisteringSession {
-  user: RegisteringUser;
-  attachment: Attachment;
+  registeringUser: UserInfo;
+  authenticatorSelection: AuthenticatorSelectionCriteria;
+  attestation: AttestationConveyancePreference;
   challenge: string;
 }
 
 export interface AuthenticatingSession {
-  user: IdentifiedUser;
+  authenticatingUser?: UserInfo;
+  userVerification?: UserVerificationRequirement;
   challenge: string;
 }
 
 export interface AuthenticatedSession {
-  user: IdentifiedUser;
+  user: UserInfo;
+  credential: ValidatedCredential;
   time: number;
 }

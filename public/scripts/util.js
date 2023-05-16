@@ -1,7 +1,10 @@
-function arrayBufferFromBase64Url(from) {
-  return Base64.toUint8Array(from);
+function displayError(err) {
+  const message = err.message || err.errorMessage || err;
+
+  window.alert(message);
 }
 
-function base64UrlFromArrayBuffer(from) {
-  return Base64.fromUint8Array(new Uint8Array(from), true);
+function getQueryParam(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
 }

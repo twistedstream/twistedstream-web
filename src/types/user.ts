@@ -1,17 +1,11 @@
 import { ValidatedCredential } from "./credential";
 
-export interface NamedUser {
-  name: string;
-}
-
-export interface IdentifiedUser extends NamedUser {
+export interface UserInfo {
   id: string;
-}
-
-export interface RegisteringUser extends IdentifiedUser {
+  name: string;
   displayName: string;
 }
 
-export interface FullUser extends RegisteringUser {
+export interface FullUser extends UserInfo {
   credentials: ValidatedCredential[];
 }
