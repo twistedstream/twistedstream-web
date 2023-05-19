@@ -10,16 +10,12 @@ export const port = Number(process.env.PORT);
 export const environment = <string>process.env.NODE_ENV;
 export const logLevel = <string>process.env.LOG_LEVEL;
 
-export const hostname = <string>process.env.HOSTNAME;
+export const rpId = <string>process.env.RP_ID;
+export const baseUrl = <string>process.env.BASE_URL;
 export const linkedInProfileUrl = <string>process.env.LINKED_IN_PROFILE_URL;
 export const twitterProfileUrl = <string>process.env.TWITTER_PROFILE_URL;
 export const githubProfileUrl = <string>process.env.GITHUB_PROFILE_URL;
 export const cookieSecret = <string>process.env.COOKIE_SECRET;
-
-// INFO: Calculated configuration
-
-const portText = port === 443 ? "" : `:${port}`;
-export const origin = `https://${hostname}${portText}`;
 
 // INFO: Package configuration
 

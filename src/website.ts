@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from "express";
+import { Router, Response, NextFunction } from "express";
 import cookieSession from "cookie-session";
 
 import { cookieSecret } from "./utils/config";

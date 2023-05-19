@@ -3,10 +3,8 @@ import querystring from "querystring";
 
 import { UserInfo } from "../types/user";
 import { AuthenticatedSession } from "../types/session";
-import { UnauthorizedError } from "./error";
 import { AuthenticatedRequest } from "../types/express";
 import { ValidatedCredential } from "../types/credential";
-import { StatusCodes } from "http-status-codes";
 
 export function signIn(
   req: Request,

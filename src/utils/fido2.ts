@@ -1,5 +1,6 @@
 import { Fido2Lib, Fido2LibOptions } from "fido2-lib";
-import { hostname, origin, companyName } from "../utils/config";
+
+import { rpId, baseUrl, companyName } from "../utils/config";
 import {
   AttestationConveyancePreference,
   AuthenticatorAttachment,
@@ -8,9 +9,9 @@ import {
 
 const coreOptions = {
   timeout: 60000,
-  rpId: hostname,
+  rpId: rpId,
   rpName: companyName,
-  rpIcon: `${origin}/images/logo.png`,
+  rpIcon: `${baseUrl}/images/logo.png`,
   challengeSize: 128,
   cryptoParams: [-7, -257],
 };

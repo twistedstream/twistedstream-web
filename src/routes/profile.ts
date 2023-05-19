@@ -1,6 +1,5 @@
 import { Router, Response } from "express";
 import { urlencoded } from "body-parser";
-import { Attachment } from "fido2-lib";
 
 import { BadRequestError } from "../utils/error";
 import {

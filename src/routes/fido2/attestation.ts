@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router, Response } from "express";
 import { json } from "body-parser";
 import { ExpectedAttestationResult, AttestationResult } from "fido2-lib";
 import base64 from "@hexagon/base64";
@@ -6,7 +6,7 @@ import crypto from "crypto";
 import { StatusCodes } from "http-status-codes";
 
 import { createServer } from "../../utils/fido2";
-import { origin } from "../../utils/config";
+import { baseUrl } from "../../utils/config";
 import { logger } from "../../utils/logger";
 import { signIn } from "../../utils/auth";
 import {
@@ -181,7 +181,7 @@ router.post(
     };
     const attestationExpectations: ExpectedAttestationResult = {
       challenge: registration.challenge,
-      origin,
+      origin: baseUrl,
       factor: "first",
     };
     let attestationResult;

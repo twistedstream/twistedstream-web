@@ -5,15 +5,10 @@ import base64 from "@hexagon/base64";
 import { StatusCodes } from "http-status-codes";
 
 import { createServer } from "../../utils/fido2";
-import { origin } from "../../utils/config";
-import { BadRequestError } from "../../utils/error";
+import { baseUrl } from "../../utils/config";
 import { logger } from "../../utils/logger";
 import { signIn } from "../../utils/auth";
-import {
-  fetchUserByName,
-  fetchUserById,
-  fetchUserByCredentialId,
-} from "../../services/users";
+import { fetchUserByName, fetchUserByCredentialId } from "../../services/users";
 import { AuthenticatingSession } from "../../types/session";
 import {
   ServerAssertionPublicKeyCredential,
@@ -167,7 +162,7 @@ router.post(
     };
     const assertionExpectations: ExpectedAssertionResult = {
       challenge: authentication.challenge,
-      origin,
+      origin: baseUrl,
       factor: "first",
       publicKey: existingCredential.publicKey,
       prevCounter: existingCredential.counter,
