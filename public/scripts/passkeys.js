@@ -1,16 +1,13 @@
-function arrayBufferFromBase64Url(from) {
-  return Base64.toUint8Array(from);
-}
-
-function base64UrlFromArrayBuffer(from) {
-  return Base64.fromUint8Array(new Uint8Array(from), true);
-}
+const {
+  browserSupportsWebAuthn,
+  browserSupportsWebAuthnAutofill,
+  startRegistration,
+  startAuthentication,
+} = SimpleWebAuthnBrowser;
 
 function arePasskeysSupported() {
   const supported =
-    getQueryParam("no_passkeys") === null &&
-    window.PublicKeyCredential &&
-    typeof window.PublicKeyCredential === "function";
+    getQueryParam("no_passkeys") === null && browserSupportsWebAuthn();
 
   console.log("Passkeys supported:", supported);
   return supported;
@@ -20,7 +17,7 @@ async function isPasskeyAutofillSupported() {
   const supported =
     getQueryParam("no_autofill") === null &&
     arePasskeysSupported &&
-    (await PublicKeyCredential.isConditionalMediationAvailable());
+    (await browserSupportsWebAuthnAutofill());
 
   console.log("Passkey autofill supported:", supported);
   return supported;
@@ -57,36 +54,16 @@ async function registerUser(username, displayName, authenticatorAttachment) {
     await attestationOptionsFetchResponse.json();
   console.log("attestationOptionsResponse:", attestationOptionsResponse);
   if (
-    !attestationOptionsFetchResponse.ok ||
+    !attestationOptionsResponse ||
     attestationOptionsResponse.status !== "ok"
   ) {
-    throw attestationOptionsResponse.errorMessage;
+    throw attestationOptionsResponse;
   }
 
-  // build credential creation options
-  const credentialCreationOptions = {
-    publicKey: {
-      ...attestationOptionsResponse,
-      user: {
-        ...attestationOptionsResponse.user,
-        id: arrayBufferFromBase64Url(attestationOptionsResponse.user.id),
-      },
-      challenge: arrayBufferFromBase64Url(attestationOptionsResponse.challenge),
-      excludeCredentials: attestationOptionsResponse.excludeCredentials.map(
-        (c) => ({
-          ...c,
-          id: arrayBufferFromBase64Url(c.id),
-        })
-      ),
-    },
-  };
-  console.log("credentialCreationOptions:", credentialCreationOptions);
-
-  // create public key credential (via the browser)
-  let credentialsCreationResult;
+  let attestationResultRequest;
   try {
-    credentialsCreationResult = await navigator.credentials.create(
-      credentialCreationOptions
+    attestationResultRequest = await startRegistration(
+      attestationOptionsResponse
     );
   } catch (err) {
     if (err.name === "NotAllowedError") {
@@ -101,23 +78,6 @@ async function registerUser(username, displayName, authenticatorAttachment) {
     console.error("Credential creation error:", err);
     throw err;
   }
-  console.log("credentialsCreationResult:", credentialsCreationResult);
-
-  // build result request
-  const attestationResultRequest = {
-    id: credentialsCreationResult.id,
-    rawId: base64UrlFromArrayBuffer(credentialsCreationResult.rawId),
-    response: {
-      clientDataJSON: base64UrlFromArrayBuffer(
-        credentialsCreationResult.response.clientDataJSON
-      ),
-      attestationObject: base64UrlFromArrayBuffer(
-        credentialsCreationResult.response.attestationObject
-      ),
-    },
-    type: "public-key",
-  };
-  console.log("attestationResultRequest:", attestationResultRequest);
 
   // validate registration with rp
   const attestationResultFetchResponse = await fetch(
@@ -133,29 +93,17 @@ async function registerUser(username, displayName, authenticatorAttachment) {
   );
   const attestationResultResponse = await attestationResultFetchResponse.json();
   console.log("attestationResultResponse:", attestationResultResponse);
-  if (
-    !attestationResultFetchResponse.ok ||
-    attestationResultResponse.status !== "ok"
-  ) {
+  if (!attestationResultResponse || attestationResultResponse.status !== "ok") {
     throw attestationResultResponse;
   }
 
   return attestationResultResponse.return_to;
 }
 
-async function authenticateUser(arg) {
-  let username = "";
-  let abortController;
-
-  if (typeof arg === "string") {
-    username = arg;
-  } else {
-    abortController = arg;
-  }
-
+async function authenticateUser(username) {
   // build options request
   const assertionOptionsRequest = {
-    username,
+    username: username || "",
     userVerification: "preferred",
   };
   console.log("assertionOptionsRequest:", assertionOptionsRequest);
@@ -174,32 +122,17 @@ async function authenticateUser(arg) {
   );
   const assertionOptionsResponse = await assertionOptionsFetchResponse.json();
   console.log("assertionOptionsResponse:", assertionOptionsResponse);
-  if (!assertionOptionsFetchResponse.ok) {
+  if (!assertionOptionsResponse || assertionOptionsResponse.status !== "ok") {
     throw assertionOptionsResponse;
   }
 
-  // build credential authentication options
-  const credentialGetOptions = {
-    publicKey: {
-      ...assertionOptionsResponse,
-      allowCredentials: assertionOptionsResponse.allowCredentials.map((c) => ({
-        ...c,
-        id: arrayBufferFromBase64Url(c.id),
-      })),
-      challenge: arrayBufferFromBase64Url(assertionOptionsResponse.challenge),
-    },
-  };
-  // autofill support
-  if (abortController) {
-    credentialGetOptions.mediation = "conditional";
-    credentialGetOptions.signal = abortController.signal;
-  }
-  console.log("credentialGetOptions:", credentialGetOptions);
-
-  // get public key credential (via the browser)
-  let credentialGetResult;
+  const useBrowserAutofill = username === undefined;
+  let assertionResultRequest;
   try {
-    credentialGetResult = await navigator.credentials.get(credentialGetOptions);
+    assertionResultRequest = await startAuthentication(
+      assertionOptionsResponse,
+      useBrowserAutofill
+    );
   } catch (err) {
     if (err.name === "NotAllowedError") {
       return console.warn("User cancelled:", err);
@@ -211,29 +144,6 @@ async function authenticateUser(arg) {
     console.error("Credential get error:", err);
     throw err;
   }
-  console.log("credentialGetResult:", credentialGetResult);
-
-  // build result request
-  const assertionResultRequest = {
-    id: credentialGetResult.id,
-    rawId: base64UrlFromArrayBuffer(credentialGetResult.rawId),
-    type: "public-key",
-    response: {
-      clientDataJSON: base64UrlFromArrayBuffer(
-        credentialGetResult.response.clientDataJSON
-      ),
-      authenticatorData: base64UrlFromArrayBuffer(
-        credentialGetResult.response.authenticatorData
-      ),
-      signature: base64UrlFromArrayBuffer(
-        credentialGetResult.response.signature
-      ),
-      userHandle: base64UrlFromArrayBuffer(
-        credentialGetResult.response.userHandle
-      ),
-    },
-  };
-  console.log("assertionResultRequest:", assertionResultRequest);
 
   // validate authentication with rp
   const assertionResultFetchResponse = await fetch("/fido2/assertion/result", {
@@ -246,7 +156,7 @@ async function authenticateUser(arg) {
   });
   const assertionResultResponse = await assertionResultFetchResponse.json();
   console.log("assertionResultResponse:", assertionResultResponse);
-  if (!assertionResultFetchResponse.ok) {
+  if (!assertionResultResponse || assertionResultResponse.status !== "ok") {
     throw assertionResultResponse;
   }
 

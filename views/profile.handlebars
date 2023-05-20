@@ -1,7 +1,7 @@
 {{#> main_layout}}
   {{#*inline "head_scripts"}}
     <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.5/base64.min.js"></script>
-    <script src="/scripts/passkeys.js"></script>
+    {{> passkey_scripts }}
   {{/inline}}
 
   {{#*inline "body"}}
@@ -23,7 +23,7 @@
         <div class="row mt-3">
           <div class="col text-center">        
             <div class="form-row justify-content-center">
-              <div class="col-md-auto">
+              <div class="col-sm-auto">
                 <label class="sr-only" for="user_name">Username</label>
                 <div class="input-group mb-2">
                   <div class="input-group-prepend">
@@ -32,11 +32,11 @@
                   <input type="text" class="form-control" id="user_name" readonly value="{{profile.name}}">
                 </div>
               </div>
-              <div class="col-md-auto">
+              <div class="col-sm-auto">
                 <label class="sr-only" for="display_name">Name</label>
                 <input type="text" class="form-control mb-2" id="display_name" name="display_name" value="{{profile.displayName}}">
               </div>
-              <div class="col-md-auto">
+              <div class="col-sm-auto">
                 <button type="submit" class="btn btn-primary mb-2" name="update" value="profile">Update</button>
               </div>
             </div>

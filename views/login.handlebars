@@ -1,7 +1,7 @@
 {{#> main_layout}}
   {{#*inline "head_scripts"}}
     <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.5/base64.min.js"></script>
-    <script src="/scripts/passkeys.js"></script>
+    {{> passkey_scripts }}
   {{/inline}}
 
   {{#*inline "body"}}
@@ -21,7 +21,7 @@
       <div class="row mt-3 passkeys_supported" hidden>
         <form class="col text-center" id="sign_in_form">
           <div class="form-row justify-content-center">
-            <div class="col-md-auto">
+            <div class="col-sm-auto">
               <label class="sr-only" for="username">Username</label>
               <div class="input-group mb-2">
                 <div class="input-group-prepend">
@@ -30,7 +30,7 @@
                 <input type="text" class="form-control" id="username" autocomplete="username webauthn" placeholder="Username" name="username" value="{{user_name}}">
               </div>
             </div>
-            <div class="col-md-auto">
+            <div class="col-sm-auto">
               <button type="submit" class="btn btn-primary mb-2" id="sign_in_button" disabled>Sign in</button>
             </div>
           </div>
@@ -79,11 +79,10 @@
         passkeysSupportedElements.forEach((e) => e.hidden = false);
 
         // support autofill sign-in
-        let abortController = new AbortController();
         function startSignIn() {
           if (autofillSupported) {
             // perform autofill
-            authenticateUser(abortController)
+            authenticateUser()
               .then((returnTo) => {
                 if (returnTo) {
                   window.location = returnTo;
@@ -101,8 +100,6 @@
         signInForm.addEventListener("submit", async (event) => {
           event.preventDefault();
 
-          abortController.abort();
-
           try {
             const returnTo = await authenticateUser(usernameInput.value);
             if (returnTo) {
@@ -111,7 +108,7 @@
           } catch (err) {
             displayError(err);
 
-            abortController = new AbortController();
+            // reset sign-in UX
             startSignIn();
           }
         });
