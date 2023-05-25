@@ -58,6 +58,7 @@ const AuthenticatorTransport = Type.Union([
   Type.Literal("hybrid"),
   Type.Literal("internal"),
 ]);
+export type AuthenticatorTransport = Static<typeof AuthenticatorTransport>;
 
 const AuthenticatorSelectionCriteria = Type.Object({
   authenticatorAttachment: Type.Optional(AuthenticatorAttachment),

@@ -1,11 +1,24 @@
-import { ValidatedCredential } from "./credential";
+import {
+  AuthenticatorAttachment,
+  AuthenticatorTransport,
+} from "../schema/fido2-server";
 
-export interface UserInfo {
+export interface User {
   id: string;
-  name: string;
+  username: string;
   displayName: string;
 }
 
-export interface FullUser extends UserInfo {
-  credentials: ValidatedCredential[];
+export interface Authenticator {
+  credentialID: string;
+  created: Date;
+  publicKey: string;
+  counter: number;
+  deviceType: AuthenticatorAttachment;
+  backedUp: boolean;
+  transports?: AuthenticatorTransport[];
+}
+
+export interface RegisteredAuthenticator extends Authenticator {
+  userID: string;
 }

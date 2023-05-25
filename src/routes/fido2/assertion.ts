@@ -8,7 +8,12 @@ import { createServer } from "../../utils/fido2";
 import { baseUrl } from "../../utils/config";
 import { logger } from "../../utils/logger";
 import { signIn } from "../../utils/auth";
-import { fetchUserByName, fetchUserByCredentialId } from "../../services/users";
+import {
+  fetchCredentialById,
+  fetchUserById,
+  fetchUserByName,
+  fetchUserCredentials,
+} from "../../services/users";
 import { AuthenticatingSession } from "../../types/session";
 import {
   ServerAssertionPublicKeyCredential,
@@ -17,8 +22,8 @@ import {
   ServerResponse,
 } from "../../schema/fido2-server";
 import { renderErrorServerResponse, validateSchema } from "../../schema/util";
-import { FullUser } from "../../types/user";
-import { ValidatedCredential } from "../../types/credential";
+import { User } from "../../types/user";
+import { RegisteredAuthenticator } from "../../types/user";
 
 const router = Router();
 
@@ -50,12 +55,20 @@ router.post(
     const username = optionsRequest.username.trim();
 
     // fetch existing user
-    let existingUser: FullUser | null = null;
+    let existingUser: User | undefined;
+    let existingCredentials: RegisteredAuthenticator[] = [];
     if (username.length > 0) {
-      existingUser = await fetchUserByName(optionsRequest.username);
+      existingUser = await fetchUserByName(username);
       if (!existingUser) {
-        logger.warn(`No such user with name '${optionsRequest.username}'`);
+        logger.warn(`No such user with name '${username}'`);
         return renderFailedAuthenticationResponse(res);
+      }
+      existingCredentials = await fetchUserCredentials(username);
+      if (existingCredentials.length === 0) {
+        // NOTE: this shouldn't happen unless there's a data integrity issue
+        throw new Error(
+          `Existing user ${existingUser.id} is missing credentials.`
+        );
       }
     }
 
@@ -73,12 +86,14 @@ router.post(
       errorMessage: "",
       challenge: base64.fromArrayBuffer(assertionOptions.challenge, true),
       // add allowed credentials of existing user
-      allowCredentials: existingUser
-        ? existingUser.credentials.map((c) => ({
-            type: "public-key",
-            id: c.id,
-          }))
-        : [],
+      allowCredentials:
+        existingCredentials.length > 0
+          ? existingCredentials.map((c) => ({
+              type: "public-key",
+              id: c.credentialID,
+              transports: c.transports,
+            }))
+          : [],
     };
     logger.info(challengeResponse, "Login challenge response");
 
@@ -87,7 +102,7 @@ router.post(
       authenticatingUser: existingUser
         ? {
             id: existingUser.id,
-            name: existingUser.name,
+            username: existingUser.username,
           }
         : null,
       userVerification: optionsRequest.userVerification,
@@ -125,23 +140,31 @@ router.post(
       "/assertion/result: Authentication state retrieved from session"
     );
 
-    // find user by cred ID
-    const existingUser = await fetchUserByCredentialId(resultRequest.id);
-    if (!existingUser) {
+    // find user credential
+    const activeCredential = await fetchCredentialById(resultRequest.id);
+    if (!activeCredential) {
       logger.warn(
-        `/assertion/result: No user found with credential ID ${resultRequest.id}`
+        `/assertion/result: No credential found with ID ${resultRequest.id}`
       );
 
       return renderFailedAuthenticationResponse(res);
     }
+    if (
+      authentication.authenticatingUser &&
+      activeCredential.userID !== authentication.authenticatingUser.id
+    ) {
+      logger.warn(
+        `/assertion/result: Presented credential (id = ${activeCredential.credentialID}) is not associated with specified user (id = ${authentication.authenticatingUser.id})`
+      );
 
-    // ensure credential
-    const existingCredential: ValidatedCredential | undefined =
-      existingUser.credentials.find((c) => c.id === resultRequest.id);
-    if (!existingCredential) {
-      // this should never happen
+      return renderFailedAuthenticationResponse(res);
+    }
+    // fetch associated user
+    const existingUser = await fetchUserById(activeCredential.userID);
+    if (!existingUser) {
+      // NOTE: this shouldn't happen unless there's a data integrity issue
       throw new Error(
-        `Found user with ID ${existingUser.id} is somehow now missing credential with ID ${resultRequest.id}`
+        `Cannot find user (id = ${activeCredential.userID}) associated with active credential (id =${activeCredential.credentialID})`
       );
     }
 
@@ -164,9 +187,9 @@ router.post(
       challenge: authentication.challenge,
       origin: baseUrl,
       factor: "first",
-      publicKey: existingCredential.publicKey,
-      prevCounter: existingCredential.counter,
-      userHandle: existingCredential.userHandle,
+      publicKey: activeCredential.publicKey,
+      prevCounter: activeCredential.counter,
+      userHandle: activeCredential.userID,
     };
     let assertionResult;
     try {
@@ -177,7 +200,7 @@ router.post(
     } catch (err) {
       logger.warn(
         err,
-        `Authentication error with user with ID ${existingUser.id} and credential ${existingCredential.id}`
+        `Authentication error with user (id = ${existingUser.id}) and credential (id = ${activeCredential.credentialID})`
       );
 
       return renderFailedAuthenticationResponse(res);
@@ -192,7 +215,7 @@ router.post(
     };
 
     // complete authentication
-    signIn(req, existingUser, existingCredential);
+    signIn(req, existingUser, activeCredential);
 
     res.json(validateResponse);
   }

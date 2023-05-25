@@ -1,29 +1,93 @@
-import { ValidatedCredential } from "../types/credential";
-import { FullUser, UserInfo } from "../types/user";
+import { User, Authenticator, RegisteredAuthenticator } from "../types/user";
 import { logger } from "../utils/logger";
-
-const _users: FullUser[] = [];
 
 // helpers
 
-async function findUserById(userId: string): Promise<FullUser | undefined> {
-  return _users.find((u) => u.id === userId);
+// FUTURE: externalize to DB
+const _users: User[] = [];
+const _credentials: RegisteredAuthenticator[] = [];
+
+async function findUserById(userID: string): Promise<User | undefined> {
+  return _users.find((u) => u.id === userID);
 }
 
-async function findUserByName(name: string): Promise<FullUser | undefined> {
-  return _users.find((u) => u.name === name);
+async function findUserByName(username: string): Promise<User | undefined> {
+  return _users.find((u) => u.username === username);
 }
 
-async function findUserByCredentialId(
-  credentialId: string
-): Promise<FullUser | undefined> {
-  return _users.find((u) => u.credentials.some((c) => c.id === credentialId));
+async function findCredentialById(
+  credentialID: string
+): Promise<RegisteredAuthenticator | undefined> {
+  return _credentials.find((p) => p.credentialID === credentialID);
 }
 
-async function ensureUser(userId: string): Promise<FullUser> {
-  const foundUser = await findUserById(userId);
+async function findUserCredential(
+  userID: string,
+  credentialID: string
+): Promise<RegisteredAuthenticator | undefined> {
+  return _credentials.find(
+    (p) => p.userID === userID && p.credentialID === credentialID
+  );
+}
+
+async function getCredentials(
+  userID: string
+): Promise<RegisteredAuthenticator[]> {
+  return _credentials.filter((p) => p.userID === userID);
+}
+
+async function addUser(user: User): Promise<User> {
+  _users.push(user);
+  logger.debug(_users, "Users after add");
+
+  return user;
+}
+
+async function addCredential(userID: string, credential: Authenticator) {
+  if (await findUserCredential(userID, credential.credentialID)) {
+    throw new Error(
+      `Credential with ID ${`credential.credentialID`} already exists`
+    );
+  }
+  if (!(await findUserById(userID))) {
+    throw new Error(`User with ID ${userID} not found`);
+  }
+
+  const registeredCredential: RegisteredAuthenticator = {
+    ...credential,
+    userID,
+  };
+  _credentials.push(registeredCredential);
+  logger.debug(_credentials, "Credentials after add");
+}
+
+async function removeCredential(userID: string, credentialID: string) {
+  if (
+    _credentials.filter(
+      (c) => c.credentialID === credentialID && c.userID === userID
+    ).length === 0
+  ) {
+    throw new Error(
+      `Credential (id = ${credentialID}) not associated with user (id = ${userID})`
+    );
+  }
+  if (_credentials.filter((c) => c.userID === userID).length === 1) {
+    throw new Error(
+      `Cannot remove the last credential (id = ${credentialID}) associated with user (id = ${userID})`
+    );
+  }
+
+  const indexToDelete = _credentials.findIndex(
+    (c) => c.credentialID === credentialID
+  );
+  _credentials.splice(indexToDelete, 1);
+  logger.debug(_credentials, "Credentials after remove");
+}
+
+async function ensureUser(userID: string): Promise<User> {
+  const foundUser = await findUserById(userID);
   if (!foundUser) {
-    throw new Error(`User with ID ${userId} does not exist.`);
+    throw new Error(`User with ID ${userID} does not exist.`);
   }
 
   return foundUser;
@@ -31,86 +95,76 @@ async function ensureUser(userId: string): Promise<FullUser> {
 
 // service
 
-export async function fetchUserById(id: string): Promise<FullUser | null> {
-  const foundUser = await findUserById(id);
+export async function fetchUserById(userID: string): Promise<User | undefined> {
+  const foundUser = await findUserById(userID);
   if (foundUser) {
-    // return clone of user
     return { ...foundUser };
   }
-  return null;
 }
 
-export async function fetchUserByName(name: string): Promise<FullUser | null> {
-  const foundUser = await findUserByName(name);
+export async function fetchUserByName(
+  username: string
+): Promise<User | undefined> {
+  const foundUser = await findUserByName(username);
   if (foundUser) {
-    // return clone of user
     return { ...foundUser };
   }
-  return null;
-}
-
-export async function fetchUserByCredentialId(
-  id: string
-): Promise<FullUser | null> {
-  const foundUser = await findUserByCredentialId(id);
-  if (foundUser) {
-    // return clone of user
-    return { ...foundUser };
-  }
-  return null;
 }
 
 export async function createUser(
-  registeringUser: UserInfo,
-  firstCredential: ValidatedCredential
-): Promise<FullUser> {
-  const newUser: FullUser = {
-    // clone user data
+  registeringUser: User,
+  firstCredential: Authenticator
+): Promise<User> {
+  const user: User = {
     ...registeringUser,
-
-    credentials: [{ ...firstCredential }],
   };
+  const addedUser = await addUser(user);
 
-  _users.push(newUser);
-  logger.debug(_users, "createUser: users after add");
+  const credential: Authenticator = {
+    ...firstCredential,
+  };
+  await addCredential(registeringUser.id, credential);
 
-  return { ...newUser };
+  return { ...addedUser };
 }
 
-export async function addUserCredential(
-  existingUserId: string,
-  newCredential: ValidatedCredential
-): Promise<FullUser> {
-  const foundUser = await ensureUser(existingUserId);
-
-  // add credential
-  foundUser.credentials = [...foundUser.credentials, newCredential];
-
-  // return clone of user
-  return { ...foundUser };
-}
-
-export async function removeUserCredential(
-  existingUserId: string,
-  existingCredentialId: string
-): Promise<FullUser> {
-  const foundUser = await ensureUser(existingUserId);
-
-  // remove credential (filter method)
-  foundUser.credentials = foundUser.credentials.filter(
-    (c) => c.id !== existingCredentialId
-  );
-
-  // return clone of user
-  return { ...foundUser };
-}
-
-export async function updateUser(user: UserInfo): Promise<FullUser> {
+export async function updateUser(user: User): Promise<User> {
   const foundUser = await ensureUser(user.id);
 
   // update profile fields
   foundUser.displayName = user.displayName;
 
-  // return clone of user
   return { ...foundUser };
+}
+
+export async function fetchCredentialById(
+  credentialID: string
+): Promise<RegisteredAuthenticator | undefined> {
+  const foundCredential = await findCredentialById(credentialID);
+
+  if (foundCredential) {
+    return { ...foundCredential };
+  }
+}
+
+export async function fetchUserCredentials(
+  userID: string
+): Promise<RegisteredAuthenticator[]> {
+  const credentials = await getCredentials(userID);
+
+  return [...credentials];
+}
+
+export async function addUserCredential(
+  existingUserId: string,
+  newCredential: Authenticator
+) {
+  await addCredential(existingUserId, newCredential);
+}
+
+export async function removeUserCredential(
+  existingUserId: string,
+  existingCredentialId: string
+) {
+  await removeCredential(existingUserId, existingCredentialId);
 }

@@ -29,7 +29,7 @@
                   <div class="input-group-prepend">
                     <div class="input-group-text">@</div>
                   </div>
-                  <input type="text" class="form-control" id="user_name" readonly value="{{profile.name}}">
+                  <input type="text" class="form-control" id="user_name" readonly value="{{profile.username}}">
                 </div>
               </div>
               <div class="col-sm-auto">
@@ -130,7 +130,7 @@
 
         // wire up UI events
         addCredentialButton.addEventListener("click", async (event) => {
-          const username = "{{profile.name}}";
+          const username = "{{profile.username}}";
           const displayName = "{{profile.displayName}}";
           const attachment = attachmentCrossPlatformCheckbox.checked
             ? "cross-platform"

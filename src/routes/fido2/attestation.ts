@@ -12,11 +12,12 @@ import { signIn } from "../../utils/auth";
 import {
   fetchUserByName,
   createUser,
-  addUserCredential,
   fetchUserById,
+  fetchUserCredentials,
+  addUserCredential,
 } from "../../services/users";
-import { ValidatedCredential } from "../../types/credential";
-import { UserInfo } from "../../types/user";
+import { Authenticator } from "../../types/user";
+import { User } from "../../types/user";
 import { RegisteringSession } from "../../types/session";
 import {
   ServerPublicKeyCredentialCreationOptionsRequest,
@@ -46,7 +47,7 @@ router.post(
     const optionsRequest: ServerPublicKeyCredentialCreationOptionsRequest =
       req.body;
 
-    let registeringUser: UserInfo;
+    let registeringUser: User;
     let excludeCredentials: ServerPublicKeyCredentialDescriptor[];
     if (req.user) {
       // session user exists, so we'll be enrolling another credential
@@ -58,17 +59,19 @@ router.post(
           `User with ID ${req.user.id} no longer exists`
         );
       }
+      const credentials = await fetchUserCredentials(req.user.id);
 
       registeringUser = {
         id: existingUser.id,
-        name: existingUser.name,
+        username: existingUser.username,
         displayName: existingUser.displayName,
       };
 
-      // add existing credentials of user
-      excludeCredentials = existingUser.credentials.map((c) => ({
-        id: c.id,
+      // tell client to exclude existing user credentials
+      excludeCredentials = credentials.map((c) => ({
+        id: c.credentialID,
         type: "public-key",
+        transports: c.transports,
       }));
     } else {
       const existingUser = await fetchUserByName(optionsRequest.username);
@@ -82,7 +85,7 @@ router.post(
 
       registeringUser = {
         id: base64.fromArrayBuffer(crypto.randomBytes(16).buffer, true),
-        name: optionsRequest.username,
+        username: optionsRequest.username,
         displayName: optionsRequest.displayName,
       };
 
@@ -109,7 +112,10 @@ router.post(
       status: "ok",
       errorMessage: "",
       challenge: base64.fromArrayBuffer(attestationOptions.challenge, true),
-      user: registeringUser,
+      user: {
+        ...registeringUser,
+        name: registeringUser.username,
+      },
       excludeCredentials,
       authenticatorSelection: {
         ...attestationOptions.authenticatorSelection,
@@ -204,29 +210,35 @@ router.post(
     }
 
     // build credential object
-    const validatedCredential: ValidatedCredential = {
-      id: base64.fromArrayBuffer(
+    const validatedCredential: Authenticator = {
+      credentialID: base64.fromArrayBuffer(
         attestationResult.authnrData.get("credId"),
         true
       ),
       counter: attestationResult.authnrData.get("counter"),
       publicKey: attestationResult.authnrData.get("credentialPublicKeyPem"),
-      userHandle: registration.registeringUser.id,
       created: new Date(Date.now()),
-      attachment:
+      deviceType:
         registration.authenticatorSelection.authenticatorAttachment ||
         "platform",
+      backedUp: false,
     };
     logger.debug(
       validatedCredential,
       "/attestation/result: Validated credential"
     );
 
-    const user = req.user
-      ? // update existing user in rp with additional credential
-        await addUserCredential(req.user.id, validatedCredential)
-      : // create new user in rp with initial credential
-        await createUser(registration.registeringUser, validatedCredential);
+    let user = req.user;
+    if (user) {
+      // update existing user in rp with additional credential
+      await addUserCredential(user.id, validatedCredential);
+    } else {
+      // create new user in rp with initial credential
+      user = await createUser(
+        registration.registeringUser,
+        validatedCredential
+      );
+    }
 
     // build response
     const resultResponse: ServerResponse & { return_to: string } = {

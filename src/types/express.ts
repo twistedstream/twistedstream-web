@@ -1,9 +1,9 @@
 import { Request } from "express";
-import { UserInfo } from "./user";
+import { User } from "./user";
 import { ValidatedCredential } from "./credential";
 
 export interface AuthenticatedRequest extends Request {
-  user?: UserInfo;
+  user?: User;
   credential?: ValidatedCredential;
 }
 

@@ -4,6 +4,7 @@ import { urlencoded } from "body-parser";
 import { BadRequestError } from "../utils/error";
 import {
   fetchUserById,
+  fetchUserCredentials,
   removeUserCredential,
   updateUser,
 } from "../services/users";
@@ -12,23 +13,29 @@ import {
   AuthenticatedRequest,
   AuthenticatedRequestWithTypedBody,
 } from "../types/express";
-import { FullUser } from "../types/user";
+import { RegisteredAuthenticator, User } from "../types/user";
 
 const router = Router();
 
 // helpers
 
-async function fetchProfile(req: AuthenticatedRequest): Promise<FullUser> {
+async function fetchProfile(
+  req: AuthenticatedRequest
+): Promise<{ user: User; credentials: RegisteredAuthenticator[] }> {
   if (!req.user) {
     throw Error("Request is not authenticated");
   }
-
-  const profile = await fetchUserById(req.user.id);
-  if (!profile) {
+  const user = await fetchUserById(req.user.id);
+  if (!user) {
     throw BadRequestError(`No such user with ID ${req.user.id}`);
   }
 
-  return profile;
+  const credentials = await fetchUserCredentials(req.user.id);
+
+  return {
+    user,
+    credentials,
+  };
 }
 
 // endpoints
@@ -40,15 +47,19 @@ router.get(
     const profile = await fetchProfile(req);
 
     const passkeys = [...profile.credentials].map((c) => ({
-      id: c.id,
-      type: c.attachment,
+      id: c.credentialID,
+      type: c.deviceType,
       created: c.created,
     }));
 
     const viewProfile = {
-      ...profile,
-      activePasskey: passkeys.find((p) => p.id === req.credential?.id),
-      otherPasskeys: passkeys.filter((p) => p.id !== req.credential?.id),
+      ...profile.user,
+      activePasskey: passkeys.find(
+        (p) => p.id === req.credential?.credentialID
+      ),
+      otherPasskeys: passkeys.filter(
+        (p) => p.id !== req.credential?.credentialID
+      ),
     };
 
     res.render("profile", {
@@ -75,21 +86,21 @@ router.post(
     const { update, display_name } = req.body;
     if (update === "profile" && display_name) {
       // update user profile
-      profile.displayName = display_name;
-      await updateUser(profile);
+      profile.user.displayName = display_name;
+      await updateUser(profile.user);
 
       return res.redirect("back");
     }
 
     const { delete_cred } = req.body;
     if (delete_cred) {
-      if (req.credential?.id === delete_cred) {
+      if (req.credential?.credentialID === delete_cred) {
         throw BadRequestError(
           "Cannot delete credential that was used to sign into the current session"
         );
       }
 
-      await removeUserCredential(profile.id, delete_cred);
+      await removeUserCredential(profile.user.id, delete_cred);
 
       return res.redirect("back");
     }

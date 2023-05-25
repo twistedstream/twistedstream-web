@@ -1,15 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 import querystring from "querystring";
 
-import { UserInfo } from "../types/user";
+import { Authenticator, User } from "../types/user";
 import { AuthenticatedSession } from "../types/session";
 import { AuthenticatedRequest } from "../types/express";
-import { ValidatedCredential } from "../types/credential";
 
 export function signIn(
   req: Request,
-  user: UserInfo,
-  credential: ValidatedCredential
+  user: User,
+  credential: Authenticator
 ): void {
   req.session = req.session || {};
 
@@ -17,7 +16,7 @@ export function signIn(
   req.session.authentication = <AuthenticatedSession>{
     user: {
       id: user.id,
-      name: user.name,
+      username: user.username,
     },
     credential,
     time: Date.now(),
