@@ -23,7 +23,7 @@ async function isPasskeyAutofillSupported() {
   return supported;
 }
 
-async function registerUser(username, displayName, authenticatorAttachment) {
+async function registerUser(username, displayName) {
   // build options request
   const attestationOptionsRequest = {
     username,
@@ -31,7 +31,7 @@ async function registerUser(username, displayName, authenticatorAttachment) {
     authenticatorSelection: {
       requireResidentKey: false,
       residentKey: "preferred",
-      authenticatorAttachment,
+      authenticatorAttachment: "platform",
       userVerification: "preferred",
     },
     attestation: "direct",

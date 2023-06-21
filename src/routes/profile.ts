@@ -4,7 +4,7 @@ import { urlencoded } from "body-parser";
 import { BadRequestError } from "../utils/error";
 import {
   fetchUserById,
-  fetchUserCredentials,
+  fetchCredentialsByUserId,
   removeUserCredential,
   updateUser,
 } from "../services/users";
@@ -14,6 +14,7 @@ import {
   AuthenticatedRequestWithTypedBody,
 } from "../types/express";
 import { RegisteredAuthenticator, User } from "../types/user";
+import { ValidationError } from "../types/error";
 
 const router = Router();
 
@@ -30,7 +31,7 @@ async function fetchProfile(
     throw BadRequestError(`No such user with ID ${req.user.id}`);
   }
 
-  const credentials = await fetchUserCredentials(req.user.id);
+  const credentials = await fetchCredentialsByUserId(req.user.id);
 
   return {
     user,
@@ -48,7 +49,7 @@ router.get(
 
     const passkeys = [...profile.credentials].map((c) => ({
       id: c.credentialID,
-      type: c.deviceType,
+      type: c.credentialDeviceType,
       created: c.created,
     }));
 
@@ -87,7 +88,15 @@ router.post(
     if (update === "profile" && display_name) {
       // update user profile
       profile.user.displayName = display_name;
-      await updateUser(profile.user);
+      try {
+        await updateUser(profile.user);
+      } catch (err: any) {
+        if (err instanceof ValidationError) {
+          throw BadRequestError(err.message);
+        }
+
+        throw err;
+      }
 
       return res.redirect("back");
     }

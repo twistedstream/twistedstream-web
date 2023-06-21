@@ -1,15 +1,9 @@
+import { UserVerificationRequirement } from "@simplewebauthn/typescript-types";
 import { User } from "./user";
-import {
-  AuthenticatorSelectionCriteria,
-  AttestationConveyancePreference,
-  UserVerificationRequirement,
-} from "../schema/fido2-server";
 import { Authenticator } from "./user";
 
 export interface RegisteringSession {
   registeringUser: User;
-  authenticatorSelection: AuthenticatorSelectionCriteria;
-  attestation: AttestationConveyancePreference;
   challenge: string;
 }
 

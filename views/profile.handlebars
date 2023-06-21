@@ -86,17 +86,6 @@
             <button type="button" id="add_credential" class="btn btn-primary mb-2">Add Passkey</button>
           </div>
         </div>
-
-        <div class="row passkeys_supported" hidden>
-          <div class="col text-center">
-            <div class="form-check-inline">
-              <input class="form-check-input" type="checkbox" id="attachment_is_cross_platform">
-              <label class="form-check-label" for="attachment_is_cross_platform">
-                Use another device
-              </label>
-            </div>
-          </div>
-        </div>
       </form>
     </div>
   {{/inline}}
@@ -132,15 +121,11 @@
         addCredentialButton.addEventListener("click", async (event) => {
           const username = "{{profile.username}}";
           const displayName = "{{profile.displayName}}";
-          const attachment = attachmentCrossPlatformCheckbox.checked
-            ? "cross-platform"
-            : "platform";
 
           try {
             const result = await registerUser(
               username, 
               displayName, 
-              attachment
             );
             if (result) {
               window.location.reload();

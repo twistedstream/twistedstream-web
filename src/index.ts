@@ -1,5 +1,5 @@
 // NOTE: The config import should always run first to load the environment
-import { port, environment, rpId, baseUrl } from "./utils/config";
+import { port, environment, rpID, baseUrl } from "./utils/config";
 import "express-async-errors";
 
 import http from "http";
@@ -29,7 +29,7 @@ server.listen(port, () => {
   logger.info(
     {
       port,
-      rpId,
+      rpID,
       baseUrl,
     },
     `${serverName} server started`

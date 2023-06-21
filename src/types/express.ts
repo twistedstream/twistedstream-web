@@ -1,10 +1,10 @@
 import { Request } from "express";
 import { User } from "./user";
-import { ValidatedCredential } from "./credential";
+import { Authenticator } from "./user";
 
 export interface AuthenticatedRequest extends Request {
   user?: User;
-  credential?: ValidatedCredential;
+  credential?: Authenticator;
 }
 
 export interface AuthenticatedRequestWithTypedBody<T>

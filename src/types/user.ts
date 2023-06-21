@@ -1,7 +1,7 @@
 import {
-  AuthenticatorAttachment,
+  CredentialDeviceType,
   AuthenticatorTransport,
-} from "../schema/fido2-server";
+} from "@simplewebauthn/typescript-types";
 
 export interface User {
   id: string;
@@ -10,12 +10,13 @@ export interface User {
 }
 
 export interface Authenticator {
-  credentialID: string;
   created: Date;
-  publicKey: string;
+  credentialID: string;
+  credentialPublicKey: string;
   counter: number;
-  deviceType: AuthenticatorAttachment;
-  backedUp: boolean;
+  aaguid: string;
+  credentialDeviceType: CredentialDeviceType;
+  credentialBackedUp: boolean;
   transports?: AuthenticatorTransport[];
 }
 

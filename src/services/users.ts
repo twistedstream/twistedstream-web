@@ -1,7 +1,14 @@
+import base64 from "@hexagon/base64";
+import crypto from "crypto";
+
 import { User, Authenticator, RegisteredAuthenticator } from "../types/user";
 import { logger } from "../utils/logger";
+import { ValidationError } from "../types/error";
 
-// helpers
+const USER_NAME_PATTERN = /^[a-zA-Z0-9_\-]{3,100}$/;
+const USER_DISPLAY_NAME_PATTERN = /^[a-zA-Z0-9\- ]{2,200}$/;
+
+// data
 
 // FUTURE: externalize to DB
 const _users: User[] = [];
@@ -93,6 +100,25 @@ async function ensureUser(userID: string): Promise<User> {
   return foundUser;
 }
 
+// helpers
+
+function validateUser(user: User) {
+  if (!user.username || !USER_NAME_PATTERN.test(user.username)) {
+    throw new ValidationError(
+      "User",
+      "username",
+      `must match pattern: ${USER_NAME_PATTERN}`
+    );
+  }
+  if (!user.displayName || !USER_DISPLAY_NAME_PATTERN.test(user.displayName)) {
+    throw new ValidationError(
+      "User",
+      "displayName",
+      `must match pattern: ${USER_DISPLAY_NAME_PATTERN}`
+    );
+  }
+}
+
 // service
 
 export async function fetchUserById(userID: string): Promise<User | undefined> {
@@ -111,13 +137,26 @@ export async function fetchUserByName(
   }
 }
 
-export async function createUser(
+export function createUser(username: string, displayName: string) {
+  const newUser: User = {
+    id: base64.fromArrayBuffer(crypto.randomBytes(16).buffer, true),
+    username,
+    displayName,
+  };
+  validateUser(newUser);
+
+  return newUser;
+}
+
+export async function registerUser(
   registeringUser: User,
   firstCredential: Authenticator
 ): Promise<User> {
   const user: User = {
     ...registeringUser,
   };
+  validateUser(user);
+
   const addedUser = await addUser(user);
 
   const credential: Authenticator = {
@@ -129,6 +168,9 @@ export async function createUser(
 }
 
 export async function updateUser(user: User): Promise<User> {
+  // validate
+  validateUser(user);
+
   const foundUser = await ensureUser(user.id);
 
   // update profile fields
@@ -147,12 +189,24 @@ export async function fetchCredentialById(
   }
 }
 
-export async function fetchUserCredentials(
+export async function fetchCredentialsByUserId(
   userID: string
 ): Promise<RegisteredAuthenticator[]> {
   const credentials = await getCredentials(userID);
 
   return [...credentials];
+}
+
+export async function fetchCredentialsByUsername(
+  username: string
+): Promise<RegisteredAuthenticator[]> {
+  const user = await findUserByName(username);
+
+  if (user) {
+    const credentials = await getCredentials(user?.id);
+    return [...credentials];
+  }
+  return [];
 }
 
 export async function addUserCredential(

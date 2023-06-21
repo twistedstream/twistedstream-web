@@ -10,7 +10,7 @@ export const port = Number(process.env.PORT);
 export const environment = <string>process.env.NODE_ENV;
 export const logLevel = <string>process.env.LOG_LEVEL;
 
-export const rpId = <string>process.env.RP_ID;
+export const rpID = <string>process.env.RP_ID;
 export const baseUrl = <string>process.env.BASE_URL;
 export const linkedInProfileUrl = <string>process.env.LINKED_IN_PROFILE_URL;
 export const twitterProfileUrl = <string>process.env.TWITTER_PROFILE_URL;
