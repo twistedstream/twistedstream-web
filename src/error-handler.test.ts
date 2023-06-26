@@ -3,7 +3,7 @@ import sinon from "sinon";
 import request from "supertest";
 import { Request, Response } from "express";
 
-import { ViewRenderArgs, createTestExpressApp } from "./utils/testing";
+import { createTestExpressApp } from "./utils/testing";
 import { ErrorWithStatusCode } from "./utils/error";
 import * as utilsError from "./utils/error";
 
@@ -26,8 +26,7 @@ test("error handler", async (t) => {
 
   t.test("with html content", async (t) => {
     t.test("handles 404 errors", async (t) => {
-      const renderArgs: ViewRenderArgs = {};
-      const app = createTestExpressApp(renderArgs);
+      const { app, renderArgs } = createTestExpressApp();
       errorHandler(app);
 
       const response = await request(app).get("/foo").accept("text/html");
@@ -42,8 +41,7 @@ test("error handler", async (t) => {
     });
 
     t.test("handles other 4** user errors", async (t) => {
-      const renderArgs: ViewRenderArgs = {};
-      const app = createTestExpressApp(renderArgs);
+      const { app, renderArgs } = createTestExpressApp();
       app.get("/foo", (_req: Request, _res: Response) => {
         throw new ErrorWithStatusCode(401, "Not so fast, pal");
       });
@@ -63,8 +61,7 @@ test("error handler", async (t) => {
     });
 
     t.test("handles (and logs) 5** server errors", async (t) => {
-      const renderArgs: ViewRenderArgs = {};
-      const app = createTestExpressApp(renderArgs);
+      const { app, renderArgs } = createTestExpressApp();
       const error = new Error("Boom!");
       app.get("/foo", (_req: Request, _res: Response) => {
         throw error;
@@ -89,7 +86,7 @@ test("error handler", async (t) => {
 
   t.test("with json content", async (t) => {
     t.test("handles 404 errors", async (t) => {
-      const app = createTestExpressApp();
+      const { app } = createTestExpressApp();
       errorHandler(app);
 
       const response = await request(app)
@@ -105,7 +102,7 @@ test("error handler", async (t) => {
     });
 
     t.test("handles other 4** user errors", async (t) => {
-      const app = createTestExpressApp();
+      const { app } = createTestExpressApp();
       app.get("/foo", (_req: Request, _res: Response) => {
         throw new ErrorWithStatusCode(401, "Not so fast, pal");
       });
@@ -124,7 +121,7 @@ test("error handler", async (t) => {
     });
 
     t.test("handles (and logs) 5** server errors", async (t) => {
-      const app = createTestExpressApp();
+      const { app } = createTestExpressApp();
       const error = new Error("Boom!");
       app.get("/foo", (_req: Request, _res: Response) => {
         throw error;

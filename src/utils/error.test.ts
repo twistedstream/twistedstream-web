@@ -1,9 +1,11 @@
 import { test } from "tap";
 
 import {
+  BadRequestError,
   ErrorWithStatusCode,
   generateCorrelationId,
   NotFoundError,
+  UnauthorizedError,
 } from "./error";
 
 test("utils/error", async (t) => {
@@ -44,6 +46,22 @@ test("utils/error", async (t) => {
       const error = NotFoundError();
       t.equal(error.message, "Not Found");
       t.equal(error.statusCode, 404);
+    });
+  });
+
+  t.test("BadRequestError", async (t) => {
+    t.test("returns expected error object", async (t) => {
+      const error = BadRequestError("Dang it!");
+      t.equal(error.message, "Bad Request: Dang it!");
+      t.equal(error.statusCode, 400);
+    });
+  });
+
+  t.test("UnauthorizedError", async (t) => {
+    t.test("returns expected error object", async (t) => {
+      const error = UnauthorizedError();
+      t.equal(error.message, "Unauthorized");
+      t.equal(error.statusCode, 401);
     });
   });
 });
