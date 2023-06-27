@@ -7,6 +7,7 @@ import {
 } from "../utils/config";
 import fido2 from "./fido2";
 import profile from "./profile";
+import { capturePreAuthState, signOut } from "../utils/auth";
 
 const router = Router();
 
@@ -43,29 +44,26 @@ router.get("/github", (_req: Request, res: Response) => {
 });
 
 router.get("/register", (req: Request, res: Response) => {
-  req.session = req.session || {};
-  const { return_to } = req.query;
-  req.session.return_to = return_to;
+  capturePreAuthState(req);
 
   res.render("register", {
     title: "Sign up",
-    return_to,
+    return_to: req.query.return_to,
   });
 });
 
 router.get("/login", (req: Request, res: Response) => {
-  req.session = req.session || {};
-  const { return_to } = req.query;
-  req.session.return_to = return_to;
+  capturePreAuthState(req);
 
   res.render("login", {
     title: "Sign in",
-    return_to,
+    return_to: req.query.return_to,
   });
 });
 
 router.get("/logout", (req: Request, res: Response) => {
-  req.session = null;
+  signOut(req);
+
   res.redirect("/");
 });
 

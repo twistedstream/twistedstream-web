@@ -13,11 +13,15 @@ test("routes", async (t) => {
   const routerFake = sinon.fake.returns(expressRouter);
   const fido2Route = {};
   const profileRoute = {};
+  const capturePreAuthStateFake = sinon.fake();
+  const signOutFake = sinon.fake();
 
   const importModule = () => {
     expressRouter.use.resetHistory();
     expressRouter.get.resetHistory();
     routerFake.resetHistory();
+    capturePreAuthStateFake.resetHistory();
+    signOutFake.resetHistory();
 
     const { default: index } = t.mock("./index", {
       express: {
@@ -25,6 +29,10 @@ test("routes", async (t) => {
       },
       "./fido2": fido2Route,
       "./profile": profileRoute,
+      "../utils/auth": {
+        capturePreAuthState: capturePreAuthStateFake,
+        signOut: signOutFake,
+      },
     });
 
     return index;
@@ -138,18 +146,18 @@ test("routes", async (t) => {
       t.equal(options.return_to, "/foo");
     });
 
-    t.test("saves return-to to session", async (t) => {
+    t.test("captures pre-auth state", async (t) => {
       importModule();
 
       const registerEndpoint = expressRouter.get.getCalls()[4];
       const middleware: (req: any, res: any) => void = registerEndpoint.args[1];
 
-      const req: any = { query: { return_to: "/foo" } };
+      const req: any = { query: {} };
       const res: any = { render: sinon.fake() };
       middleware(req, res);
 
-      t.ok(req.session);
-      t.equal(req.session.return_to, "/foo");
+      t.ok(capturePreAuthStateFake.called);
+      t.equal(capturePreAuthStateFake.firstCall.firstArg, req);
     });
   });
 
@@ -174,12 +182,12 @@ test("routes", async (t) => {
       const loginEndpoint = expressRouter.get.getCalls()[5];
       const middleware: (req: any, res: any) => void = loginEndpoint.args[1];
 
-      const req: any = { query: { return_to: "/foo" } };
+      const req: any = { query: {} };
       const res: any = { render: sinon.fake() };
       middleware(req, res);
 
-      t.ok(req.session);
-      t.equal(req.session.return_to, "/foo");
+      t.ok(capturePreAuthStateFake.called);
+      t.equal(capturePreAuthStateFake.firstCall.firstArg, req);
     });
   });
 
@@ -194,17 +202,18 @@ test("routes", async (t) => {
       t.equal(response.headers.location, "/");
     });
 
-    t.test("clears the session", async (t) => {
+    t.test("performs sign out", async (t) => {
       importModule();
 
       const logoutEndpoint = expressRouter.get.getCalls()[6];
       const middleware: (req: any, res: any) => void = logoutEndpoint.args[1];
 
-      const req: any = { session: { return_to: "/foo" } };
+      const req: any = { query: {} };
       const res: any = { redirect: sinon.fake() };
       middleware(req, res);
 
-      t.equal(req.session, null);
+      t.ok(signOutFake.called);
+      t.equal(signOutFake.firstCall.firstArg, req);
     });
   });
 });

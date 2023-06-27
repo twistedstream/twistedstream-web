@@ -5,6 +5,14 @@ import { Authenticator, User } from "../types/user";
 import { AuthenticatedSession } from "../types/session";
 import { AuthenticatedRequest } from "../types/express";
 
+// auth helpers
+
+export function capturePreAuthState(req: Request) {
+  req.session = req.session || {};
+  const { return_to } = req.query;
+  req.session.return_to = return_to;
+}
+
 export function signIn(
   req: Request,
   user: User,
@@ -13,18 +21,20 @@ export function signIn(
   req.session = req.session || {};
 
   // update session
+  const { id, username } = user;
   req.session.authentication = <AuthenticatedSession>{
-    user: {
-      id: user.id,
-      username: user.username,
-    },
+    user: { id, username },
     credential,
     time: Date.now(),
   };
 
-  // clear old session values
+  // clear temp session values
   delete req.session.registration;
   delete req.session.return_to;
+}
+
+export function signOut(req: Request) {
+  req.session = null;
 }
 
 // middleware
@@ -35,7 +45,7 @@ export function auth() {
     _res: Response,
     next: NextFunction
   ) => {
-    const authentication: AuthenticatedSession = req?.session?.authentication;
+    const authentication: AuthenticatedSession = req.session?.authentication;
 
     // FUTURE: only set user if session hasn't expired
     if (authentication?.time) {
