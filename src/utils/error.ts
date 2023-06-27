@@ -1,5 +1,6 @@
 import { StatusCodes, getReasonPhrase } from "http-status-codes";
 import ShortUniqueId from "short-unique-id";
+import { Response } from "express";
 
 const uid = new ShortUniqueId({ length: 25 });
 
@@ -28,3 +29,15 @@ export const BadRequestError = (message: string) =>
 
 export const UnauthorizedError = () =>
   new ErrorWithStatusCode(StatusCodes.UNAUTHORIZED);
+
+export function renderFido2ServerErrorResponse(
+  res: Response,
+  statusCode: StatusCodes,
+  message: string
+) {
+  const response = {
+    status: "failed",
+    errorMessage: message,
+  };
+  return res.status(statusCode).json(response);
+}

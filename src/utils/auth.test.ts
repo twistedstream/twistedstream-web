@@ -98,7 +98,7 @@ test("utils/auth", async (t) => {
 
         middleware(req, res, next);
 
-        t.match(req, {});
+        t.same(req, {});
         t.ok(nextCalled);
       }
     );

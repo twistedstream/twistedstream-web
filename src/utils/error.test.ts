@@ -1,4 +1,5 @@
 import { test } from "tap";
+import sinon from "sinon";
 
 import {
   BadRequestError,
@@ -6,7 +7,9 @@ import {
   generateCorrelationId,
   NotFoundError,
   UnauthorizedError,
+  renderFido2ServerErrorResponse,
 } from "./error";
+import { StatusCodes } from "http-status-codes";
 
 test("utils/error", async (t) => {
   t.test("generateCorrelationId", async (t) => {
@@ -62,6 +65,31 @@ test("utils/error", async (t) => {
       const error = UnauthorizedError();
       t.equal(error.message, "Unauthorized");
       t.equal(error.statusCode, 401);
+    });
+  });
+
+  t.test("renderFido2ServerErrorResponse", async (t) => {
+    t.test("renders the expected response", async (t) => {
+      const statusResponse: any = {
+        json: sinon.fake(),
+      };
+      const res: any = {
+        status: sinon.fake.returns(statusResponse),
+      };
+
+      renderFido2ServerErrorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "What'd you do?"
+      );
+
+      t.ok(res.status.called);
+      t.equal(res.status.firstCall.firstArg, StatusCodes.BAD_REQUEST);
+      t.ok(statusResponse.json.called);
+      t.same(statusResponse.json.firstCall.firstArg, {
+        status: "failed",
+        errorMessage: "What'd you do?",
+      });
     });
   });
 });

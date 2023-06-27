@@ -10,7 +10,7 @@ import { StatusCodes } from "http-status-codes";
 
 import { baseUrl, companyName, rpID } from "../../utils/config";
 import { logger } from "../../utils/logger";
-import { renderFido2ServerErrorResponse } from "../../utils/fido2";
+import { renderFido2ServerErrorResponse } from "../../utils/error";
 import { signIn } from "../../utils/auth";
 import {
   fetchUserByName,
