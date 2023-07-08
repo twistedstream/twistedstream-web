@@ -17,7 +17,7 @@ import {
   fetchUserById,
   fetchUserByName,
   fetchCredentialsByUsername,
-} from "../../services/users";
+} from "../../services/user";
 import { AuthenticatingSession } from "../../types/session";
 import { User } from "../../types/user";
 import { RegisteredAuthenticator } from "../../types/user";

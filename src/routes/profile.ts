@@ -7,7 +7,7 @@ import {
   fetchCredentialsByUserId,
   removeUserCredential,
   updateUser,
-} from "../services/users";
+} from "../services/user";
 import { requiresAuth } from "../utils/auth";
 import {
   AuthenticatedRequest,

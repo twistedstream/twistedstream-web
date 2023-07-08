@@ -19,7 +19,7 @@ import {
   fetchUserById,
   fetchCredentialsByUserId,
   addUserCredential,
-} from "../../services/users";
+} from "../../services/user";
 import { Authenticator, RegisteredAuthenticator } from "../../types/user";
 import { User } from "../../types/user";
 import { RegisteringSession } from "../../types/session";
