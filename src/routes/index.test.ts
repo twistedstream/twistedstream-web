@@ -3,7 +3,6 @@ import sinon from "sinon";
 import request from "supertest";
 
 import { createTestExpressApp } from "../utils/testing";
-import errorHandler from "../error-handler";
 
 type MockOptions = {
   mockExpress?: boolean;
@@ -102,10 +101,11 @@ test("routes/index", async (t) => {
 
   t.test("GET /", async (t) => {
     t.test("returns HTML with expected view state", async (t) => {
-      const { app, renderArgs } = createTestExpressApp();
       const index = importModule();
-      app.use(index);
-      errorHandler(app);
+      const { app, renderArgs } = createTestExpressApp({
+        middlewareSetup: (app) => app.use(index),
+        errorHandlerSetup: { test: t },
+      });
 
       const response = await request(app).get("/");
       const { viewName, options } = renderArgs;
@@ -125,10 +125,11 @@ test("routes/index", async (t) => {
 
   t.test("GET /linkedin", async (t) => {
     t.test("returns expected redirect", async (t) => {
-      const { app } = createTestExpressApp();
       const index = importModule();
-      app.use(index);
-      errorHandler(app);
+      const { app } = createTestExpressApp({
+        middlewareSetup: (app) => app.use(index),
+        errorHandlerSetup: { test: t },
+      });
 
       const response = await request(app).get("/linkedin");
 
@@ -139,10 +140,11 @@ test("routes/index", async (t) => {
 
   t.test("GET /twitter", async (t) => {
     t.test("returns expected redirect", async (t) => {
-      const { app } = createTestExpressApp();
       const index = importModule();
-      app.use(index);
-      errorHandler(app);
+      const { app } = createTestExpressApp({
+        middlewareSetup: (app) => app.use(index),
+        errorHandlerSetup: { test: t },
+      });
 
       const response = await request(app).get("/twitter");
 
@@ -153,10 +155,11 @@ test("routes/index", async (t) => {
 
   t.test("GET /github", async (t) => {
     t.test("returns expected redirect", async (t) => {
-      const { app } = createTestExpressApp();
       const index = importModule();
-      app.use(index);
-      errorHandler(app);
+      const { app } = createTestExpressApp({
+        middlewareSetup: (app) => app.use(index),
+        errorHandlerSetup: { test: t },
+      });
 
       const response = await request(app).get("/github");
 
@@ -167,10 +170,11 @@ test("routes/index", async (t) => {
 
   t.test("GET /register", async (t) => {
     t.test("renders HTML with expected view state", async (t) => {
-      const { app, renderArgs } = createTestExpressApp();
       const index = importModule();
-      app.use(index);
-      errorHandler(app);
+      const { app, renderArgs } = createTestExpressApp({
+        middlewareSetup: (app) => app.use(index),
+        errorHandlerSetup: { test: t },
+      });
 
       const response = await request(app).get("/register?return_to=/foo");
       const { viewName, options } = renderArgs;
@@ -203,10 +207,11 @@ test("routes/index", async (t) => {
 
   t.test("GET /login", async (t) => {
     t.test("renders HTML with expected view state", async (t) => {
-      const { app, renderArgs } = createTestExpressApp();
       const index = importModule();
-      app.use(index);
-      errorHandler(app);
+      const { app, renderArgs } = createTestExpressApp({
+        middlewareSetup: (app) => app.use(index),
+        errorHandlerSetup: { test: t },
+      });
 
       const response = await request(app).get("/login?return_to=/foo");
       const { viewName, options } = renderArgs;
@@ -239,10 +244,11 @@ test("routes/index", async (t) => {
 
   t.test("GET /logout", async (t) => {
     t.test("returns expected redirect", async (t) => {
-      const { app } = createTestExpressApp();
       const index = importModule();
-      app.use(index);
-      errorHandler(app);
+      const { app } = createTestExpressApp({
+        middlewareSetup: (app) => app.use(index),
+        errorHandlerSetup: { test: t },
+      });
 
       const response = await request(app).get("/logout");
 

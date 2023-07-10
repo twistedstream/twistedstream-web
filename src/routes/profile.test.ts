@@ -6,10 +6,8 @@ import { CredentialDeviceType } from "@simplewebauthn/typescript-types";
 import {
   verifyAuthenticationRequiredResponse,
   createTestExpressApp,
-  simulateAuth,
 } from "../utils/testing";
 import { ValidationError } from "../types/error";
-import errorHandler from "../error-handler";
 
 type MockOptions = {
   mockExpress?: boolean;
@@ -89,10 +87,11 @@ test("routes/profile", async (t) => {
 
   t.test("GET /", async (t) => {
     t.test("requires authenticated session", async (t) => {
-      const { app } = createTestExpressApp();
       const profile = importModule();
-      app.use(profile);
-      errorHandler(app);
+      const { app } = createTestExpressApp({
+        middlewareSetup: (app) => app.use(profile),
+        errorHandlerSetup: { test: t },
+      });
 
       const response = await request(app).get("/");
       verifyAuthenticationRequiredResponse(t, response);
@@ -108,15 +107,16 @@ test("routes/profile", async (t) => {
         },
       ]);
 
-      const { app, renderArgs } = createTestExpressApp();
-      simulateAuth(app, {
-        originalUrl: "/",
-        user: { id: "123abc", username: "bob", displayName: "Bob User" },
-        credential: activeCredential,
-      });
       const profile = importModule({ mockModules: true });
-      app.use(profile);
-      errorHandler(app);
+      const { app, renderArgs } = createTestExpressApp({
+        authSetup: {
+          originalUrl: "/",
+          user: { id: "123abc", username: "bob", displayName: "Bob User" },
+          credential: activeCredential,
+        },
+        middlewareSetup: (app) => app.use(profile),
+        errorHandlerSetup: { test: t },
+      });
 
       const response = await request(app).get("/");
       const { viewName, options } = renderArgs;
@@ -147,10 +147,11 @@ test("routes/profile", async (t) => {
 
   t.test("POST /", async (t) => {
     t.test("requires authenticated session", async (t) => {
-      const { app } = createTestExpressApp();
       const profile = importModule();
-      app.use(profile);
-      errorHandler(app);
+      const { app } = createTestExpressApp({
+        middlewareSetup: (app) => app.use(profile),
+        errorHandlerSetup: { test: t },
+      });
 
       const response = await request(app).post("/");
       verifyAuthenticationRequiredResponse(t, response);
@@ -164,15 +165,16 @@ test("routes/profile", async (t) => {
             new ValidationError("User", "displayName", "Sorry, can't do it")
           );
 
-          const { app, renderArgs } = createTestExpressApp();
-          simulateAuth(app, {
-            originalUrl: "/",
-            user: { id: "123abc", username: "bob", displayName: "Bob User" },
-            credential: activeCredential,
-          });
           const profile = importModule({ mockModules: true });
-          app.use(profile);
-          errorHandler(app);
+          const { app, renderArgs } = createTestExpressApp({
+            authSetup: {
+              originalUrl: "/",
+              user: { id: "123abc", username: "bob", displayName: "Bob User" },
+              credential: activeCredential,
+            },
+            middlewareSetup: (app) => app.use(profile),
+            errorHandlerSetup: { test: t },
+          });
 
           const response = await request(app)
             .post("/")
@@ -202,15 +204,16 @@ test("routes/profile", async (t) => {
         async (t) => {
           updateUserStub.rejects(new Error("BOOM!"));
 
-          const { app, renderArgs } = createTestExpressApp();
-          simulateAuth(app, {
-            originalUrl: "/",
-            user: { id: "123abc", username: "bob", displayName: "Bob User" },
-            credential: activeCredential,
-          });
           const profile = importModule({ mockModules: true });
-          app.use(profile);
-          errorHandler(app);
+          const { app, renderArgs } = createTestExpressApp({
+            authSetup: {
+              originalUrl: "/",
+              user: { id: "123abc", username: "bob", displayName: "Bob User" },
+              credential: activeCredential,
+            },
+            middlewareSetup: (app) => app.use(profile),
+            errorHandlerSetup: { test: t },
+          });
 
           const response = await request(app)
             .post("/")
@@ -237,15 +240,16 @@ test("routes/profile", async (t) => {
         async (t) => {
           updateUserStub.resolves();
 
-          const { app } = createTestExpressApp();
-          simulateAuth(app, {
-            originalUrl: "/",
-            user: { id: "123abc", username: "bob", displayName: "Bob User" },
-            credential: activeCredential,
-          });
           const profile = importModule({ mockModules: true });
-          app.use(profile);
-          errorHandler(app);
+          const { app } = createTestExpressApp({
+            authSetup: {
+              originalUrl: "/",
+              user: { id: "123abc", username: "bob", displayName: "Bob User" },
+              credential: activeCredential,
+            },
+            middlewareSetup: (app) => app.use(profile),
+            errorHandlerSetup: { test: t },
+          });
 
           const response = await request(app)
             .post("/")
@@ -268,15 +272,16 @@ test("routes/profile", async (t) => {
       t.test(
         "renders HTML with expected user error if attempting to delete current credential",
         async (t) => {
-          const { app, renderArgs } = createTestExpressApp();
-          simulateAuth(app, {
-            originalUrl: "/",
-            user: { id: "123abc", username: "bob", displayName: "Bob User" },
-            credential: activeCredential,
-          });
           const profile = importModule({ mockModules: true });
-          app.use(profile);
-          errorHandler(app);
+          const { app, renderArgs } = createTestExpressApp({
+            authSetup: {
+              originalUrl: "/",
+              user: { id: "123abc", username: "bob", displayName: "Bob User" },
+              credential: activeCredential,
+            },
+            middlewareSetup: (app) => app.use(profile),
+            errorHandlerSetup: { test: t },
+          });
 
           const response = await request(app)
             .post("/")
@@ -299,15 +304,16 @@ test("routes/profile", async (t) => {
         async (t) => {
           removeUserCredentialStub.resolves();
 
-          const { app } = createTestExpressApp();
-          simulateAuth(app, {
-            originalUrl: "/",
-            user: { id: "123abc", username: "bob", displayName: "Bob User" },
-            credential: activeCredential,
-          });
           const profile = importModule({ mockModules: true });
-          app.use(profile);
-          errorHandler(app);
+          const { app } = createTestExpressApp({
+            authSetup: {
+              originalUrl: "/",
+              user: { id: "123abc", username: "bob", displayName: "Bob User" },
+              credential: activeCredential,
+            },
+            middlewareSetup: (app) => app.use(profile),
+            errorHandlerSetup: { test: t },
+          });
 
           const response = await request(app)
             .post("/")
@@ -323,15 +329,16 @@ test("routes/profile", async (t) => {
     t.test(
       "renders HTML with expected user error if unsupported profile operation",
       async (t) => {
-        const { app, renderArgs } = createTestExpressApp();
-        simulateAuth(app, {
-          originalUrl: "/",
-          user: { id: "123abc", username: "bob", displayName: "Bob User" },
-          credential: activeCredential,
-        });
         const profile = importModule({ mockModules: true });
-        app.use(profile);
-        errorHandler(app);
+        const { app, renderArgs } = createTestExpressApp({
+          authSetup: {
+            originalUrl: "/",
+            user: { id: "123abc", username: "bob", displayName: "Bob User" },
+            credential: activeCredential,
+          },
+          middlewareSetup: (app) => app.use(profile),
+          errorHandlerSetup: { test: t },
+        });
 
         const response = await request(app).post("/").send("foo=bar");
         const { viewName, options } = renderArgs;
