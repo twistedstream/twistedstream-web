@@ -159,7 +159,7 @@ test("routes/profile", async (t) => {
 
     t.test("user update", async (t) => {
       t.test(
-        "renders HTML with expected user error if a validation error occurs while updating profile",
+        "if a validation error occurs while updating profile, renders HTML with expected user error",
         async (t) => {
           updateUserStub.rejects(
             new ValidationError("User", "displayName", "Sorry, can't do it")
@@ -200,7 +200,7 @@ test("routes/profile", async (t) => {
       );
 
       t.test(
-        "renders HTML with expected server error if an unknown error occurs while updating profile",
+        "if an unknown error occurs while updating profile, renders HTML with expected server error",
         async (t) => {
           updateUserStub.rejects(new Error("BOOM!"));
 
@@ -236,7 +236,7 @@ test("routes/profile", async (t) => {
       );
 
       t.test(
-        "updates profile and responds with expected redirect",
+        "if successful, updates profile and responds with expected redirect",
         async (t) => {
           updateUserStub.resolves();
 
@@ -270,7 +270,7 @@ test("routes/profile", async (t) => {
 
     t.test("credential deletion", async (t) => {
       t.test(
-        "renders HTML with expected user error if attempting to delete current credential",
+        "if attempting to delete current credential, renders HTML with expected user error",
         async (t) => {
           const profile = importModule({ mockModules: true });
           const { app, renderArgs } = createTestExpressApp({
@@ -300,7 +300,7 @@ test("routes/profile", async (t) => {
       );
 
       t.test(
-        "updates profile and responds with expected redirect",
+        "if successful, updates profile and responds with expected redirect",
         async (t) => {
           removeUserCredentialStub.resolves();
 
@@ -327,7 +327,7 @@ test("routes/profile", async (t) => {
     });
 
     t.test(
-      "renders HTML with expected user error if unsupported profile operation",
+      "if unsupported profile operation, renders HTML with expected user error",
       async (t) => {
         const profile = importModule({ mockModules: true });
         const { app, renderArgs } = createTestExpressApp({
