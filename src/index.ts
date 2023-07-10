@@ -1,5 +1,6 @@
 // NOTE: The config import should always run first to load the environment
 import { port, environment, rpID, baseUrl } from "./utils/config";
+// makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
 import http from "http";

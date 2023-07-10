@@ -2,44 +2,64 @@ import { test } from "tap";
 import sinon from "sinon";
 import request from "supertest";
 
-import routes from "./index";
 import { createTestExpressApp } from "../utils/testing";
+import errorHandler from "../error-handler";
 
-test("routes", async (t) => {
+type MockOptions = {
+  mockExpress?: boolean;
+  mockChildRoutes?: boolean;
+  mockModules?: boolean;
+};
+
+test("routes/index", async (t) => {
   const expressRouter = {
     use: sinon.fake(),
     get: sinon.fake(),
   };
   const routerFake = sinon.fake.returns(expressRouter);
-  const fido2Route = {};
-  const profileRoute = {};
   const capturePreAuthStateFake = sinon.fake();
   const signOutFake = sinon.fake();
+  const fido2Route = {};
+  const profileRoute = {};
 
-  const importModule = () => {
+  function importModule({
+    mockExpress = false,
+    mockChildRoutes = false,
+    mockModules = false,
+  }: MockOptions = {}) {
     expressRouter.use.resetHistory();
     expressRouter.get.resetHistory();
     routerFake.resetHistory();
     capturePreAuthStateFake.resetHistory();
     signOutFake.resetHistory();
 
-    const { default: index } = t.mock("./index", {
-      express: {
+    const dependencies: any = {};
+    if (mockExpress) {
+      dependencies.express = {
         Router: routerFake,
-      },
-      "./fido2": fido2Route,
-      "./profile": profileRoute,
-      "../utils/auth": {
+      };
+    }
+    if (mockChildRoutes) {
+      dependencies["./fido2"] = fido2Route;
+      dependencies["./profile"] = profileRoute;
+    }
+    if (mockModules) {
+      dependencies["../utils/auth"] = {
         capturePreAuthState: capturePreAuthStateFake,
         signOut: signOutFake,
-      },
-    });
+      };
+    }
 
-    return index;
-  };
+    const { default: router } = t.mock("./index", dependencies);
+
+    return router;
+  }
 
   t.test("is a Router instance", async (t) => {
-    const index = importModule();
+    const index = importModule({
+      mockExpress: true,
+      mockChildRoutes: true,
+    });
 
     t.ok(routerFake.called);
     t.same(routerFake.firstCall.args, []);
@@ -47,7 +67,10 @@ test("routes", async (t) => {
   });
 
   t.test("registers expected endpoints", async (t) => {
-    importModule();
+    importModule({
+      mockExpress: true,
+      mockChildRoutes: true,
+    });
 
     t.same(
       expressRouter.get.getCalls().map((c) => c.firstArg),
@@ -64,7 +87,10 @@ test("routes", async (t) => {
   });
 
   t.test("registers child routes", async (t) => {
-    importModule();
+    importModule({
+      mockExpress: true,
+      mockChildRoutes: true,
+    });
 
     const calls = expressRouter.use.getCalls();
     t.equal(calls.length, 2);
@@ -75,9 +101,11 @@ test("routes", async (t) => {
   });
 
   t.test("GET /", async (t) => {
-    t.test("returns 200 with expected text", async (t) => {
+    t.test("returns HTML with expected view state", async (t) => {
       const { app, renderArgs } = createTestExpressApp();
-      app.use(routes);
+      const index = importModule();
+      app.use(index);
+      errorHandler(app);
 
       const response = await request(app).get("/");
       const { viewName, options } = renderArgs;
@@ -96,9 +124,11 @@ test("routes", async (t) => {
   });
 
   t.test("GET /linkedin", async (t) => {
-    t.test("returns 302 with expected redirect", async (t) => {
-      const { app, renderArgs } = createTestExpressApp();
-      app.use(routes);
+    t.test("returns expected redirect", async (t) => {
+      const { app } = createTestExpressApp();
+      const index = importModule();
+      app.use(index);
+      errorHandler(app);
 
       const response = await request(app).get("/linkedin");
 
@@ -108,9 +138,11 @@ test("routes", async (t) => {
   });
 
   t.test("GET /twitter", async (t) => {
-    t.test("returns 302 with expected redirect", async (t) => {
+    t.test("returns expected redirect", async (t) => {
       const { app } = createTestExpressApp();
-      app.use(routes);
+      const index = importModule();
+      app.use(index);
+      errorHandler(app);
 
       const response = await request(app).get("/twitter");
 
@@ -120,9 +152,11 @@ test("routes", async (t) => {
   });
 
   t.test("GET /github", async (t) => {
-    t.test("returns 302 with expected redirect", async (t) => {
+    t.test("returns expected redirect", async (t) => {
       const { app } = createTestExpressApp();
-      app.use(routes);
+      const index = importModule();
+      app.use(index);
+      errorHandler(app);
 
       const response = await request(app).get("/github");
 
@@ -132,9 +166,11 @@ test("routes", async (t) => {
   });
 
   t.test("GET /register", async (t) => {
-    t.test("returns 200 with expected text", async (t) => {
+    t.test("renders HTML with expected view state", async (t) => {
       const { app, renderArgs } = createTestExpressApp();
-      app.use(routes);
+      const index = importModule();
+      app.use(index);
+      errorHandler(app);
 
       const response = await request(app).get("/register?return_to=/foo");
       const { viewName, options } = renderArgs;
@@ -147,7 +183,11 @@ test("routes", async (t) => {
     });
 
     t.test("captures pre-auth state", async (t) => {
-      importModule();
+      importModule({
+        mockExpress: true,
+        mockChildRoutes: true,
+        mockModules: true,
+      });
 
       const registerEndpoint = expressRouter.get.getCalls()[4];
       const middleware: (req: any, res: any) => void = registerEndpoint.args[1];
@@ -162,9 +202,11 @@ test("routes", async (t) => {
   });
 
   t.test("GET /login", async (t) => {
-    t.test("returns 200 with expected text", async (t) => {
+    t.test("renders HTML with expected view state", async (t) => {
       const { app, renderArgs } = createTestExpressApp();
-      app.use(routes);
+      const index = importModule();
+      app.use(index);
+      errorHandler(app);
 
       const response = await request(app).get("/login?return_to=/foo");
       const { viewName, options } = renderArgs;
@@ -177,7 +219,11 @@ test("routes", async (t) => {
     });
 
     t.test("saves return-to to session", async (t) => {
-      importModule();
+      importModule({
+        mockExpress: true,
+        mockChildRoutes: true,
+        mockModules: true,
+      });
 
       const loginEndpoint = expressRouter.get.getCalls()[5];
       const middleware: (req: any, res: any) => void = loginEndpoint.args[1];
@@ -192,9 +238,11 @@ test("routes", async (t) => {
   });
 
   t.test("GET /logout", async (t) => {
-    t.test("returns 302 with expected redirect", async (t) => {
+    t.test("returns expected redirect", async (t) => {
       const { app } = createTestExpressApp();
-      app.use(routes);
+      const index = importModule();
+      app.use(index);
+      errorHandler(app);
 
       const response = await request(app).get("/logout");
 
@@ -203,7 +251,11 @@ test("routes", async (t) => {
     });
 
     t.test("performs sign out", async (t) => {
-      importModule();
+      importModule({
+        mockExpress: true,
+        mockChildRoutes: true,
+        mockModules: true,
+      });
 
       const logoutEndpoint = expressRouter.get.getCalls()[6];
       const middleware: (req: any, res: any) => void = logoutEndpoint.args[1];

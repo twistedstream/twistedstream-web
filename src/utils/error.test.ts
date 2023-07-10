@@ -8,6 +8,7 @@ import {
   NotFoundError,
   UnauthorizedError,
   renderFido2ServerErrorResponse,
+  assert,
 } from "./error";
 import { StatusCodes } from "http-status-codes";
 
@@ -90,6 +91,24 @@ test("utils/error", async (t) => {
         status: "failed",
         errorMessage: "What'd you do?",
       });
+    });
+  });
+
+  t.test("assert", async (t) => {
+    t.test("throws if value is undefined", async (t) => {
+      t.throws(() => assert(undefined), "Unexpected undefined value");
+    });
+
+    t.test("throws if value is null", async (t) => {
+      t.throws(() => assert(null), "Unexpected null value");
+    });
+
+    t.test("returns real value", async (t) => {
+      const value = {};
+
+      const result = assert(value);
+
+      t.equal(result, value);
     });
   });
 });

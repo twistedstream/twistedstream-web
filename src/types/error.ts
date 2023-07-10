@@ -1,5 +1,7 @@
 export class ValidationError extends Error {
-  constructor(type: string, field: string, message: string) {
-    super(`${type}: ${field}: ${message}`);
+  constructor(entity: string, field: string, message: string) {
+    super(`${entity}: ${field}: ${message}`);
   }
+
+  readonly type: string = "validation";
 }

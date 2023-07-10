@@ -46,7 +46,7 @@ test("services/user", async (t) => {
   t.test("fetchUserById", async (t) => {
     t.test("returns user from the database by ID", async (t) => {
       const foundUser = {};
-      findUserByIdStub.withArgs("123abc").returns(Promise.resolve(foundUser));
+      findUserByIdStub.withArgs("123abc").resolves(foundUser);
 
       const { fetchUserById } = importModule();
       const result = await fetchUserById("123abc");
@@ -58,7 +58,7 @@ test("services/user", async (t) => {
   t.test("fetchUserByName", async (t) => {
     t.test("returns user from the database by name", async (t) => {
       const foundUser = {};
-      findUserByNameStub.withArgs("bob").returns(Promise.resolve(foundUser));
+      findUserByNameStub.withArgs("bob").resolves(foundUser);
 
       const { fetchUserByName } = importModule();
       const result = await fetchUserByName("bob");
@@ -105,7 +105,7 @@ test("services/user", async (t) => {
         username: "bob",
         displayName: "Bob User",
       };
-      addUserStub.withArgs(registeringUser).returns(addedUser);
+      addUserStub.withArgs(registeringUser).resolves(addedUser);
     });
 
     t.test("validates the user", async (t) => {
@@ -147,7 +147,7 @@ test("services/user", async (t) => {
 
     t.test("validates the user", async (t) => {
       const foundUser = {};
-      findUserByIdStub.withArgs("123abc").returns(Promise.resolve(foundUser));
+      findUserByIdStub.withArgs("123abc").resolves(foundUser);
 
       const { updateUser } = importModule();
       await updateUser(updatingUser);
@@ -157,7 +157,7 @@ test("services/user", async (t) => {
     });
 
     t.test("throws error if user doesn't exist", async (t) => {
-      findUserByIdStub.withArgs("123abc").returns(Promise.resolve());
+      findUserByIdStub.withArgs("123abc").resolves();
 
       const { updateUser } = importModule();
       t.rejects(() => updateUser(updatingUser), {
@@ -167,7 +167,7 @@ test("services/user", async (t) => {
 
     t.test("updates the user in the database", async (t) => {
       const foundUser = {};
-      findUserByIdStub.withArgs("123abc").returns(Promise.resolve(foundUser));
+      findUserByIdStub.withArgs("123abc").resolves(foundUser);
 
       const { updateUser } = importModule();
       await updateUser(updatingUser);
@@ -180,9 +180,7 @@ test("services/user", async (t) => {
   t.test("fetchCredentialById", async (t) => {
     t.test("returns credential from the database by ID", async (t) => {
       const foundCredential = {};
-      findCredentialByIdStub
-        .withArgs("xyz789")
-        .returns(Promise.resolve(foundCredential));
+      findCredentialByIdStub.withArgs("xyz789").resolves(foundCredential);
 
       const { fetchCredentialById } = importModule();
       const result = await fetchCredentialById("xyz789");
@@ -194,9 +192,7 @@ test("services/user", async (t) => {
   t.test("fetchCredentialsByUserId", async (t) => {
     t.test("returns credentials from the database by user ID", async (t) => {
       const foundCredentials = [{}, {}];
-      getCredentialsStub
-        .withArgs("123abc")
-        .returns(Promise.resolve(foundCredentials));
+      getCredentialsStub.withArgs("123abc").resolves(foundCredentials);
 
       const { fetchCredentialsByUserId } = importModule();
       const result = await fetchCredentialsByUserId("123abc");
@@ -208,7 +204,7 @@ test("services/user", async (t) => {
   t.test("fetchCredentialsByUsername", async (t) => {
     t.test("gets user by name from database", async (t) => {
       const foundUser = {};
-      findUserByNameStub.withArgs("bob").returns(Promise.resolve(foundUser));
+      findUserByNameStub.withArgs("bob").resolves(foundUser);
 
       const { fetchCredentialsByUsername } = importModule();
       await fetchCredentialsByUsername("bob");
@@ -221,11 +217,9 @@ test("services/user", async (t) => {
       "returns user's credentials from database if one was found",
       async (t) => {
         const foundUser = { id: "123abc" };
-        findUserByNameStub.withArgs("bob").returns(Promise.resolve(foundUser));
+        findUserByNameStub.withArgs("bob").resolves(foundUser);
         const foundCredentials = [{}, {}];
-        getCredentialsStub
-          .withArgs("123abc")
-          .returns(Promise.resolve(foundCredentials));
+        getCredentialsStub.withArgs("123abc").resolves(foundCredentials);
 
         const { fetchCredentialsByUsername } = importModule();
         const result = await fetchCredentialsByUsername("bob");
@@ -237,7 +231,7 @@ test("services/user", async (t) => {
     t.test(
       "returns no credentials from database if no user was found",
       async (t) => {
-        findUserByNameStub.withArgs("bob").returns(Promise.resolve());
+        findUserByNameStub.withArgs("bob").resolves();
 
         const { fetchCredentialsByUsername } = importModule();
         const result = await fetchCredentialsByUsername("bob");
@@ -252,9 +246,7 @@ test("services/user", async (t) => {
     t.test(
       "throws error if credential is already associated with the user",
       async (t) => {
-        findUserCredentialStub
-          .withArgs("123abc", "xyz789")
-          .returns(Promise.resolve({}));
+        findUserCredentialStub.withArgs("123abc", "xyz789").resolves({});
 
         const { addUserCredential } = importModule();
         t.rejects(
@@ -267,10 +259,8 @@ test("services/user", async (t) => {
     );
 
     t.test("throws error if user does not yet exist", async (t) => {
-      findUserCredentialStub
-        .withArgs("123abc", "xyz789")
-        .returns(Promise.resolve());
-      findUserByIdStub.withArgs("123abc").returns(Promise.resolve());
+      findUserCredentialStub.withArgs("123abc", "xyz789").resolves();
+      findUserByIdStub.withArgs("123abc").resolves();
 
       const { addUserCredential } = importModule();
       t.rejects(() => addUserCredential("123abc", { credentialID: "xyz789" }), {
@@ -279,11 +269,9 @@ test("services/user", async (t) => {
     });
 
     t.test("adds credential to user in database", async (t) => {
-      findUserCredentialStub
-        .withArgs("123abc", "xyz789")
-        .returns(Promise.resolve());
+      findUserCredentialStub.withArgs("123abc", "xyz789").resolves();
       const foundUser = {};
-      findUserByIdStub.withArgs("123abc").returns(Promise.resolve(foundUser));
+      findUserByIdStub.withArgs("123abc").resolves(foundUser);
 
       const { addUserCredential } = importModule();
       const newCredential = { credentialID: "xyz789" };
@@ -299,9 +287,7 @@ test("services/user", async (t) => {
     t.test(
       "throws error if credential is not associated with the user",
       async (t) => {
-        findUserCredentialStub
-          .withArgs("123abc", "xyz789")
-          .returns(Promise.resolve());
+        findUserCredentialStub.withArgs("123abc", "xyz789").resolves();
 
         const { removeUserCredential } = importModule();
         t.rejects(() => removeUserCredential("123abc", "xyz789"), {
@@ -314,14 +300,10 @@ test("services/user", async (t) => {
     t.test(
       "throws error if attempting to remove last credential",
       async (t) => {
-        findUserCredentialStub
-          .withArgs("123abc", "xyz789")
-          .returns(Promise.resolve({}));
-        getCredentialsStub.withArgs("123abc").returns(
-          Promise.resolve(
-            // returns a single credential
-            [{}]
-          )
+        findUserCredentialStub.withArgs("123abc", "xyz789").resolves({});
+        getCredentialsStub.withArgs("123abc").resolves(
+          // returns a single credential
+          [{}]
         );
 
         const { removeUserCredential } = importModule();
@@ -333,14 +315,10 @@ test("services/user", async (t) => {
     );
 
     t.test("removes credential from user in database", async (t) => {
-      findUserCredentialStub
-        .withArgs("123abc", "xyz789")
-        .returns(Promise.resolve({}));
-      getCredentialsStub.withArgs("123abc").returns(
-        Promise.resolve(
-          // returns a multiple credentials
-          [{}, {}]
-        )
+      findUserCredentialStub.withArgs("123abc", "xyz789").resolves({});
+      getCredentialsStub.withArgs("123abc").resolves(
+        // returns a multiple credentials
+        [{}, {}]
       );
 
       const { removeUserCredential } = importModule();

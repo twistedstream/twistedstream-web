@@ -41,3 +41,14 @@ export function renderFido2ServerErrorResponse(
   };
   return res.status(statusCode).json(response);
 }
+
+export function assert<T>(value: T | undefined | null): T {
+  if (value === undefined) {
+    throw new Error("Unexpected undefined value");
+  }
+  if (value === null) {
+    throw new Error("Unexpected null value");
+  }
+
+  return value;
+}
