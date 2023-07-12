@@ -3,6 +3,7 @@ import sinon from "sinon";
 
 import {
   capturePreAuthState,
+  beginSignup,
   signIn,
   signOut,
   auth,
@@ -21,10 +22,25 @@ test("utils/auth", async (t) => {
     });
   });
 
+  t.test("beginSignup", async (t) => {
+    t.test("saves registration state in session", async (t) => {
+      const req: any = {};
+      const user: any = { id: "123abc", username: "bob" };
+      const challenge = "CHALLENGE!";
+
+      beginSignup(req, user, challenge);
+
+      t.ok(req.session);
+      t.ok(req.session.registration);
+      t.equal(req.session.registration.registeringUser, user);
+      t.equal(req.session.registration.challenge, challenge);
+    });
+  });
+
   t.test("signIn", async (t) => {
     t.test("saves authenticated identity in session", async (t) => {
       const req: any = {};
-      const user: any = { id: "bob", username: "Bob User" };
+      const user: any = { id: "123abc", username: "bob" };
       const credential: any = {};
 
       signIn(req, user, credential);
@@ -32,8 +48,8 @@ test("utils/auth", async (t) => {
       t.ok(req.session);
       t.ok(req.session.authentication);
       t.same(req.session.authentication.user, {
-        id: "bob",
-        username: "Bob User",
+        id: "123abc",
+        username: "bob",
       });
       t.equal(req.session.authentication.credential, credential);
       t.ok(req.session.authentication.time);
@@ -41,7 +57,7 @@ test("utils/auth", async (t) => {
 
     t.test("clears temp session values", async (t) => {
       const req: any = { registration: {}, return_to: "/foo" };
-      const user: any = { id: "bob", username: "Bob User" };
+      const user: any = { id: "123abc", username: "bob" };
       const credential: any = {};
 
       signIn(req, user, credential);

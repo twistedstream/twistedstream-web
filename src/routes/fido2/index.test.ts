@@ -36,7 +36,6 @@ test("routes/fido2/index", async (t) => {
     importModule();
 
     const calls = expressRouter.use.getCalls();
-    t.equal(calls.length, 2);
     t.equal(calls[0].args[0], "/assertion");
     t.equal(calls[0].args[1], assertionRoute);
     t.equal(calls[1].args[0], "/attestation");

@@ -1,4 +1,4 @@
-import express, { Express, NextFunction, Response } from "express";
+import express, { Express, NextFunction, Request, Response } from "express";
 import { Response as SupertestResponse } from "supertest";
 import path from "path";
 import querystring from "querystring";
@@ -11,18 +11,26 @@ import { AuthenticatedRequest } from "../types/express";
 
 type AuthSetup = {
   originalUrl: string;
-  user: User;
-  credential: Authenticator;
+  activeUser: User;
+  activeCredential: Authenticator;
 };
 type MiddlewareSetup = (app: Express) => void;
-type ErrorHandlerSetup = { test: Tap.Test };
+type ErrorHandlerSetup = {
+  test: Tap.Test;
+  modulePath: string;
+  suppressErrorOutput?: boolean;
+};
 type TestExpressAppOptions = {
   authSetup?: AuthSetup;
   middlewareSetup?: MiddlewareSetup;
   errorHandlerSetup?: ErrorHandlerSetup;
 };
 type ViewRenderArgs = { viewName?: string; options?: any };
+type ExpressRequestExpectations = { url: string; method: "GET" | "POST" };
 
+/**
+ * Creates an Express object that can be used for testing
+ */
 export function createTestExpressApp({
   authSetup,
   middlewareSetup,
@@ -47,8 +55,8 @@ export function createTestExpressApp({
       "*",
       (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
         req.originalUrl = authSetup.originalUrl;
-        req.user = authSetup.user;
-        req.credential = authSetup.credential;
+        req.user = authSetup.activeUser;
+        req.credential = authSetup.activeCredential;
 
         next();
       }
@@ -60,11 +68,17 @@ export function createTestExpressApp({
   }
 
   if (errorHandlerSetup) {
+    const logger = {
+      error: errorHandlerSetup.suppressErrorOutput
+        ? sinon.fake()
+        : console.error,
+    };
+
     // include error handler behavior, but fake the logging
     const { default: errorHandler } = errorHandlerSetup.test.mock(
-      "../error-handler",
+      errorHandlerSetup.modulePath,
       {
-        "../utils/logger": { logger: { error: sinon.fake() } },
+        "../utils/logger": { logger },
       }
     );
     errorHandler(app);
@@ -73,6 +87,23 @@ export function createTestExpressApp({
   return { app, renderArgs };
 }
 
+/**
+ * Verifies the state of the provided Express.Request object
+ */
+export function verifyRequest(
+  test: Tap.Test,
+  req: Request,
+  expectations: ExpressRequestExpectations
+) {
+  test.equal(req.url, expectations.url);
+  test.equal(req.method, expectations.method);
+  // FUTURE: additional verifications
+}
+
+/**
+ * Verifies that the provided SuperTest.Response object appears to be a redirect
+ * to the login endpoint
+ */
 export function verifyAuthenticationRequiredResponse(
   test: Tap.Test,
   response: SupertestResponse,
@@ -83,4 +114,30 @@ export function verifyAuthenticationRequiredResponse(
     response.headers.location,
     "/login?" + querystring.encode({ return_to })
   );
+}
+
+export function verifyFido2ServerErrorResponse(
+  test: Tap.Test,
+  response: SupertestResponse,
+  statusCode: number,
+  errorMessage: string | RegExp
+) {
+  test.equal(response.statusCode, statusCode);
+  test.match(response.headers["content-type"], "application/json");
+  const json = JSON.parse(response.text);
+  test.equal(json.status, "failed");
+  test.match(json.errorMessage, errorMessage);
+}
+
+export function verifyFido2ServerSuccessResponse(
+  test: Tap.Test,
+  response: SupertestResponse,
+  expectedData: any
+) {
+  test.equal(response.statusCode, 200);
+  test.match(response.headers["content-type"], "application/json");
+  const json = JSON.parse(response.text);
+  test.equal(json.status, "ok");
+  test.equal(json.errorMessage, "");
+  test.match(json, expectedData);
 }

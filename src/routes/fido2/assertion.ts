@@ -1,7 +1,6 @@
 import { Router, Request, Response } from "express";
 import { json } from "body-parser";
 import base64 from "@hexagon/base64";
-import { StatusCodes } from "http-status-codes";
 import {
   VerifiedAuthenticationResponse,
   generateAuthenticationOptions,
@@ -10,7 +9,7 @@ import {
 
 import { baseUrl, rpID } from "../../utils/config";
 import { logger } from "../../utils/logger";
-import { renderFido2ServerErrorResponse } from "../../utils/error";
+import { BadRequestError } from "../../utils/error";
 import { signIn } from "../../utils/auth";
 import {
   fetchCredentialById,
@@ -26,12 +25,8 @@ const router = Router();
 
 // helpers
 
-export function renderFailedAuthenticationResponse(res: Response) {
-  return renderFido2ServerErrorResponse(
-    res,
-    StatusCodes.BAD_REQUEST,
-    "We couldn't sign you in"
-  );
+export function FailedAuthenticationError() {
+  return BadRequestError("We couldn't sign you in");
 }
 
 // endpoints
@@ -50,7 +45,7 @@ router.post("/options", json(), async (req: Request, res: Response) => {
     existingUser = await fetchUserByName(trimmedUsername);
     if (!existingUser) {
       logger.warn(`No such user with name '${trimmedUsername}'`);
-      return renderFailedAuthenticationResponse(res);
+      throw FailedAuthenticationError();
     }
     existingCredentials = await fetchCredentialsByUsername(trimmedUsername);
     if (existingCredentials.length === 0) {
@@ -113,21 +108,13 @@ router.post("/result", json(), async (req: Request, res: Response) => {
   const { body } = req;
   const { id } = body;
   if (!id) {
-    return renderFido2ServerErrorResponse(
-      res,
-      StatusCodes.BAD_REQUEST,
-      "Missing: credential ID"
-    );
+    throw BadRequestError("Missing: credential ID");
   }
 
   // retrieve authentication state from session
   const authentication: AuthenticatingSession = req.session.authentication;
   if (!authentication) {
-    return renderFido2ServerErrorResponse(
-      res,
-      StatusCodes.BAD_REQUEST,
-      "No active authentication"
-    );
+    throw BadRequestError("No active authentication");
   }
   logger.debug(
     authentication,
@@ -139,7 +126,7 @@ router.post("/result", json(), async (req: Request, res: Response) => {
   if (!activeCredential) {
     logger.warn(`/assertion/result: No credential found with ID ${id}`);
 
-    return renderFailedAuthenticationResponse(res);
+    throw FailedAuthenticationError();
   }
   if (
     authentication.authenticatingUser &&
@@ -149,7 +136,7 @@ router.post("/result", json(), async (req: Request, res: Response) => {
       `/assertion/result: Presented credential (id = ${activeCredential.credentialID}) is not associated with specified user (id = ${authentication.authenticatingUser.id})`
     );
 
-    return renderFailedAuthenticationResponse(res);
+    throw FailedAuthenticationError();
   }
   // fetch associated user
   const existingUser = await fetchUserById(activeCredential.userID);
@@ -184,7 +171,7 @@ router.post("/result", json(), async (req: Request, res: Response) => {
       `Authentication error with user (id = ${existingUser.id}) and credential (id = ${activeCredential.credentialID})`
     );
 
-    return renderFailedAuthenticationResponse(res);
+    throw FailedAuthenticationError();
   }
   logger.debug(verification, "/assertion/result: verification");
 

@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import querystring from "querystring";
 
 import { Authenticator, User } from "../types/user";
-import { AuthenticatedSession } from "../types/session";
+import { AuthenticatedSession, RegisteringSession } from "../types/session";
 import { AuthenticatedRequest } from "../types/express";
 
 // auth helpers
@@ -11,6 +11,19 @@ export function capturePreAuthState(req: Request) {
   req.session = req.session || {};
   const { return_to } = req.query;
   req.session.return_to = return_to;
+}
+
+export function beginSignup(
+  req: Request,
+  registeringUser: User,
+  challenge: string
+) {
+  req.session = req.session || {};
+
+  req.session.registration = <RegisteringSession>{
+    registeringUser,
+    challenge,
+  };
 }
 
 export function signIn(

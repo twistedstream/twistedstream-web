@@ -3,19 +3,22 @@ import sinon from "sinon";
 import request from "supertest";
 import { Request, Response } from "express";
 
-import { createTestExpressApp } from "./utils/testing";
-import { BadRequestError } from "./utils/error";
-import * as utilsError from "./utils/error";
+import {
+  createTestExpressApp,
+  verifyFido2ServerErrorResponse,
+} from "../../utils/testing";
+import { BadRequestError } from "../../utils/error";
+import * as utilsError from "../../utils/error";
 
-test("global error handler", async (t) => {
+test("FIDO2 error handler", async (t) => {
   const buildErrorHandlerDataStub = sinon.stub();
   const logger = {
     error: sinon.fake(),
   };
 
   const { default: errorHandler } = t.mock("./error-handler", {
-    "./utils/logger": { logger },
-    "./utils/error": {
+    "../../utils/logger": { logger },
+    "../../utils/error": {
       ...utilsError,
       buildErrorHandlerData: buildErrorHandlerDataStub,
     },
@@ -59,20 +62,18 @@ test("global error handler", async (t) => {
       }
     );
 
-    t.test("renders HTML with the expected view state", async (t) => {
-      buildErrorHandlerDataStub.returns({ statusCode: 404 });
+    t.test("renders JSON with the expected data", async (t) => {
+      buildErrorHandlerDataStub.returns({
+        message: "Can't find it",
+        statusCode: 404,
+      });
 
-      const { app, renderArgs } = createTestExpressApp();
+      const { app } = createTestExpressApp();
       errorHandler(app);
 
       const response = await request(app).get("/foo");
-      const { viewName, options } = renderArgs;
 
-      t.equal(response.status, 404);
-      t.match(response.headers["content-type"], "text/html");
-      t.equal(viewName, "404");
-      t.equal(options.title, "Sorry, which page?");
-      t.equal(options.message, "Not Found");
+      verifyFido2ServerErrorResponse(t, response, 404, "Can't find it");
     });
 
     t.test("does not log the error", async (t) => {
@@ -88,7 +89,7 @@ test("global error handler", async (t) => {
   });
 
   t.test("other 4** errors", async (t) => {
-    t.test("renders HTML with the expected view state", async (t) => {
+    t.test("renders JSON with the expected data", async (t) => {
       buildErrorHandlerDataStub.returns({
         message: "Really bad request",
         statusCode: 400,
@@ -102,15 +103,8 @@ test("global error handler", async (t) => {
       errorHandler(app);
 
       const response = await request(app).get("/foo");
-      const { viewName, options } = renderArgs;
 
-      t.equal(response.status, 400);
-      t.match(response.headers["content-type"], "text/html");
-      t.equal(viewName, "error");
-      t.equal(options.title, "Error");
-      t.equal(options.message, "Really bad request");
-      t.equal(options.error_status, 400);
-      t.notOk(options.correlation_id);
+      verifyFido2ServerErrorResponse(t, response, 400, "Really bad request");
     });
 
     t.test("does not log the error", async (t) => {
@@ -129,29 +123,22 @@ test("global error handler", async (t) => {
   });
 
   t.test("5** errors", async (t) => {
-    t.test("renders HTML with the expected view state", async (t) => {
+    t.test("renders JSON with the expected data", async (t) => {
       buildErrorHandlerDataStub.returns({
         message: "What'd you do?",
         statusCode: 500,
         correlation_id: "ERROR_ID",
       });
 
-      const { app, renderArgs } = createTestExpressApp();
+      const { app } = createTestExpressApp();
       app.get("/foo", (_req: Request, _res: Response) => {
         throw new Error("BOOM!");
       });
       errorHandler(app);
 
       const response = await request(app).get("/foo");
-      const { viewName, options } = renderArgs;
 
-      t.equal(response.status, 500);
-      t.match(response.headers["content-type"], "text/html");
-      t.equal(viewName, "error");
-      t.equal(options.title, "Error");
-      t.equal(options.message, "What'd you do?");
-      t.equal(options.error_status, 500);
-      t.equal(options.correlation_id, "ERROR_ID");
+      verifyFido2ServerErrorResponse(t, response, 500, "What'd you do?");
     });
 
     t.test("logs the error", async (t) => {

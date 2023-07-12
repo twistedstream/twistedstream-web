@@ -1,12 +1,13 @@
 import { StatusCodes, getReasonPhrase } from "http-status-codes";
 import ShortUniqueId from "short-unique-id";
-import { Response } from "express";
+
+type ErrorHandlerData = {
+  message: string;
+  statusCode: number;
+  correlation_id: string;
+};
 
 const uid = new ShortUniqueId({ length: 25 });
-
-export const generateCorrelationId = (): string => {
-  return uid();
-};
 
 export class ErrorWithStatusCode extends Error {
   constructor(
@@ -30,18 +31,6 @@ export const BadRequestError = (message: string) =>
 export const UnauthorizedError = () =>
   new ErrorWithStatusCode(StatusCodes.UNAUTHORIZED);
 
-export function renderFido2ServerErrorResponse(
-  res: Response,
-  statusCode: StatusCodes,
-  message: string
-) {
-  const response = {
-    status: "failed",
-    errorMessage: message,
-  };
-  return res.status(statusCode).json(response);
-}
-
 export function assert<T>(value: T | undefined | null): T {
   if (value === undefined) {
     throw new Error("Unexpected undefined value");
@@ -51,4 +40,25 @@ export function assert<T>(value: T | undefined | null): T {
   }
 
   return value;
+}
+
+export function buildErrorHandlerData(err: any): ErrorHandlerData {
+  const statusCode: StatusCodes =
+    err.statusCode || err.status || StatusCodes.INTERNAL_SERVER_ERROR;
+
+  const message =
+    statusCode < StatusCodes.INTERNAL_SERVER_ERROR
+      ? <string>err.message
+      : "Something unexpected happened";
+
+  let correlation_id: string = "";
+  if (statusCode >= StatusCodes.INTERNAL_SERVER_ERROR) {
+    correlation_id = uid();
+  }
+
+  return {
+    message,
+    statusCode,
+    correlation_id,
+  };
 }

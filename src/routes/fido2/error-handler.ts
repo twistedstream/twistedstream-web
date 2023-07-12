@@ -1,9 +1,9 @@
 import { IRouter, Request, Response, NextFunction } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { logger } from "./utils/logger";
-import { buildErrorHandlerData, NotFoundError } from "./utils/error";
-import { AuthenticatedRequest } from "./types/express";
+import { logger } from "../../utils/logger";
+import { buildErrorHandlerData, NotFoundError } from "../../utils/error";
+import { AuthenticatedRequest } from "../../types/express";
 
 const errorHandler = (router: IRouter) => {
   // Catch unhandled requests and convert to 404
@@ -28,17 +28,9 @@ const errorHandler = (router: IRouter) => {
         logger.error({ err, correlation_id });
       }
 
-      if (statusCode === StatusCodes.NOT_FOUND) {
-        return res.render("404", {
-          title: "Sorry, which page?",
-          message: err.message,
-        });
-      }
-
-      res.render("error", {
-        title: "Error",
-        message,
-        error_status: statusCode,
+      return res.status(statusCode).json({
+        status: "failed",
+        errorMessage: message,
         correlation_id,
       });
     }

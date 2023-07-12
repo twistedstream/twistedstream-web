@@ -6,12 +6,11 @@ import {
   verifyRegistrationResponse,
 } from "@simplewebauthn/server";
 import base64 from "@hexagon/base64";
-import { StatusCodes } from "http-status-codes";
 
 import { baseUrl, companyName, rpID } from "../../utils/config";
 import { logger } from "../../utils/logger";
-import { renderFido2ServerErrorResponse } from "../../utils/error";
-import { signIn } from "../../utils/auth";
+import { BadRequestError, assert } from "../../utils/error";
+import { beginSignup, signIn } from "../../utils/auth";
 import {
   fetchUserByName,
   createUser,
@@ -24,7 +23,6 @@ import { Authenticator, RegisteredAuthenticator } from "../../types/user";
 import { User } from "../../types/user";
 import { RegisteringSession } from "../../types/session";
 import { AuthenticatedRequest } from "../../types/express";
-import { ValidationError } from "../../types/error";
 
 const router = Router();
 
@@ -41,13 +39,9 @@ router.post(
     let registeringUser: User;
     try {
       registeringUser = createUser(username, displayName);
-    } catch (err) {
-      if (err instanceof ValidationError) {
-        return renderFido2ServerErrorResponse(
-          res,
-          StatusCodes.BAD_REQUEST,
-          err.message
-        );
+    } catch (err: any) {
+      if (err.type === "validation") {
+        throw BadRequestError(err.message);
       }
       throw err;
     }
@@ -57,11 +51,7 @@ router.post(
       // session user exists, so we'll be enrolling another credential
       const existingUser = await fetchUserById(req.user.id);
       if (!existingUser) {
-        return renderFido2ServerErrorResponse(
-          res,
-          StatusCodes.BAD_REQUEST,
-          `User with ID ${req.user.id} no longer exists`
-        );
+        throw BadRequestError(`User with ID ${req.user.id} no longer exists`);
       }
 
       // registering user is existing user
@@ -73,10 +63,8 @@ router.post(
     } else {
       const existingUser = await fetchUserByName(username);
       if (existingUser) {
-        return renderFido2ServerErrorResponse(
-          res,
-          StatusCodes.BAD_REQUEST,
-          `A user with name '${username}' already exists`
+        throw BadRequestError(
+          `A user with username '${username}' already exists`
         );
       }
     }
@@ -105,10 +93,7 @@ router.post(
     logger.info(optionsResponse, "Registration challenge response");
 
     // store registration state in session
-    req.session.registration = <RegisteringSession>{
-      registeringUser,
-      challenge: optionsResponse.challenge,
-    };
+    beginSignup(req, registeringUser, optionsResponse.challenge);
 
     res.json(optionsResponse);
   }
@@ -124,28 +109,16 @@ router.post(
     const { body } = req;
     const { id, response } = body;
     if (!id) {
-      return renderFido2ServerErrorResponse(
-        res,
-        StatusCodes.BAD_REQUEST,
-        "Missing: credential ID"
-      );
+      throw BadRequestError("Missing: credential ID");
     }
     if (!response) {
-      return renderFido2ServerErrorResponse(
-        res,
-        StatusCodes.BAD_REQUEST,
-        "Missing: authentication response"
-      );
+      throw BadRequestError("Missing: authentication response");
     }
 
     // retrieve registration state from session
     const registration: RegisteringSession = req.session.registration;
     if (!registration) {
-      return renderFido2ServerErrorResponse(
-        res,
-        StatusCodes.BAD_REQUEST,
-        "No active registration"
-      );
+      throw BadRequestError("No active registration");
     }
     logger.debug(
       registration,
@@ -167,20 +140,12 @@ router.post(
         `Registration error with user with ID ${registration.registeringUser.id} and credential ${id}`
       );
 
-      return renderFido2ServerErrorResponse(
-        res,
-        StatusCodes.BAD_REQUEST,
-        err.message || err
-      );
+      throw BadRequestError(`Registration failed: ${err.message}`);
     }
     logger.debug(verification, "/attestation/result: verification");
 
-    const { registrationInfo } = verification;
-    if (!registrationInfo) {
-      throw new Error(`Empty registration when verification seemed successful`);
-    }
-
     // build credential object
+    const registrationInfo = assert(verification.registrationInfo);
     const { aaguid, counter, credentialDeviceType, credentialBackedUp } =
       registrationInfo;
     const validatedCredential: Authenticator = {
@@ -201,7 +166,7 @@ router.post(
       "/attestation/result: Validated credential"
     );
 
-    let user = req.user;
+    let { user } = req;
     if (user) {
       // update existing user in rp with additional credential
       await addUserCredential(user.id, validatedCredential);
@@ -211,6 +176,9 @@ router.post(
         registration.registeringUser,
         validatedCredential
       );
+
+      // complete authentication
+      signIn(req, user, validatedCredential);
     }
 
     // build response
@@ -219,11 +187,6 @@ router.post(
       errorMessage: "",
       return_to: req.session.return_to || "/",
     };
-
-    if (!req.user) {
-      // complete authentication
-      signIn(req, user, validatedCredential);
-    }
 
     res.json(resultResponse);
   }

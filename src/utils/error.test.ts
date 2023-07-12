@@ -1,34 +1,16 @@
 import { test } from "tap";
-import sinon from "sinon";
 
 import {
   BadRequestError,
   ErrorWithStatusCode,
-  generateCorrelationId,
   NotFoundError,
   UnauthorizedError,
-  renderFido2ServerErrorResponse,
   assert,
+  buildErrorHandlerData,
 } from "./error";
 import { StatusCodes } from "http-status-codes";
 
 test("utils/error", async (t) => {
-  t.test("generateCorrelationId", async (t) => {
-    t.test("returns a 25 character string", async (t) => {
-      const result = generateCorrelationId();
-
-      t.ok(result);
-      t.equal(result.length, 25);
-    });
-
-    t.test("returns a unique value on each call", async (t) => {
-      const result1 = generateCorrelationId();
-      const result2 = generateCorrelationId();
-
-      t.not(result1, result2);
-    });
-  });
-
   t.test("ErrorWithStatusCode", async (t) => {
     t.test("constructor creates expected error", async (t) => {
       t.test("when message is provided", async (t) => {
@@ -69,31 +51,6 @@ test("utils/error", async (t) => {
     });
   });
 
-  t.test("renderFido2ServerErrorResponse", async (t) => {
-    t.test("renders the expected response", async (t) => {
-      const statusResponse: any = {
-        json: sinon.fake(),
-      };
-      const res: any = {
-        status: sinon.fake.returns(statusResponse),
-      };
-
-      renderFido2ServerErrorResponse(
-        res,
-        StatusCodes.BAD_REQUEST,
-        "What'd you do?"
-      );
-
-      t.ok(res.status.called);
-      t.equal(res.status.firstCall.firstArg, StatusCodes.BAD_REQUEST);
-      t.ok(statusResponse.json.called);
-      t.same(statusResponse.json.firstCall.firstArg, {
-        status: "failed",
-        errorMessage: "What'd you do?",
-      });
-    });
-  });
-
   t.test("assert", async (t) => {
     t.test("throws if value is undefined", async (t) => {
       t.throws(() => assert(undefined), "Unexpected undefined value");
@@ -109,6 +66,74 @@ test("utils/error", async (t) => {
       const result = assert(value);
 
       t.equal(result, value);
+    });
+  });
+
+  t.test("buildErrorHandlerData", async (t) => {
+    t.test("status code", async (t) => {
+      t.test("is extracted from the error", async (t) => {
+        const result = buildErrorHandlerData(
+          new ErrorWithStatusCode(StatusCodes.NOT_ACCEPTABLE)
+        );
+
+        t.equal(result.statusCode, StatusCodes.NOT_ACCEPTABLE);
+      });
+
+      t.test("defaults to an internal server error", async (t) => {
+        const result = buildErrorHandlerData(new Error("BOOM!"));
+
+        t.equal(result.statusCode, StatusCodes.INTERNAL_SERVER_ERROR);
+      });
+    });
+
+    t.test("server errors", async (t) => {
+      t.test("generates expected message", async (t) => {
+        const result = buildErrorHandlerData(
+          new ErrorWithStatusCode(StatusCodes.INTERNAL_SERVER_ERROR)
+        );
+
+        t.equal(result.message, "Something unexpected happened");
+      });
+
+      t.test("generates a correlation ID with expected format", async (t) => {
+        const result = buildErrorHandlerData(
+          new ErrorWithStatusCode(StatusCodes.INTERNAL_SERVER_ERROR)
+        );
+
+        t.equal(result.correlation_id.length, 25);
+      });
+
+      t.test("generates unique correlation IDs", async (t) => {
+        const result1 = buildErrorHandlerData(
+          new ErrorWithStatusCode(StatusCodes.INTERNAL_SERVER_ERROR)
+        );
+        const result2 = buildErrorHandlerData(
+          new ErrorWithStatusCode(StatusCodes.INTERNAL_SERVER_ERROR)
+        );
+
+        t.not(result1, result2);
+      });
+    });
+
+    t.test("other errors", async (t) => {
+      t.test("generates expected message", async (t) => {
+        const result = buildErrorHandlerData(
+          new ErrorWithStatusCode(
+            StatusCodes.NOT_ACCEPTABLE,
+            "This is a no go."
+          )
+        );
+
+        t.match(result.message, "This is a no go.");
+      });
+
+      t.test("does not generate a correlation ID", async (t) => {
+        const result = buildErrorHandlerData(
+          new ErrorWithStatusCode(StatusCodes.NOT_ACCEPTABLE)
+        );
+
+        t.notOk(result.correlation_id);
+      });
     });
   });
 });
