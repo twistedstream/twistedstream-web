@@ -3,12 +3,22 @@ import sinon from "sinon";
 
 import {
   capturePreAuthState,
+  beginSignIn,
   beginSignup,
   signIn,
   signOut,
+  getReturnTo,
+  getAuthentication,
+  getRegistration,
   auth,
   requiresAuth,
 } from "./auth";
+
+const testUser = {
+  id: "123abc",
+  username: "bob",
+  displayName: "Bob User",
+};
 
 test("utils/auth", async (t) => {
   t.test("capturePreAuthState", async (t) => {
@@ -25,42 +35,77 @@ test("utils/auth", async (t) => {
   t.test("beginSignup", async (t) => {
     t.test("saves registration state in session", async (t) => {
       const req: any = {};
-      const user: any = { id: "123abc", username: "bob" };
-      const challenge = "CHALLENGE!";
 
-      beginSignup(req, user, challenge);
+      beginSignup(req, "CHALLENGE!", { ...testUser });
 
       t.ok(req.session);
-      t.ok(req.session.registration);
-      t.equal(req.session.registration.registeringUser, user);
-      t.equal(req.session.registration.challenge, challenge);
+      const { registration } = req.session;
+      t.ok(registration);
+      t.same(registration.registeringUser, {
+        id: "123abc",
+        username: "bob",
+        displayName: "Bob User",
+      });
+      t.equal(registration.challenge, "CHALLENGE!");
+    });
+  });
+
+  t.test("beginSignIn", async (t) => {
+    t.test("saves authentication state in session", async (t) => {
+      t.test("when existing user", async (t) => {
+        const req: any = {};
+
+        beginSignIn(req, "CHALLENGE!", { ...testUser }, "preferred");
+
+        t.ok(req.session);
+        const { authentication } = req.session;
+        t.ok(authentication);
+        t.same(authentication.authenticatingUser, {
+          id: "123abc",
+          username: "bob",
+        });
+        t.equal(authentication.challenge, "CHALLENGE!");
+        t.equal(authentication.userVerification, "preferred");
+      });
+
+      t.test("when no existing user", async (t) => {
+        const req: any = {};
+
+        beginSignIn(req, "CHALLENGE!", undefined, "preferred");
+
+        t.ok(req.session);
+        const { authentication } = req.session;
+        t.ok(authentication);
+        t.notOk(authentication.authenticatingUser);
+        t.equal(authentication.challenge, "CHALLENGE!");
+        t.equal(authentication.userVerification, "preferred");
+      });
     });
   });
 
   t.test("signIn", async (t) => {
     t.test("saves authenticated identity in session", async (t) => {
       const req: any = {};
-      const user: any = { id: "123abc", username: "bob" };
       const credential: any = {};
 
-      signIn(req, user, credential);
+      signIn(req, { ...testUser }, credential);
 
       t.ok(req.session);
-      t.ok(req.session.authentication);
-      t.same(req.session.authentication.user, {
+      const { authentication } = req.session;
+      t.ok(authentication);
+      t.same(authentication.user, {
         id: "123abc",
         username: "bob",
       });
-      t.equal(req.session.authentication.credential, credential);
-      t.ok(req.session.authentication.time);
+      t.equal(authentication.credential, credential);
+      t.ok(authentication.time);
     });
 
     t.test("clears temp session values", async (t) => {
       const req: any = { registration: {}, return_to: "/foo" };
-      const user: any = { id: "123abc", username: "bob" };
       const credential: any = {};
 
-      signIn(req, user, credential);
+      signIn(req, { ...testUser }, credential);
 
       t.ok(req.session);
       t.notOk(req.session.registration);
@@ -75,6 +120,62 @@ test("utils/auth", async (t) => {
       signOut(req);
 
       t.notOk(req.session);
+    });
+  });
+
+  t.test("getReturnTo", async (t) => {
+    t.test("returns expected value", async (t) => {
+      const req: any = { session: { return_to: "/foo" } };
+
+      const result = getReturnTo(req);
+
+      t.equal(result, "/foo");
+    });
+
+    t.test("returns expected default", async (t) => {
+      const req: any = {};
+
+      const result = getReturnTo(req);
+
+      t.equal(result, "/");
+    });
+  });
+
+  t.test("getAuthentication", async (t) => {
+    t.test("returns expected value", async (t) => {
+      const authentication = {};
+      const req: any = { session: { authentication } };
+
+      const result = getAuthentication(req);
+
+      t.equal(result, authentication);
+    });
+
+    t.test("returns expected default", async (t) => {
+      const req: any = {};
+
+      const result = getAuthentication(req);
+
+      t.notOk(result);
+    });
+  });
+
+  t.test("getRegistration", async (t) => {
+    t.test("returns expected value", async (t) => {
+      const registration = {};
+      const req: any = { session: { registration } };
+
+      const result = getRegistration(req);
+
+      t.equal(result, registration);
+    });
+
+    t.test("returns expected default", async (t) => {
+      const req: any = {};
+
+      const result = getRegistration(req);
+
+      t.notOk(result);
     });
   });
 

@@ -9,17 +9,22 @@ import {
 
 import { baseUrl, rpID } from "../../utils/config";
 import { logger } from "../../utils/logger";
-import { BadRequestError } from "../../utils/error";
-import { signIn } from "../../utils/auth";
+import { BadRequestError, ForbiddenError } from "../../utils/error";
+import {
+  beginSignIn,
+  getAuthentication,
+  getReturnTo,
+  signIn,
+} from "../../utils/auth";
 import {
   fetchCredentialById,
   fetchUserById,
   fetchUserByName,
   fetchCredentialsByUsername,
 } from "../../services/user";
-import { AuthenticatingSession } from "../../types/session";
 import { User } from "../../types/user";
 import { RegisteredAuthenticator } from "../../types/user";
+import { AuthenticatedRequest } from "../../types/express";
 
 const router = Router();
 
@@ -31,79 +36,81 @@ export function FailedAuthenticationError() {
 
 // endpoints
 
-router.post("/options", json(), async (req: Request, res: Response) => {
-  req.session = req.session || {};
-
-  // validate request
-  const { username, userVerification } = req.body;
-  const trimmedUsername: string = username ? username.trim() : "";
-
-  // fetch existing user
-  let existingUser: User | undefined;
-  let existingCredentials: RegisteredAuthenticator[] = [];
-  if (trimmedUsername.length > 0) {
-    existingUser = await fetchUserByName(trimmedUsername);
-    if (!existingUser) {
-      logger.warn(`No such user with name '${trimmedUsername}'`);
-      throw FailedAuthenticationError();
+router.post(
+  "/options",
+  json(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    // ensure there isn't an active user session
+    if (req.user) {
+      throw ForbiddenError("User is already signed in");
     }
-    existingCredentials = await fetchCredentialsByUsername(trimmedUsername);
-    if (existingCredentials.length === 0) {
-      // NOTE: this shouldn't happen unless there's a data integrity issue
-      throw new Error(
-        `Existing user ${existingUser.id} is missing credentials.`
-      );
+
+    // validate request
+    let { username, userVerification } = req.body;
+    username = username ? username.trim() : "";
+    userVerification = userVerification || "preferred";
+
+    // fetch existing user
+    let existingUser: User | undefined;
+    let existingCredentials: RegisteredAuthenticator[] = [];
+    if (username.length > 0) {
+      existingUser = await fetchUserByName(username);
+      if (!existingUser) {
+        logger.warn(`No such user with name '${username}'`);
+        throw FailedAuthenticationError();
+      }
+      existingCredentials = await fetchCredentialsByUsername(username);
+      if (existingCredentials.length === 0) {
+        // NOTE: this shouldn't happen unless there's a data integrity issue
+        throw new Error(
+          `Existing user ${existingUser.id} is missing credentials.`
+        );
+      }
     }
+
+    // generate assertion options (challenge)
+    const assertionOptions = generateAuthenticationOptions({
+      // Require users to use a previously-registered authenticator
+      allowCredentials: existingCredentials.map((authenticator) => ({
+        id: base64.toArrayBuffer(authenticator.credentialID),
+        type: "public-key",
+        // Optional
+        transports: authenticator.transports,
+      })),
+      userVerification,
+    });
+    logger.debug(assertionOptions, "/assertion/options: assertionOptions");
+
+    // build response
+    const challengeResponse = {
+      ...assertionOptions,
+      status: "ok",
+      errorMessage: "",
+      // add allowed credentials of existing user
+      allowCredentials:
+        existingCredentials.length > 0
+          ? existingCredentials.map((c) => ({
+              type: "public-key",
+              id: c.credentialID,
+              transports: c.transports,
+            }))
+          : [],
+    };
+    logger.info(challengeResponse, "Login challenge response");
+
+    // store authentication state in session
+    beginSignIn(
+      req,
+      challengeResponse.challenge,
+      existingUser,
+      userVerification
+    );
+
+    res.json(challengeResponse);
   }
-
-  // generate assertion options (challenge)
-  const assertionOptions = generateAuthenticationOptions({
-    // Require users to use a previously-registered authenticator
-    allowCredentials: existingCredentials.map((authenticator) => ({
-      id: base64.toArrayBuffer(authenticator.credentialID),
-      type: "public-key",
-      // Optional
-      transports: authenticator.transports,
-    })),
-    userVerification: "preferred",
-  });
-  logger.debug(assertionOptions, "/assertion/options: assertionOptions");
-
-  // build response
-  const challengeResponse = {
-    ...assertionOptions,
-    status: "ok",
-    errorMessage: "",
-    // add allowed credentials of existing user
-    allowCredentials:
-      existingCredentials.length > 0
-        ? existingCredentials.map((c) => ({
-            type: "public-key",
-            id: c.credentialID,
-            transports: c.transports,
-          }))
-        : [],
-  };
-  logger.info(challengeResponse, "Login challenge response");
-
-  // store authentication state in session
-  req.session.authentication = <AuthenticatingSession>{
-    authenticatingUser: existingUser
-      ? {
-          id: existingUser.id,
-          username: existingUser.username,
-        }
-      : null,
-    userVerification,
-    challenge: challengeResponse.challenge,
-  };
-
-  res.json(challengeResponse);
-});
+);
 
 router.post("/result", json(), async (req: Request, res: Response) => {
-  req.session = req.session || {};
-
   // validate request
   const { body } = req;
   const { id } = body;
@@ -112,7 +119,7 @@ router.post("/result", json(), async (req: Request, res: Response) => {
   }
 
   // retrieve authentication state from session
-  const authentication: AuthenticatingSession = req.session.authentication;
+  const authentication = getAuthentication(req);
   if (!authentication) {
     throw BadRequestError("No active authentication");
   }
@@ -138,6 +145,7 @@ router.post("/result", json(), async (req: Request, res: Response) => {
 
     throw FailedAuthenticationError();
   }
+
   // fetch associated user
   const existingUser = await fetchUserById(activeCredential.userID);
   if (!existingUser) {
@@ -179,7 +187,7 @@ router.post("/result", json(), async (req: Request, res: Response) => {
   const resultResponse = {
     status: "ok",
     errorMessage: "",
-    return_to: req.session.return_to || "/",
+    return_to: getReturnTo(req),
   };
 
   // complete authentication

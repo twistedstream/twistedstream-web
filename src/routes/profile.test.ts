@@ -22,6 +22,8 @@ type ProfileTestExpressAppOptions = {
   suppressErrorOutput?: boolean;
 };
 
+// test objects
+
 const testUser = {
   id: "123abc",
   username: "bob",
@@ -41,27 +43,27 @@ const testCredential = {
   credentialBackedUp: false,
 };
 
+const expressRouter = {
+  get: sinon.fake(),
+  post: sinon.fake(),
+};
+const routerFake = sinon.fake.returns(expressRouter);
+const fetchCredentialsByUserIdStub = sinon.stub();
+const updateUserStub = sinon.stub();
+const removeUserCredentialStub = sinon.stub();
+
 test("routes/profile", async (t) => {
-  const expressRouter = {
-    get: sinon.fake(),
-    post: sinon.fake(),
-  };
-  const routerFake = sinon.fake.returns(expressRouter);
-  const fetchCredentialsByUserIdStub = sinon.stub();
-  const updateUserStub = sinon.stub();
-  const removeUserCredentialStub = sinon.stub();
+  t.beforeEach(async () => {
+    sinon.resetBehavior();
+    sinon.resetHistory();
+  });
+
+  // helpers
 
   function importModule({
     mockExpress = false,
     mockModules = false,
   }: MockOptions = {}) {
-    expressRouter.get.resetHistory();
-    expressRouter.post.resetHistory();
-    routerFake.resetHistory();
-    fetchCredentialsByUserIdStub.resetHistory();
-    updateUserStub.resetHistory();
-    removeUserCredentialStub.resetHistory();
-
     const dependencies: any = {};
     if (mockExpress) {
       dependencies.express = {
@@ -91,8 +93,8 @@ test("routes/profile", async (t) => {
       authSetup: withAuth
         ? {
             originalUrl: "/",
-            activeUser: testUser,
-            activeCredential: testCredential,
+            activeUser: { ...testUser },
+            activeCredential: { ...testCredential },
           }
         : undefined,
       middlewareSetup: (app) => {
@@ -105,6 +107,8 @@ test("routes/profile", async (t) => {
       },
     });
   }
+
+  // tests
 
   t.test("is a Router instance", async (t) => {
     const profile = importModule({ mockExpress: true });

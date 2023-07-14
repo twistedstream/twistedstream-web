@@ -31,6 +31,9 @@ export const BadRequestError = (message: string) =>
 export const UnauthorizedError = () =>
   new ErrorWithStatusCode(StatusCodes.UNAUTHORIZED);
 
+export const ForbiddenError = (message: string) =>
+  new ErrorWithStatusCode(StatusCodes.FORBIDDEN, message);
+
 export function assert<T>(value: T | undefined | null): T {
   if (value === undefined) {
     throw new Error("Unexpected undefined value");

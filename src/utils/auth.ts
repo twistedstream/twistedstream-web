@@ -2,8 +2,13 @@ import { NextFunction, Request, Response } from "express";
 import querystring from "querystring";
 
 import { Authenticator, User } from "../types/user";
-import { AuthenticatedSession, RegisteringSession } from "../types/session";
+import {
+  AuthenticatedSession,
+  AuthenticatingSession,
+  RegisteringSession,
+} from "../types/session";
 import { AuthenticatedRequest } from "../types/express";
+import { UserVerificationRequirement } from "@simplewebauthn/typescript-types";
 
 // auth helpers
 
@@ -15,13 +20,33 @@ export function capturePreAuthState(req: Request) {
 
 export function beginSignup(
   req: Request,
-  registeringUser: User,
-  challenge: string
+  challenge: string,
+  registeringUser: User
 ) {
   req.session = req.session || {};
 
   req.session.registration = <RegisteringSession>{
     registeringUser,
+    challenge,
+  };
+}
+
+export function beginSignIn(
+  req: Request,
+  challenge: string,
+  existingUser?: User,
+  userVerification?: UserVerificationRequirement
+) {
+  req.session = req.session || {};
+
+  req.session.authentication = <AuthenticatingSession>{
+    authenticatingUser: existingUser
+      ? {
+          id: existingUser.id,
+          username: existingUser.username,
+        }
+      : null,
+    userVerification,
     challenge,
   };
 }
@@ -48,6 +73,20 @@ export function signIn(
 
 export function signOut(req: Request) {
   req.session = null;
+}
+
+export function getReturnTo(req: Request): string {
+  return req.session?.return_to || "/";
+}
+
+export function getAuthentication(
+  req: Request
+): AuthenticatingSession | undefined {
+  return req.session?.authentication;
+}
+
+export function getRegistration(req: Request): RegisteringSession | undefined {
+  return req.session?.registration;
 }
 
 // middleware

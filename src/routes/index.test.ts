@@ -10,28 +10,31 @@ type MockOptions = {
   mockModules?: boolean;
 };
 
+// test objects
+
+const expressRouter = {
+  use: sinon.fake(),
+  get: sinon.fake(),
+};
+const routerFake = sinon.fake.returns(expressRouter);
+const capturePreAuthStateFake = sinon.fake();
+const signOutFake = sinon.fake();
+const fido2Route = sinon.fake();
+const profileRoute = sinon.fake();
+
 test("routes/index", async (t) => {
-  const expressRouter = {
-    use: sinon.fake(),
-    get: sinon.fake(),
-  };
-  const routerFake = sinon.fake.returns(expressRouter);
-  const capturePreAuthStateFake = sinon.fake();
-  const signOutFake = sinon.fake();
-  const fido2Route = sinon.fake();
-  const profileRoute = sinon.fake();
+  t.beforeEach(async () => {
+    sinon.resetBehavior();
+    sinon.resetHistory();
+  });
+
+  // helpers
 
   function importModule({
     mockExpress = false,
     mockChildRoutes = false,
     mockModules = false,
   }: MockOptions = {}) {
-    expressRouter.use.resetHistory();
-    expressRouter.get.resetHistory();
-    routerFake.resetHistory();
-    capturePreAuthStateFake.resetHistory();
-    signOutFake.resetHistory();
-
     const dependencies: any = {};
     if (mockExpress) {
       dependencies.express = {
@@ -67,6 +70,8 @@ test("routes/index", async (t) => {
       },
     });
   }
+
+  // tests
 
   t.test("is a Router instance", async (t) => {
     const index = importModule({

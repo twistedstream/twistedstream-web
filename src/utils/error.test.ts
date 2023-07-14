@@ -5,6 +5,7 @@ import {
   ErrorWithStatusCode,
   NotFoundError,
   UnauthorizedError,
+  ForbiddenError,
   assert,
   buildErrorHandlerData,
 } from "./error";
@@ -48,6 +49,14 @@ test("utils/error", async (t) => {
       const error = UnauthorizedError();
       t.equal(error.message, "Unauthorized");
       t.equal(error.statusCode, 401);
+    });
+  });
+
+  t.test("ForbiddenError", async (t) => {
+    t.test("returns expected error object", async (t) => {
+      const error = ForbiddenError("Not a chance!");
+      t.equal(error.message, "Forbidden: Not a chance!");
+      t.equal(error.statusCode, 403);
     });
   });
 

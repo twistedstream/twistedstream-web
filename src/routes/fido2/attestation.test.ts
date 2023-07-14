@@ -1,7 +1,7 @@
 import { test } from "tap";
 import sinon from "sinon";
 import request, { Test as SuperTest } from "supertest";
-import { Express, Response, NextFunction } from "express";
+import { Express } from "express";
 import {
   AuthenticatorTransport,
   CredentialDeviceType,
@@ -11,12 +11,12 @@ import crypto from "crypto";
 
 import {
   createTestExpressApp,
-  verifyFido2ServerErrorResponse,
-  verifyFido2ServerSuccessResponse,
+  verifyFido2ErrorResponse,
+  verifyFido2SuccessResponse,
   verifyRequest,
+  verifyServerErrorFido2ServerResponse,
 } from "../../utils/testing";
 import { ValidationError } from "../../types/error";
-import { AuthenticatedRequest } from "../../types/express";
 
 type MockOptions = {
   mockExpress?: boolean;
@@ -25,10 +25,10 @@ type MockOptions = {
 
 type AttestationTestExpressAppOptions = {
   withAuth?: boolean;
-  withActiveRegistration?: boolean;
   suppressErrorOutput?: boolean;
-  return_to?: string;
 };
+
+// test objects
 
 const testUser = {
   id: "123abc",
@@ -59,47 +59,45 @@ const testValidatedCredential = {
   ),
 };
 
+const testRegistration = {
+  registeringUser: { ...testUser },
+  challenge: "CHALLENGE!",
+};
+
+const expressRouter = {
+  post: sinon.fake(),
+};
+const routerFake = sinon.fake.returns(expressRouter);
+const logger = {
+  debug: sinon.fake(),
+  warn: sinon.fake(),
+  info: sinon.fake(),
+};
+const createUserStub = sinon.stub();
+const fetchUserByIdStub = sinon.stub();
+const fetchCredentialsByUserIdStub = sinon.stub();
+const fetchUserByNameStub = sinon.stub();
+const generateRegistrationOptionsStub = sinon.stub();
+const beginSignupFake = sinon.fake();
+const verifyRegistrationResponseStub = sinon.stub();
+const registerUserStub = sinon.stub();
+const signInFake = sinon.fake();
+const addUserCredentialFake = sinon.fake();
+const getReturnToStub = sinon.stub();
+const getRegistrationStub = sinon.stub();
+
 test("routes/fido2/attestation", async (t) => {
-  const expressRouter = {
-    post: sinon.fake(),
-  };
-  const routerFake = sinon.fake.returns(expressRouter);
-  const logger = {
-    debug: sinon.fake(),
-    warn: sinon.fake(),
-    info: sinon.fake(),
-  };
-  const createUserStub = sinon.stub();
-  const fetchUserByIdStub = sinon.stub();
-  const fetchCredentialsByUserIdStub = sinon.stub();
-  const fetchUserByNameStub = sinon.stub();
-  const generateRegistrationOptionsStub = sinon.stub();
-  const beginSignupFake = sinon.fake();
-  const verifyRegistrationResponseStub = sinon.stub();
-  const registerUserStub = sinon.stub();
-  const signInFake = sinon.fake();
-  const addUserCredentialFake = sinon.fake();
+  t.beforeEach(async () => {
+    sinon.resetBehavior();
+    sinon.resetHistory();
+  });
+
+  // helpers
 
   function importModule({
     mockExpress = false,
     mockModules = false,
   }: MockOptions = {}) {
-    expressRouter.post.resetHistory();
-    routerFake.resetHistory();
-    logger.debug.resetHistory();
-    logger.warn.resetHistory();
-    logger.info.resetHistory();
-    createUserStub.resetHistory();
-    fetchUserByIdStub.resetHistory();
-    fetchCredentialsByUserIdStub.resetHistory();
-    fetchUserByNameStub.resetHistory();
-    generateRegistrationOptionsStub.resetHistory();
-    beginSignupFake.resetHistory();
-    verifyRegistrationResponseStub.resetHistory();
-    registerUserStub.resetHistory();
-    signInFake.resetHistory();
-    addUserCredentialFake.resetHistory();
-
     const dependencies: any = {};
     if (mockExpress) {
       dependencies.express = {
@@ -128,6 +126,8 @@ test("routes/fido2/attestation", async (t) => {
       dependencies["../../utils/auth"] = {
         beginSignup: beginSignupFake,
         signIn: signInFake,
+        getReturnTo: getReturnToStub,
+        getRegistration: getRegistrationStub,
       };
     }
 
@@ -138,12 +138,7 @@ test("routes/fido2/attestation", async (t) => {
 
   function createAttestationTestExpressApp(
     test: Tap.Test,
-    {
-      withAuth,
-      withActiveRegistration,
-      suppressErrorOutput,
-      return_to,
-    }: AttestationTestExpressAppOptions = {}
+    { withAuth, suppressErrorOutput }: AttestationTestExpressAppOptions = {}
   ) {
     const attestation = importModule({ mockModules: true });
 
@@ -151,28 +146,11 @@ test("routes/fido2/attestation", async (t) => {
       authSetup: withAuth
         ? {
             originalUrl: "/",
-            activeUser: testUser,
-            activeCredential: testCredential,
+            activeUser: { ...testUser },
+            activeCredential: { ...testCredential },
           }
         : undefined,
       middlewareSetup: (app) => {
-        if (withActiveRegistration) {
-          app.all(
-            "*",
-            (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
-              req.session = {
-                registration: {
-                  registeringUser: testUser,
-                  challenge: "CHALLENGE!",
-                },
-                return_to,
-              };
-
-              next();
-            }
-          );
-        }
-
         app.use(attestation);
       },
       errorHandlerSetup: {
@@ -182,6 +160,8 @@ test("routes/fido2/attestation", async (t) => {
       },
     });
   }
+
+  // tests
 
   t.test("is a Router instance", async (t) => {
     const profile = importModule({ mockExpress: true });
@@ -201,7 +181,7 @@ test("routes/fido2/attestation", async (t) => {
   });
 
   t.test("POST /options", async (t) => {
-    function performOptionsRequest(app: Express): SuperTest {
+    function performOptionsPostRequest(app: Express): SuperTest {
       return request(app)
         .post("/options")
         .set("Content-Type", "application/json")
@@ -212,7 +192,7 @@ test("routes/fido2/attestation", async (t) => {
       createUserStub.returns({});
 
       const { app } = createAttestationTestExpressApp(t);
-      await performOptionsRequest(app).send({
+      await performOptionsPostRequest(app).send({
         username: "bob",
         displayName: "Bob User",
       });
@@ -229,9 +209,9 @@ test("routes/fido2/attestation", async (t) => {
         );
 
         const { app } = createAttestationTestExpressApp(t);
-        const response = await performOptionsRequest(app);
+        const response = await performOptionsPostRequest(app);
 
-        verifyFido2ServerErrorResponse(
+        verifyFido2ErrorResponse(
           t,
           response,
           400,
@@ -248,14 +228,9 @@ test("routes/fido2/attestation", async (t) => {
         const { app } = createAttestationTestExpressApp(t, {
           suppressErrorOutput: true,
         });
-        const response = await performOptionsRequest(app);
+        const response = await performOptionsPostRequest(app);
 
-        verifyFido2ServerErrorResponse(
-          t,
-          response,
-          500,
-          "Something unexpected happened"
-        );
+        verifyServerErrorFido2ServerResponse(t, response);
       }
     );
 
@@ -268,7 +243,7 @@ test("routes/fido2/attestation", async (t) => {
         const { app } = createAttestationTestExpressApp(t, {
           withAuth: true,
         });
-        await performOptionsRequest(app);
+        await performOptionsPostRequest(app);
 
         t.ok(fetchUserByIdStub.called);
         t.same(fetchUserByIdStub.firstCall.args, ["123abc"]);
@@ -283,9 +258,9 @@ test("routes/fido2/attestation", async (t) => {
           const { app } = createAttestationTestExpressApp(t, {
             withAuth: true,
           });
-          const response = await performOptionsRequest(app);
+          const response = await performOptionsPostRequest(app);
 
-          verifyFido2ServerErrorResponse(
+          verifyFido2ErrorResponse(
             t,
             response,
             400,
@@ -302,7 +277,7 @@ test("routes/fido2/attestation", async (t) => {
         const { app } = createAttestationTestExpressApp(t, {
           withAuth: true,
         });
-        await performOptionsRequest(app);
+        await performOptionsPostRequest(app);
 
         t.ok(fetchCredentialsByUserIdStub.called);
         t.same(fetchCredentialsByUserIdStub.firstCall.args, ["123abc"]);
@@ -315,7 +290,7 @@ test("routes/fido2/attestation", async (t) => {
         fetchUserByNameStub.resolves({});
 
         const { app } = createAttestationTestExpressApp(t);
-        await performOptionsRequest(app).send({
+        await performOptionsPostRequest(app).send({
           username: "bob",
         });
 
@@ -330,11 +305,11 @@ test("routes/fido2/attestation", async (t) => {
           fetchUserByNameStub.resolves({});
 
           const { app } = createAttestationTestExpressApp(t);
-          const response = await performOptionsRequest(app).send({
+          const response = await performOptionsPostRequest(app).send({
             username: "bob",
           });
 
-          verifyFido2ServerErrorResponse(
+          verifyFido2ErrorResponse(
             t,
             response,
             400,
@@ -351,11 +326,11 @@ test("routes/fido2/attestation", async (t) => {
         username: "bob",
         displayName: "Bob User",
       });
-      fetchCredentialsByUserIdStub.resolves([testCredential]);
+      fetchCredentialsByUserIdStub.resolves([{ ...testCredential }]);
       generateRegistrationOptionsStub.returns({});
 
       const { app } = createAttestationTestExpressApp(t, { withAuth: true });
-      await performOptionsRequest(app).send({
+      await performOptionsPostRequest(app).send({
         attestation: "platform",
       });
 
@@ -372,7 +347,7 @@ test("routes/fido2/attestation", async (t) => {
             {
               id: base64.toArrayBuffer(testCredential.credentialID, true),
               type: "public-key",
-              transports: testCredential.transports,
+              transports: [...testCredential.transports],
             },
           ],
         },
@@ -388,15 +363,15 @@ test("routes/fido2/attestation", async (t) => {
       });
 
       const { app } = createAttestationTestExpressApp(t);
-      await performOptionsRequest(app);
+      await performOptionsPostRequest(app);
 
       t.ok(beginSignupFake.called);
       verifyRequest(t, beginSignupFake.firstCall.args[0], {
         url: "/options",
         method: "POST",
       });
-      t.equal(beginSignupFake.firstCall.args[1], registeringUser);
-      t.equal(beginSignupFake.firstCall.args[2], "CHALLENGE!");
+      t.equal(beginSignupFake.firstCall.args[1], "CHALLENGE!");
+      t.equal(beginSignupFake.firstCall.args[2], registeringUser);
     });
 
     t.test(
@@ -410,9 +385,9 @@ test("routes/fido2/attestation", async (t) => {
         });
 
         const { app } = createAttestationTestExpressApp(t);
-        const response = await performOptionsRequest(app);
+        const response = await performOptionsPostRequest(app);
 
-        verifyFido2ServerSuccessResponse(t, response, {
+        verifyFido2SuccessResponse(t, response, {
           challenge: "CHALLENGE!",
         });
       }
@@ -420,7 +395,7 @@ test("routes/fido2/attestation", async (t) => {
   });
 
   t.test("POST /result", async (t) => {
-    function performResultRequest(app: Express): SuperTest {
+    function performResultPostRequest(app: Express): SuperTest {
       return request(app)
         .post("/result")
         .set("Content-Type", "application/json")
@@ -431,16 +406,11 @@ test("routes/fido2/attestation", async (t) => {
       "if credential ID is missing from request, renders JSON with expected user error",
       async (t) => {
         const { app } = createAttestationTestExpressApp(t);
-        const response = await performResultRequest(app).send({
+        const response = await performResultPostRequest(app).send({
           response: {},
         });
 
-        verifyFido2ServerErrorResponse(
-          t,
-          response,
-          400,
-          "Missing: credential ID"
-        );
+        verifyFido2ErrorResponse(t, response, 400, "Missing: credential ID");
       }
     );
 
@@ -448,11 +418,11 @@ test("routes/fido2/attestation", async (t) => {
       "if authentication response is missing from request, renders JSON with expected user error",
       async (t) => {
         const { app } = createAttestationTestExpressApp(t);
-        const response = await performResultRequest(app).send({
+        const response = await performResultPostRequest(app).send({
           id: testCredential.credentialID,
         });
 
-        verifyFido2ServerErrorResponse(
+        verifyFido2ErrorResponse(
           t,
           response,
           400,
@@ -461,33 +431,48 @@ test("routes/fido2/attestation", async (t) => {
       }
     );
 
+    t.test("gets the registration state", async (t) => {
+      getRegistrationStub.returns({});
+      verifyRegistrationResponseStub.returns({
+        registrationInfo: { ...testValidatedCredential },
+      });
+
+      const { app } = createAttestationTestExpressApp(t);
+      await performResultPostRequest(app).send({
+        id: testCredential.credentialID,
+        response: {},
+      });
+
+      t.ok(getRegistrationStub.called);
+      verifyRequest(t, getRegistrationStub.firstCall.firstArg, {
+        url: "/result",
+        method: "POST",
+      });
+    });
+
     t.test(
-      "if registration state is missing from session, renders JSON with expected user error",
+      "if registration state is missing, renders JSON with expected user error",
       async (t) => {
+        getRegistrationStub.returns(undefined);
+
         const { app } = createAttestationTestExpressApp(t);
-        const response = await performResultRequest(app).send({
+        const response = await performResultPostRequest(app).send({
           id: testCredential.credentialID,
           response: {},
         });
 
-        verifyFido2ServerErrorResponse(
-          t,
-          response,
-          400,
-          "No active registration"
-        );
+        verifyFido2ErrorResponse(t, response, 400, "No active registration");
       }
     );
 
     t.test("verifies registration response", async (t) => {
+      getRegistrationStub.returns(testRegistration);
       verifyRegistrationResponseStub.returns({
-        registrationInfo: testValidatedCredential,
+        registrationInfo: { ...testValidatedCredential },
       });
 
-      const { app } = createAttestationTestExpressApp(t, {
-        withActiveRegistration: true,
-      });
-      await performResultRequest(app).send({
+      const { app } = createAttestationTestExpressApp(t);
+      await performResultPostRequest(app).send({
         id: testCredential.credentialID,
         response: {
           transports: ["ble", "usb"],
@@ -511,25 +496,23 @@ test("routes/fido2/attestation", async (t) => {
     t.test(
       "if registration response verification fails, renders JSON with expected user error",
       async (t) => {
+        getRegistrationStub.returns(testRegistration);
         const err = new Error("BOOM!");
         verifyRegistrationResponseStub.throws(err);
 
-        const { app } = createAttestationTestExpressApp(t, {
-          withActiveRegistration: true,
-        });
-        const response = await performResultRequest(app).send({
+        const { app } = createAttestationTestExpressApp(t);
+        const response = await performResultPostRequest(app).send({
           id: testCredential.credentialID,
           response: {},
         });
 
-        verifyFido2ServerErrorResponse(
+        verifyFido2ErrorResponse(
           t,
           response,
           400,
           "Registration failed: BOOM!"
         );
-
-        // also test for warning log message
+        // test for warning log message
         t.ok(logger.warn.called);
         t.equal(logger.warn.firstCall.args[0], err);
         t.match(logger.warn.firstCall.args[1], "Registration error");
@@ -538,15 +521,13 @@ test("routes/fido2/attestation", async (t) => {
 
     t.test("if active user session", async (t) => {
       t.test("adds credential to existing user", async (t) => {
+        getRegistrationStub.returns(testRegistration);
         verifyRegistrationResponseStub.returns({
-          registrationInfo: testValidatedCredential,
+          registrationInfo: { ...testValidatedCredential },
         });
 
-        const { app } = createAttestationTestExpressApp(t, {
-          withAuth: true,
-          withActiveRegistration: true,
-        });
-        await performResultRequest(app).send({
+        const { app } = createAttestationTestExpressApp(t, { withAuth: true });
+        await performResultPostRequest(app).send({
           id: testCredential.credentialID,
           response: {
             transports: ["ble", "usb"],
@@ -564,14 +545,13 @@ test("routes/fido2/attestation", async (t) => {
 
     t.test("if no active user session", async (t) => {
       t.test("registers new user with credential", async (t) => {
+        getRegistrationStub.returns(testRegistration);
         verifyRegistrationResponseStub.returns({
-          registrationInfo: testValidatedCredential,
+          registrationInfo: { ...testValidatedCredential },
         });
 
-        const { app } = createAttestationTestExpressApp(t, {
-          withActiveRegistration: true,
-        });
-        await performResultRequest(app).send({
+        const { app } = createAttestationTestExpressApp(t);
+        await performResultPostRequest(app).send({
           id: testCredential.credentialID,
           response: {
             transports: ["ble", "usb"],
@@ -579,7 +559,7 @@ test("routes/fido2/attestation", async (t) => {
         });
 
         t.ok(registerUserStub.called);
-        t.equal(registerUserStub.firstCall.args[0], testUser);
+        t.same(registerUserStub.firstCall.args[0], { ...testUser });
         t.match(registerUserStub.firstCall.args[1], {
           ...testCredential,
           created: /.*/,
@@ -587,16 +567,15 @@ test("routes/fido2/attestation", async (t) => {
       });
 
       t.test("performs sign-in", async (t) => {
+        getRegistrationStub.returns(testRegistration);
         verifyRegistrationResponseStub.returns({
-          registrationInfo: testValidatedCredential,
+          registrationInfo: { ...testValidatedCredential },
         });
         const user = {};
         registerUserStub.returns(user);
 
-        const { app } = createAttestationTestExpressApp(t, {
-          withActiveRegistration: true,
-        });
-        await performResultRequest(app).send({
+        const { app } = createAttestationTestExpressApp(t);
+        await performResultPostRequest(app).send({
           id: testCredential.credentialID,
           response: {
             transports: ["ble", "usb"],
@@ -616,44 +595,42 @@ test("routes/fido2/attestation", async (t) => {
       });
     });
 
+    t.test("gets return to URL", async (t) => {
+      getRegistrationStub.returns(testRegistration);
+      verifyRegistrationResponseStub.returns({
+        registrationInfo: { ...testValidatedCredential },
+      });
+
+      const { app } = createAttestationTestExpressApp(t);
+      await performResultPostRequest(app).send({
+        id: testCredential.credentialID,
+        response: {},
+      });
+
+      t.ok(getReturnToStub.called);
+      verifyRequest(t, getReturnToStub.firstCall.firstArg, {
+        url: "/result",
+        method: "POST",
+      });
+    });
+
     t.test(
       "if successful, renders JSON with expected options data",
       async (t) => {
-        t.test("when return_to is not set", async (t) => {
-          verifyRegistrationResponseStub.returns({
-            registrationInfo: testValidatedCredential,
-          });
+        getRegistrationStub.returns(testRegistration);
+        verifyRegistrationResponseStub.returns({
+          registrationInfo: { ...testValidatedCredential },
+        });
+        getReturnToStub.returns("/foo");
 
-          const { app } = createAttestationTestExpressApp(t, {
-            withActiveRegistration: true,
-          });
-          const response = await performResultRequest(app).send({
-            id: testCredential.credentialID,
-            response: {},
-          });
-
-          verifyFido2ServerSuccessResponse(t, response, {
-            return_to: "/",
-          });
+        const { app } = createAttestationTestExpressApp(t);
+        const response = await performResultPostRequest(app).send({
+          id: testCredential.credentialID,
+          response: {},
         });
 
-        t.test("when return_to is set", async (t) => {
-          verifyRegistrationResponseStub.returns({
-            registrationInfo: testValidatedCredential,
-          });
-
-          const { app } = createAttestationTestExpressApp(t, {
-            withActiveRegistration: true,
-            return_to: "/foo",
-          });
-          const response = await performResultRequest(app).send({
-            id: testCredential.credentialID,
-            response: {},
-          });
-
-          verifyFido2ServerSuccessResponse(t, response, {
-            return_to: "/foo",
-          });
+        verifyFido2SuccessResponse(t, response, {
+          return_to: "/foo",
         });
       }
     );

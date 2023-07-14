@@ -10,7 +10,12 @@ import base64 from "@hexagon/base64";
 import { baseUrl, companyName, rpID } from "../../utils/config";
 import { logger } from "../../utils/logger";
 import { BadRequestError, assert } from "../../utils/error";
-import { beginSignup, signIn } from "../../utils/auth";
+import {
+  beginSignup,
+  getRegistration,
+  getReturnTo,
+  signIn,
+} from "../../utils/auth";
 import {
   fetchUserByName,
   createUser,
@@ -21,7 +26,6 @@ import {
 } from "../../services/user";
 import { Authenticator, RegisteredAuthenticator } from "../../types/user";
 import { User } from "../../types/user";
-import { RegisteringSession } from "../../types/session";
 import { AuthenticatedRequest } from "../../types/express";
 
 const router = Router();
@@ -32,8 +36,6 @@ router.post(
   "/options",
   json(),
   async (req: AuthenticatedRequest, res: Response) => {
-    req.session = req.session || {};
-
     // validate request
     const { username, displayName, attestation } = req.body;
     let registeringUser: User;
@@ -93,7 +95,7 @@ router.post(
     logger.info(optionsResponse, "Registration challenge response");
 
     // store registration state in session
-    beginSignup(req, registeringUser, optionsResponse.challenge);
+    beginSignup(req, optionsResponse.challenge, registeringUser);
 
     res.json(optionsResponse);
   }
@@ -103,8 +105,6 @@ router.post(
   "/result",
   json(),
   async (req: AuthenticatedRequest, res: Response) => {
-    req.session = req.session || {};
-
     // validate request
     const { body } = req;
     const { id, response } = body;
@@ -116,7 +116,7 @@ router.post(
     }
 
     // retrieve registration state from session
-    const registration: RegisteringSession = req.session.registration;
+    const registration = getRegistration(req);
     if (!registration) {
       throw BadRequestError("No active registration");
     }
@@ -185,7 +185,7 @@ router.post(
     const resultResponse = {
       status: "ok",
       errorMessage: "",
-      return_to: req.session.return_to || "/",
+      return_to: getReturnTo(req),
     };
 
     res.json(resultResponse);

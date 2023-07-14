@@ -7,11 +7,17 @@ import { createTestExpressApp } from "./utils/testing";
 import { BadRequestError } from "./utils/error";
 import * as utilsError from "./utils/error";
 
-test("global error handler", async (t) => {
-  const buildErrorHandlerDataStub = sinon.stub();
-  const logger = {
-    error: sinon.fake(),
-  };
+// test objects
+const buildErrorHandlerDataStub = sinon.stub();
+const logger = {
+  error: sinon.fake(),
+};
+
+test("(root): error handler", async (t) => {
+  t.beforeEach(() => {
+    logger.error.resetHistory();
+    buildErrorHandlerDataStub.resetHistory();
+  });
 
   const { default: errorHandler } = t.mock("./error-handler", {
     "./utils/logger": { logger },
@@ -19,11 +25,6 @@ test("global error handler", async (t) => {
       ...utilsError,
       buildErrorHandlerData: buildErrorHandlerDataStub,
     },
-  });
-
-  t.afterEach(() => {
-    logger.error.resetHistory();
-    buildErrorHandlerDataStub.resetHistory();
   });
 
   t.test("builds error handler data using the thrown error", async (t) => {

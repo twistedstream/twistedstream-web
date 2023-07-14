@@ -5,16 +5,22 @@ import { Request, Response } from "express";
 
 import {
   createTestExpressApp,
-  verifyFido2ServerErrorResponse,
+  verifyFido2ErrorResponse,
 } from "../../utils/testing";
 import { BadRequestError } from "../../utils/error";
 import * as utilsError from "../../utils/error";
 
-test("FIDO2 error handler", async (t) => {
-  const buildErrorHandlerDataStub = sinon.stub();
-  const logger = {
-    error: sinon.fake(),
-  };
+// test objects
+const buildErrorHandlerDataStub = sinon.stub();
+const logger = {
+  error: sinon.fake(),
+};
+
+test("routes/fido2: error handler", async (t) => {
+  t.beforeEach(() => {
+    logger.error.resetHistory();
+    buildErrorHandlerDataStub.resetHistory();
+  });
 
   const { default: errorHandler } = t.mock("./error-handler", {
     "../../utils/logger": { logger },
@@ -22,11 +28,6 @@ test("FIDO2 error handler", async (t) => {
       ...utilsError,
       buildErrorHandlerData: buildErrorHandlerDataStub,
     },
-  });
-
-  t.afterEach(() => {
-    logger.error.resetHistory();
-    buildErrorHandlerDataStub.resetHistory();
   });
 
   t.test("builds error handler data using the thrown error", async (t) => {
@@ -73,7 +74,7 @@ test("FIDO2 error handler", async (t) => {
 
       const response = await request(app).get("/foo");
 
-      verifyFido2ServerErrorResponse(t, response, 404, "Can't find it");
+      verifyFido2ErrorResponse(t, response, 404, "Can't find it");
     });
 
     t.test("does not log the error", async (t) => {
@@ -104,7 +105,7 @@ test("FIDO2 error handler", async (t) => {
 
       const response = await request(app).get("/foo");
 
-      verifyFido2ServerErrorResponse(t, response, 400, "Really bad request");
+      verifyFido2ErrorResponse(t, response, 400, "Really bad request");
     });
 
     t.test("does not log the error", async (t) => {
@@ -138,7 +139,7 @@ test("FIDO2 error handler", async (t) => {
 
       const response = await request(app).get("/foo");
 
-      verifyFido2ServerErrorResponse(t, response, 500, "What'd you do?");
+      verifyFido2ErrorResponse(t, response, 500, "What'd you do?");
     });
 
     t.test("logs the error", async (t) => {

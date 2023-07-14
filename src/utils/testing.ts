@@ -3,6 +3,7 @@ import { Response as SupertestResponse } from "supertest";
 import path from "path";
 import querystring from "querystring";
 import sinon from "sinon";
+import { StatusCodes } from "http-status-codes";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
@@ -116,7 +117,7 @@ export function verifyAuthenticationRequiredResponse(
   );
 }
 
-export function verifyFido2ServerErrorResponse(
+export function verifyFido2ErrorResponse(
   test: Tap.Test,
   response: SupertestResponse,
   statusCode: number,
@@ -129,7 +130,19 @@ export function verifyFido2ServerErrorResponse(
   test.match(json.errorMessage, errorMessage);
 }
 
-export function verifyFido2ServerSuccessResponse(
+export function verifyServerErrorFido2ServerResponse(
+  test: Tap.Test,
+  response: SupertestResponse
+) {
+  verifyFido2ErrorResponse(
+    test,
+    response,
+    StatusCodes.INTERNAL_SERVER_ERROR,
+    "Something unexpected happened"
+  );
+}
+
+export function verifyFido2SuccessResponse(
   test: Tap.Test,
   response: SupertestResponse,
   expectedData: any
