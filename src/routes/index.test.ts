@@ -22,70 +22,76 @@ const signOutFake = sinon.fake();
 const fido2Route = sinon.fake();
 const profileRoute = sinon.fake();
 
+// helpers
+
+function importModule(
+  test: Tap.Test,
+  {
+    mockExpress = false,
+    mockChildRoutes = false,
+    mockModules = false,
+  }: MockOptions = {}
+) {
+  const dependencies: any = {};
+  if (mockExpress) {
+    dependencies.express = {
+      Router: routerFake,
+    };
+  }
+  if (mockChildRoutes) {
+    dependencies["./fido2"] = fido2Route;
+    dependencies["./profile"] = profileRoute;
+  }
+  if (mockModules) {
+    dependencies["../utils/auth"] = {
+      capturePreAuthState: capturePreAuthStateFake,
+      signOut: signOutFake,
+    };
+  }
+
+  const { default: router } = test.mock("./index", dependencies);
+
+  return router;
+}
+
+function createIndexTestExpressApp(test: Tap.Test) {
+  const index = importModule(test, {
+    mockModules: true,
+    mockChildRoutes: true,
+  });
+
+  return createTestExpressApp({
+    middlewareSetup: (app) => {
+      app.use(index);
+    },
+    errorHandlerSetup: {
+      test,
+      modulePath: "../error-handler",
+    },
+  });
+}
+
+// tests
+
 test("routes/index", async (t) => {
   t.beforeEach(async () => {
     sinon.resetBehavior();
     sinon.resetHistory();
   });
 
-  // helpers
-
-  function importModule({
-    mockExpress = false,
-    mockChildRoutes = false,
-    mockModules = false,
-  }: MockOptions = {}) {
-    const dependencies: any = {};
-    if (mockExpress) {
-      dependencies.express = {
-        Router: routerFake,
-      };
-    }
-    if (mockChildRoutes) {
-      dependencies["./fido2"] = fido2Route;
-      dependencies["./profile"] = profileRoute;
-    }
-    if (mockModules) {
-      dependencies["../utils/auth"] = {
-        capturePreAuthState: capturePreAuthStateFake,
-        signOut: signOutFake,
-      };
-    }
-
-    const { default: router } = t.mock("./index", dependencies);
-
-    return router;
-  }
-
-  function createIndexTestExpressApp(test: Tap.Test) {
-    const index = importModule({ mockModules: true, mockChildRoutes: true });
-
-    return createTestExpressApp({
-      middlewareSetup: (app) => {
-        app.use(index);
-      },
-      errorHandlerSetup: {
-        test,
-        modulePath: "../error-handler",
-      },
-    });
-  }
-
-  // tests
-
   t.test("is a Router instance", async (t) => {
-    const index = importModule({
+    const index = importModule(t, {
       mockExpress: true,
       mockChildRoutes: true,
     });
 
     t.ok(routerFake.called);
-    t.same(routerFake.firstCall.args, []);
+    t.equal(routerFake.firstCall.args.length, 0);
     t.equal(index, expressRouter);
   });
 
   t.test("registers expected endpoints", async (t) => {
-    importModule({
+    importModule(t, {
       mockExpress: true,
       mockChildRoutes: true,
     });
@@ -105,7 +111,7 @@ test("routes/index", async (t) => {
   });
 
   t.test("registers child routes", async (t) => {
-    importModule({
+    importModule(t, {
       mockExpress: true,
       mockChildRoutes: true,
     });

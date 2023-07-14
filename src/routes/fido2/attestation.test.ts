@@ -86,93 +86,93 @@ const addUserCredentialFake = sinon.fake();
 const getReturnToStub = sinon.stub();
 const getRegistrationStub = sinon.stub();
 
+// helpers
+
+function importModule(
+  test: Tap.Test,
+  { mockExpress = false, mockModules = false }: MockOptions = {}
+) {
+  const dependencies: any = {};
+  if (mockExpress) {
+    dependencies.express = {
+      Router: routerFake,
+    };
+  }
+  if (mockModules) {
+    dependencies["../../utils/logger"] = { logger };
+    dependencies["../../services/user"] = {
+      createUser: createUserStub,
+      fetchUserById: fetchUserByIdStub,
+      fetchCredentialsByUserId: fetchCredentialsByUserIdStub,
+      fetchUserByName: fetchUserByNameStub,
+      registerUser: registerUserStub,
+      addUserCredential: addUserCredentialFake,
+    };
+    dependencies["@simplewebauthn/server"] = {
+      generateRegistrationOptions: generateRegistrationOptionsStub,
+      verifyRegistrationResponse: verifyRegistrationResponseStub,
+    };
+    dependencies["../../utils/config"] = {
+      baseUrl: "https://example.com",
+      companyName: "Example, Inc.",
+      rpID: "example.com",
+    };
+    dependencies["../../utils/auth"] = {
+      beginSignup: beginSignupFake,
+      signIn: signInFake,
+      getReturnTo: getReturnToStub,
+      getRegistration: getRegistrationStub,
+    };
+  }
+
+  const { default: router } = test.mock("./attestation", dependencies);
+
+  return router;
+}
+
+function createAttestationTestExpressApp(
+  test: Tap.Test,
+  { withAuth, suppressErrorOutput }: AttestationTestExpressAppOptions = {}
+) {
+  const attestation = importModule(test, { mockModules: true });
+
+  return createTestExpressApp({
+    authSetup: withAuth
+      ? {
+          originalUrl: "/",
+          activeUser: { ...testUser },
+          activeCredential: { ...testCredential },
+        }
+      : undefined,
+    middlewareSetup: (app) => {
+      app.use(attestation);
+    },
+    errorHandlerSetup: {
+      test,
+      modulePath: "../routes/fido2/error-handler",
+      suppressErrorOutput,
+    },
+  });
+}
+
+// tests
+
 test("routes/fido2/attestation", async (t) => {
   t.beforeEach(async () => {
     sinon.resetBehavior();
     sinon.resetHistory();
   });
 
-  // helpers
-
-  function importModule({
-    mockExpress = false,
-    mockModules = false,
-  }: MockOptions = {}) {
-    const dependencies: any = {};
-    if (mockExpress) {
-      dependencies.express = {
-        Router: routerFake,
-      };
-    }
-    if (mockModules) {
-      dependencies["../../utils/logger"] = { logger };
-      dependencies["../../services/user"] = {
-        createUser: createUserStub,
-        fetchUserById: fetchUserByIdStub,
-        fetchCredentialsByUserId: fetchCredentialsByUserIdStub,
-        fetchUserByName: fetchUserByNameStub,
-        registerUser: registerUserStub,
-        addUserCredential: addUserCredentialFake,
-      };
-      dependencies["@simplewebauthn/server"] = {
-        generateRegistrationOptions: generateRegistrationOptionsStub,
-        verifyRegistrationResponse: verifyRegistrationResponseStub,
-      };
-      dependencies["../../utils/config"] = {
-        baseUrl: "https://example.com",
-        companyName: "Example, Inc.",
-        rpID: "example.com",
-      };
-      dependencies["../../utils/auth"] = {
-        beginSignup: beginSignupFake,
-        signIn: signInFake,
-        getReturnTo: getReturnToStub,
-        getRegistration: getRegistrationStub,
-      };
-    }
-
-    const { default: router } = t.mock("./attestation", dependencies);
-
-    return router;
-  }
-
-  function createAttestationTestExpressApp(
-    test: Tap.Test,
-    { withAuth, suppressErrorOutput }: AttestationTestExpressAppOptions = {}
-  ) {
-    const attestation = importModule({ mockModules: true });
-
-    return createTestExpressApp({
-      authSetup: withAuth
-        ? {
-            originalUrl: "/",
-            activeUser: { ...testUser },
-            activeCredential: { ...testCredential },
-          }
-        : undefined,
-      middlewareSetup: (app) => {
-        app.use(attestation);
-      },
-      errorHandlerSetup: {
-        test,
-        modulePath: "../routes/fido2/error-handler",
-        suppressErrorOutput,
-      },
-    });
-  }
-
-  // tests
-
   t.test("is a Router instance", async (t) => {
-    const profile = importModule({ mockExpress: true });
+    const profile = importModule(t, { mockExpress: true });
 
     t.ok(routerFake.called);
-    t.same(routerFake.firstCall.args, []);
+    t.equal(routerFake.firstCall.args.length, 0);
     t.equal(profile, expressRouter);
   });
 
   t.test("registers expected endpoints", async (t) => {
-    importModule({ mockExpress: true });
+    importModule(t, { mockExpress: true });
 
     t.same(
       expressRouter.post.getCalls().map((c) => c.firstArg),
@@ -198,7 +198,8 @@ test("routes/fido2/attestation", async (t) => {
       });
 
       t.ok(createUserStub.called);
-      t.same(createUserStub.firstCall.args, ["bob", "Bob User"]);
+      t.equal(createUserStub.firstCall.args[0], "bob");
+      t.equal(createUserStub.firstCall.args[1], "Bob User");
     });
 
     t.test(
@@ -246,7 +247,7 @@ test("routes/fido2/attestation", async (t) => {
         await performOptionsPostRequest(app);
 
         t.ok(fetchUserByIdStub.called);
-        t.same(fetchUserByIdStub.firstCall.args, ["123abc"]);
+        t.same(fetchUserByIdStub.firstCall.firstArg, "123abc");
       });
 
       t.test(
@@ -280,7 +281,7 @@ test("routes/fido2/attestation", async (t) => {
         await performOptionsPostRequest(app);
 
         t.ok(fetchCredentialsByUserIdStub.called);
-        t.same(fetchCredentialsByUserIdStub.firstCall.args, ["123abc"]);
+        t.equal(fetchCredentialsByUserIdStub.firstCall.firstArg, "123abc");
       });
     });
 
@@ -295,7 +296,7 @@ test("routes/fido2/attestation", async (t) => {
         });
 
         t.ok(fetchUserByNameStub.called);
-        t.same(fetchUserByNameStub.firstCall.args, ["bob"]);
+        t.equal(fetchUserByNameStub.firstCall.firstArg, "bob");
       });
 
       t.test(
@@ -335,23 +336,21 @@ test("routes/fido2/attestation", async (t) => {
       });
 
       t.ok(generateRegistrationOptionsStub.called);
-      t.same(generateRegistrationOptionsStub.firstCall.args, [
-        {
-          rpName: "Example, Inc.",
-          rpID: "example.com",
-          userID: "123abc",
-          userName: "bob",
-          userDisplayName: "Bob User",
-          attestationType: "platform",
-          excludeCredentials: [
-            {
-              id: base64.toArrayBuffer(testCredential.credentialID, true),
-              type: "public-key",
-              transports: [...testCredential.transports],
-            },
-          ],
-        },
-      ]);
+      t.same(generateRegistrationOptionsStub.firstCall.firstArg, {
+        rpName: "Example, Inc.",
+        rpID: "example.com",
+        userID: "123abc",
+        userName: "bob",
+        userDisplayName: "Bob User",
+        attestationType: "platform",
+        excludeCredentials: [
+          {
+            id: base64.toArrayBuffer(testCredential.credentialID, true),
+            type: "public-key",
+            transports: [...testCredential.transports],
+          },
+        ],
+      });
     });
 
     t.test("begins sign up", async (t) => {

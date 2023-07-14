@@ -74,102 +74,102 @@ const verifyAuthenticationResponseStub = sinon.stub();
 const getReturnToStub = sinon.stub();
 const signInFake = sinon.fake();
 
+// helpers
+
+function importModule(
+  test: Tap.Test,
+  { mockExpress = false, mockModules = false }: MockOptions = {}
+) {
+  const dependencies: any = {};
+  if (mockExpress) {
+    dependencies.express = {
+      Router: routerFake,
+    };
+  }
+  if (mockModules) {
+    dependencies["../../utils/logger"] = { logger };
+    dependencies["../../services/user"] = {
+      fetchUserByName: fetchUserByNameStub,
+      fetchCredentialsByUsername: fetchCredentialsByUsernameStub,
+      fetchCredentialById: fetchCredentialByIdStub,
+      fetchUserById: fetchUserByIdStub,
+    };
+    dependencies["@simplewebauthn/server"] = {
+      generateAuthenticationOptions: generateAuthenticationOptionsStub,
+      verifyAuthenticationResponse: verifyAuthenticationResponseStub,
+    };
+    dependencies["../../utils/config"] = {
+      baseUrl: "https://example.com",
+      rpID: "example.com",
+    };
+    dependencies["../../utils/auth"] = {
+      beginSignIn: beginSignInFake,
+      getAuthentication: getAuthenticationStub,
+      getReturnTo: getReturnToStub,
+      signIn: signInFake,
+    };
+  }
+
+  const { default: router } = test.mock("./assertion", dependencies);
+
+  return router;
+}
+
+function createAssertionTestExpressApp(
+  test: Tap.Test,
+  { withAuth, suppressErrorOutput }: AssertionTestExpressAppOptions = {}
+) {
+  const attestation = importModule(test, { mockModules: true });
+
+  return createTestExpressApp({
+    authSetup: withAuth
+      ? {
+          originalUrl: "/",
+          activeUser: testUser,
+          activeCredential: testCredential,
+        }
+      : undefined,
+    middlewareSetup: (app) => {
+      app.use(attestation);
+    },
+    errorHandlerSetup: {
+      test,
+      modulePath: "../routes/fido2/error-handler",
+      suppressErrorOutput,
+    },
+  });
+}
+
+function verifyFailedAuthenticationFido2ErrorResponse(
+  test: Tap.Test,
+  response: SupertestResponse
+) {
+  verifyFido2ErrorResponse(
+    test,
+    response,
+    400,
+    "Bad Request: We couldn't sign you in"
+  );
+}
+
+// tests
+
 test("routes/fido2/assertion", async (t) => {
   t.beforeEach(async () => {
     sinon.resetBehavior();
     sinon.resetHistory();
   });
 
-  // helpers
-
-  function importModule({
-    mockExpress = false,
-    mockModules = false,
-  }: MockOptions = {}) {
-    const dependencies: any = {};
-    if (mockExpress) {
-      dependencies.express = {
-        Router: routerFake,
-      };
-    }
-    if (mockModules) {
-      dependencies["../../utils/logger"] = { logger };
-      dependencies["../../services/user"] = {
-        fetchUserByName: fetchUserByNameStub,
-        fetchCredentialsByUsername: fetchCredentialsByUsernameStub,
-        fetchCredentialById: fetchCredentialByIdStub,
-        fetchUserById: fetchUserByIdStub,
-      };
-      dependencies["@simplewebauthn/server"] = {
-        generateAuthenticationOptions: generateAuthenticationOptionsStub,
-        verifyAuthenticationResponse: verifyAuthenticationResponseStub,
-      };
-      dependencies["../../utils/config"] = {
-        baseUrl: "https://example.com",
-        rpID: "example.com",
-      };
-      dependencies["../../utils/auth"] = {
-        beginSignIn: beginSignInFake,
-        getAuthentication: getAuthenticationStub,
-        getReturnTo: getReturnToStub,
-        signIn: signInFake,
-      };
-    }
-
-    const { default: router } = t.mock("./assertion", dependencies);
-
-    return router;
-  }
-
-  function createAssertionTestExpressApp(
-    test: Tap.Test,
-    { withAuth, suppressErrorOutput }: AssertionTestExpressAppOptions = {}
-  ) {
-    const attestation = importModule({ mockModules: true });
-
-    return createTestExpressApp({
-      authSetup: withAuth
-        ? {
-            originalUrl: "/",
-            activeUser: testUser,
-            activeCredential: testCredential,
-          }
-        : undefined,
-      middlewareSetup: (app) => {
-        app.use(attestation);
-      },
-      errorHandlerSetup: {
-        test,
-        modulePath: "../routes/fido2/error-handler",
-        suppressErrorOutput,
-      },
-    });
-  }
-
-  function verifyFailedAuthenticationFido2ErrorResponse(
-    test: Tap.Test,
-    response: SupertestResponse
-  ) {
-    verifyFido2ErrorResponse(
-      test,
-      response,
-      400,
-      "Bad Request: We couldn't sign you in"
-    );
-  }
-
-  // tests
-
   t.test("is a Router instance", async (t) => {
-    const profile = importModule({ mockExpress: true });
+    const profile = importModule(t, { mockExpress: true });
 
     t.ok(routerFake.called);
-    t.same(routerFake.firstCall.args, []);
+    t.equal(routerFake.firstCall.args.length, 0);
     t.equal(profile, expressRouter);
   });
 
   t.test("registers expected endpoints", async (t) => {
-    importModule({ mockExpress: true });
+    importModule(t, { mockExpress: true });
 
     t.same(
       expressRouter.post.getCalls().map((c) => c.firstArg),
@@ -208,7 +208,7 @@ test("routes/fido2/assertion", async (t) => {
         });
 
         t.ok(fetchUserByNameStub.called);
-        t.same(fetchUserByNameStub.firstCall.args, ["bob"]);
+        t.same(fetchUserByNameStub.firstCall.firstArg, "bob");
       });
 
       t.test(
@@ -241,7 +241,7 @@ test("routes/fido2/assertion", async (t) => {
         });
 
         t.ok(fetchCredentialsByUsernameStub.called);
-        t.same(fetchCredentialsByUsernameStub.firstCall.args, ["bob"]);
+        t.same(fetchCredentialsByUsernameStub.firstCall.firstArg, "bob");
       });
 
       t.test(

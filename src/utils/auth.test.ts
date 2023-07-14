@@ -14,11 +14,15 @@ import {
   requiresAuth,
 } from "./auth";
 
+// test objects
+
 const testUser = {
   id: "123abc",
   username: "bob",
   displayName: "Bob User",
 };
+
+// tests
 
 test("utils/auth", async (t) => {
   t.test("capturePreAuthState", async (t) => {

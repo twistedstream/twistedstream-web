@@ -1,39 +1,50 @@
 import { test } from "tap";
 import sinon from "sinon";
 
+// test objects
+
+const expressRouter = {
+  use: sinon.fake(),
+};
+const routerFake = sinon.fake.returns(expressRouter);
+const assertionRoute = {};
+const attestationRoute = {};
+
+// helpers
+
+function importModule(test: Tap.Test) {
+  expressRouter.use.resetHistory();
+  routerFake.resetHistory();
+
+  const { default: router } = test.mock("./index", {
+    express: {
+      Router: routerFake,
+    },
+    "./assertion": assertionRoute,
+    "./attestation": attestationRoute,
+  });
+
+  return router;
+}
+
+// tests
+
 test("routes/fido2/index", async (t) => {
-  const expressRouter = {
-    use: sinon.fake(),
-  };
-  const routerFake = sinon.fake.returns(expressRouter);
-  const assertionRoute = {};
-  const attestationRoute = {};
-
-  function importModule() {
-    expressRouter.use.resetHistory();
-    routerFake.resetHistory();
-
-    const { default: router } = t.mock("./index", {
-      express: {
-        Router: routerFake,
-      },
-      "./assertion": assertionRoute,
-      "./attestation": attestationRoute,
-    });
-
-    return router;
-  }
+  t.beforeEach(async (t) => {
+    sinon.resetBehavior();
+    sinon.resetHistory();
+  });
 
   t.test("is a Router instance", async (t) => {
-    const index = importModule();
+    const index = importModule(t);
 
     t.ok(routerFake.called);
-    t.same(routerFake.firstCall.args, []);
+    t.equal(routerFake.firstCall.args.length, 0);
     t.equal(index, expressRouter);
   });
 
   t.test("registers child routes", async (t) => {
-    importModule();
+    importModule(t);
 
     const calls = expressRouter.use.getCalls();
     t.equal(calls[0].args[0], "/assertion");

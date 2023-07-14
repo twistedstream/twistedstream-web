@@ -1,56 +1,58 @@
 import { test } from "tap";
 import sinon from "sinon";
 
+// test objects
+
+const expressApp = {
+  use: sinon.fake(),
+  set: sinon.fake(),
+  engine: sinon.fake(),
+};
+const expressPinoMiddleware = {};
+const expressPinoFake = sinon.fake.returns(expressPinoMiddleware);
+const staticMiddleware = {};
+const expressStaticFactoryFake = sinon.fake.returns(staticMiddleware);
+const expressFactoryFake: any = sinon.fake.returns(expressApp);
+expressFactoryFake.static = expressStaticFactoryFake;
+const handlebarsEngine = {};
+const handlebarsEngineFake = sinon.fake.returns(handlebarsEngine);
+const logger = {};
+const website = {};
+const errorHandlerFake = sinon.fake();
+
+// helpers
+
+function importModule(test: Tap.Test) {
+  const { default: app } = test.mock("./app", {
+    express: expressFactoryFake,
+    "express-pino-logger": expressPinoFake,
+    "express-handlebars": {
+      engine: handlebarsEngineFake,
+    },
+    "./utils/config": {
+      companyName: "Some Company",
+      packageVersion: "42.1",
+    },
+    "./utils/logger": {
+      logger,
+    },
+    "./website": website,
+    "./error-handler": errorHandlerFake,
+  });
+
+  return app;
+}
+
+// tests
+
 test("app", async (t) => {
-  const expressApp = {
-    use: sinon.fake(),
-    set: sinon.fake(),
-    engine: sinon.fake(),
-  };
-  const expressPinoMiddleware = {};
-  const expressPinoFake = sinon.fake.returns(expressPinoMiddleware);
-  const staticMiddleware = {};
-  const expressStaticFactoryFake = sinon.fake.returns(staticMiddleware);
-  const expressFactoryFake: any = sinon.fake.returns(expressApp);
-  expressFactoryFake.static = expressStaticFactoryFake;
-  const handlebarsEngine = {};
-  const handlebarsEngineFake = sinon.fake.returns(handlebarsEngine);
-  const logger = {};
-  const website = {};
-  const errorHandlerFake = sinon.fake();
-
-  const importModule = () => {
-    expressApp.use.resetHistory();
-    expressApp.set.resetHistory();
-    expressApp.engine.resetHistory();
-    expressFactoryFake.resetHistory();
-    expressPinoFake.resetHistory();
-    expressStaticFactoryFake.resetHistory();
-    handlebarsEngineFake.resetHistory();
-    errorHandlerFake.resetHistory();
-
-    const { default: app } = t.mock("./app", {
-      express: expressFactoryFake,
-      "express-pino-logger": expressPinoFake,
-      "express-handlebars": {
-        engine: handlebarsEngineFake,
-      },
-      "./utils/config": {
-        companyName: "Some Company",
-        packageVersion: "42.1",
-      },
-      "./utils/logger": {
-        logger,
-      },
-      "./website": website,
-      "./error-handler": errorHandlerFake,
-    });
-
-    return app;
-  };
+  t.beforeEach(async () => {
+    sinon.resetBehavior();
+    sinon.resetHistory();
+  });
 
   t.test("is an Express instance", async (t) => {
-    const app = importModule();
+    const app = importModule(t);
 
     t.ok(expressFactoryFake.called);
     t.equal(expressFactoryFake.firstCall.args.length, 0);
@@ -58,7 +60,7 @@ test("app", async (t) => {
   });
 
   t.test("uses express-pino-logger middleware", async (t) => {
-    importModule();
+    importModule(t);
 
     t.ok(expressPinoFake.called);
     t.same(expressPinoFake.firstCall.firstArg, { logger: {} });
@@ -69,7 +71,7 @@ test("app", async (t) => {
   });
 
   t.test("uses static middleware", async (t) => {
-    importModule();
+    importModule(t);
 
     t.ok(expressStaticFactoryFake.called);
     t.equal(expressStaticFactoryFake.firstCall.firstArg, "public");
@@ -80,7 +82,7 @@ test("app", async (t) => {
 
   t.test("configures the handlebars view engine", async (t) => {
     t.test("for Express", async (t) => {
-      importModule();
+      importModule(t);
 
       t.ok(expressApp.set.called);
       t.equal(expressApp.set.firstCall.args[0], "view engine");
@@ -97,7 +99,7 @@ test("app", async (t) => {
     });
 
     t.test("with helpers", async (t) => {
-      importModule();
+      importModule(t);
       const { helpers } = handlebarsEngineFake.firstCall.firstArg;
 
       t.equal(helpers.company(), "Some Company");
@@ -107,14 +109,14 @@ test("app", async (t) => {
   });
 
   t.test("uses website router", async (t) => {
-    importModule();
+    importModule(t);
 
     t.ok(expressApp.use.called);
     t.equal(expressApp.use.getCalls()[2].firstArg, website);
   });
 
   t.test("configures error handling", async (t) => {
-    const app = importModule();
+    const app = importModule(t);
 
     t.ok(errorHandlerFake.called);
     t.equal(errorHandlerFake.firstCall.firstArg, app);

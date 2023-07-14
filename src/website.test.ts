@@ -2,43 +2,47 @@ import { test } from "tap";
 import sinon from "sinon";
 import { NextFunction } from "express";
 
+// test objects
+
+const expressRouter = {
+  use: sinon.fake(),
+};
+const routerFake = sinon.fake.returns(expressRouter);
+const cookieSessionMiddleware = {};
+const cookieSessionFake = sinon.fake.returns(cookieSessionMiddleware);
+const authMiddleware = {};
+const authFake = sinon.fake.returns(authMiddleware);
+const routes = {};
+const cookieSecret = "Bananas!";
+
+// helpers
+
+function importModule(test: Tap.Test) {
+  const { default: website } = test.mock("./website", {
+    express: {
+      Router: routerFake,
+    },
+    "cookie-session": cookieSessionFake,
+    "./utils/config": {
+      cookieSecret,
+    },
+    "./routes": routes,
+    "./utils/auth": { auth: authFake },
+  });
+
+  return website;
+}
+
+// tests
+
 test("website", async (t) => {
-  const expressRouter = {
-    use: sinon.fake(),
-  };
-  const routerFake = sinon.fake.returns(expressRouter);
-  const cookieSessionMiddleware = {};
-  const cookieSessionFake = sinon.fake.returns(cookieSessionMiddleware);
-  const authMiddleware = {};
-  const authFake = sinon.fake.returns(authMiddleware);
-
-  const routes = {};
-
-  const importModule = () => {
-    expressRouter.use.resetHistory();
-    routerFake.resetHistory();
-    cookieSessionFake.resetHistory();
-    authFake.resetHistory();
-
-    const cookieSecret = "Bananas!";
-
-    const { default: website } = t.mock("./website", {
-      express: {
-        Router: routerFake,
-      },
-      "cookie-session": cookieSessionFake,
-      "./utils/config": {
-        cookieSecret,
-      },
-      "./routes": routes,
-      "./utils/auth": { auth: authFake },
-    });
-
-    return website;
-  };
+  t.beforeEach(async () => {
+    sinon.resetBehavior();
+    sinon.resetHistory();
+  });
 
   t.test("is a Router instance", async (t) => {
-    const website = importModule();
+    const website = importModule(t);
 
     t.ok(routerFake.called);
     t.equal(routerFake.firstCall.args.length, 0);
@@ -46,7 +50,7 @@ test("website", async (t) => {
   });
 
   t.test("uses cookie-session middleware", async (t) => {
-    importModule();
+    importModule(t);
 
     t.ok(cookieSessionFake.called);
     t.same(cookieSessionFake.firstCall.firstArg, {
@@ -60,7 +64,7 @@ test("website", async (t) => {
   });
 
   t.test("uses auth middleware", async (t) => {
-    importModule();
+    importModule(t);
 
     t.ok(authFake.called);
     t.equal(authFake.firstCall.args.length, 0);
@@ -70,7 +74,7 @@ test("website", async (t) => {
   });
 
   t.test("sets locals user to request user", async (t) => {
-    importModule();
+    importModule(t);
 
     t.ok(expressRouter.use.called);
 
@@ -86,7 +90,7 @@ test("website", async (t) => {
   });
 
   t.test("registers routes router", async (t) => {
-    importModule();
+    importModule(t);
 
     t.ok(expressRouter.use.called);
     t.equal(expressRouter.use.getCalls()[3].firstArg, routes);

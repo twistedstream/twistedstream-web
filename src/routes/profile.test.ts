@@ -52,74 +52,74 @@ const fetchCredentialsByUserIdStub = sinon.stub();
 const updateUserStub = sinon.stub();
 const removeUserCredentialStub = sinon.stub();
 
+// helpers
+
+function importModule(
+  test: Tap.Test,
+  { mockExpress = false, mockModules = false }: MockOptions = {}
+) {
+  const dependencies: any = {};
+  if (mockExpress) {
+    dependencies.express = {
+      Router: routerFake,
+    };
+  }
+  if (mockModules) {
+    dependencies["../services/user"] = {
+      fetchCredentialsByUserId: fetchCredentialsByUserIdStub,
+      updateUser: updateUserStub,
+      removeUserCredential: removeUserCredentialStub,
+    };
+  }
+
+  const { default: router } = test.mock("./profile", dependencies);
+
+  return router;
+}
+
+function createProfileTestExpressApp(
+  test: Tap.Test,
+  { withAuth, suppressErrorOutput }: ProfileTestExpressAppOptions = {}
+) {
+  const profile = importModule(test, { mockModules: true });
+
+  return createTestExpressApp({
+    authSetup: withAuth
+      ? {
+          originalUrl: "/",
+          activeUser: { ...testUser },
+          activeCredential: { ...testCredential },
+        }
+      : undefined,
+    middlewareSetup: (app) => {
+      app.use(profile);
+    },
+    errorHandlerSetup: {
+      test,
+      modulePath: "../error-handler",
+      suppressErrorOutput,
+    },
+  });
+}
+
+// tests
+
 test("routes/profile", async (t) => {
   t.beforeEach(async () => {
     sinon.resetBehavior();
     sinon.resetHistory();
   });
 
-  // helpers
-
-  function importModule({
-    mockExpress = false,
-    mockModules = false,
-  }: MockOptions = {}) {
-    const dependencies: any = {};
-    if (mockExpress) {
-      dependencies.express = {
-        Router: routerFake,
-      };
-    }
-    if (mockModules) {
-      dependencies["../services/user"] = {
-        fetchCredentialsByUserId: fetchCredentialsByUserIdStub,
-        updateUser: updateUserStub,
-        removeUserCredential: removeUserCredentialStub,
-      };
-    }
-
-    const { default: router } = t.mock("./profile", dependencies);
-
-    return router;
-  }
-
-  function createProfileTestExpressApp(
-    test: Tap.Test,
-    { withAuth, suppressErrorOutput }: ProfileTestExpressAppOptions = {}
-  ) {
-    const profile = importModule({ mockModules: true });
-
-    return createTestExpressApp({
-      authSetup: withAuth
-        ? {
-            originalUrl: "/",
-            activeUser: { ...testUser },
-            activeCredential: { ...testCredential },
-          }
-        : undefined,
-      middlewareSetup: (app) => {
-        app.use(profile);
-      },
-      errorHandlerSetup: {
-        test,
-        modulePath: "../error-handler",
-        suppressErrorOutput,
-      },
-    });
-  }
-
-  // tests
-
   t.test("is a Router instance", async (t) => {
-    const profile = importModule({ mockExpress: true });
+    const profile = importModule(t, { mockExpress: true });
 
     t.ok(routerFake.called);
-    t.same(routerFake.firstCall.args, []);
+    t.equal(routerFake.firstCall.args.length, 0);
     t.equal(profile, expressRouter);
   });
 
   t.test("registers expected endpoints", async (t) => {
-    importModule({ mockExpress: true });
+    importModule(t, { mockExpress: true });
 
     t.same(
       expressRouter.get.getCalls().map((c) => c.firstArg),
@@ -216,13 +216,11 @@ test("routes/profile", async (t) => {
           });
           const { viewName, options } = renderArgs;
 
-          t.same(updateUserStub.firstCall.args, [
-            {
-              id: "123abc",
-              username: "bob",
-              displayName: "Bad Bob",
-            },
-          ]);
+          t.same(updateUserStub.firstCall.firstArg, {
+            id: "123abc",
+            username: "bob",
+            displayName: "Bad Bob",
+          });
           t.equal(response.status, 400);
           t.match(response.headers["content-type"], "text/html");
           t.equal(viewName, "error");
@@ -250,13 +248,11 @@ test("routes/profile", async (t) => {
           });
           const { viewName, options } = renderArgs;
 
-          t.same(updateUserStub.firstCall.args, [
-            {
-              id: "123abc",
-              username: "bob",
-              displayName: "Bad Bob",
-            },
-          ]);
+          t.same(updateUserStub.firstCall.firstArg, {
+            id: "123abc",
+            username: "bob",
+            displayName: "Bad Bob",
+          });
           t.equal(response.status, 500);
           t.match(response.headers["content-type"], "text/html");
           t.equal(viewName, "error");
@@ -277,13 +273,11 @@ test("routes/profile", async (t) => {
             display_name: "Good Bob",
           });
 
-          t.same(updateUserStub.firstCall.args, [
-            {
-              id: "123abc",
-              username: "bob",
-              displayName: "Good Bob",
-            },
-          ]);
+          t.same(updateUserStub.firstCall.firstArg, {
+            id: "123abc",
+            username: "bob",
+            displayName: "Good Bob",
+          });
           t.equal(response.status, 302);
           t.equal(response.headers.location, "/");
         }
@@ -325,7 +319,8 @@ test("routes/profile", async (t) => {
             delete_cred: "987zxy",
           });
 
-          t.same(removeUserCredentialStub.firstCall.args, ["123abc", "987zxy"]);
+          t.equal(removeUserCredentialStub.firstCall.args[0], "123abc");
+          t.equal(removeUserCredentialStub.firstCall.args[1], "987zxy");
           t.equal(response.status, 302);
           t.equal(response.headers.location, "/");
         }

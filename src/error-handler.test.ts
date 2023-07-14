@@ -8,10 +8,13 @@ import { BadRequestError } from "./utils/error";
 import * as utilsError from "./utils/error";
 
 // test objects
+
 const buildErrorHandlerDataStub = sinon.stub();
 const logger = {
   error: sinon.fake(),
 };
+
+// tests
 
 test("(root): error handler", async (t) => {
   t.beforeEach(() => {

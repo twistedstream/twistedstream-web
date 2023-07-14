@@ -1,54 +1,54 @@
 import { test } from "tap";
 import sinon from "sinon";
 
+// test objects
+
+const addCredentialStub = sinon.stub();
+const addUserStub = sinon.stub();
+const patchUserStub = sinon.stub();
+const findCredentialByIdStub = sinon.stub();
+const findUserByIdStub = sinon.stub();
+const findUserByNameStub = sinon.stub();
+const findUserCredentialStub = sinon.stub();
+const getCredentialsStub = sinon.stub();
+const removeCredentialStub = sinon.stub();
+const validateUserFake = sinon.fake();
+
+// helpers
+
+function importModule(test: Tap.Test) {
+  return test.mock("./user", {
+    "../data": {
+      addCredential: addCredentialStub,
+      addUser: addUserStub,
+      patchUser: patchUserStub,
+      findCredentialById: findCredentialByIdStub,
+      findUserById: findUserByIdStub,
+      findUserByName: findUserByNameStub,
+      findUserCredential: findUserCredentialStub,
+      getCredentials: getCredentialsStub,
+      removeCredential: removeCredentialStub,
+    },
+    "./user-validation": {
+      validateUser: validateUserFake,
+    },
+  });
+}
+
+//tests
+
 test("services/user", async (t) => {
-  const addCredentialStub = sinon.stub();
-  const addUserStub = sinon.stub();
-  const patchUserStub = sinon.stub();
-  const findCredentialByIdStub = sinon.stub();
-  const findUserByIdStub = sinon.stub();
-  const findUserByNameStub = sinon.stub();
-  const findUserCredentialStub = sinon.stub();
-  const getCredentialsStub = sinon.stub();
-  const removeCredentialStub = sinon.stub();
-  const validateUserFake = sinon.fake();
-
-  const importModule = () => {
-    addCredentialStub.resetHistory();
-    addUserStub.resetHistory();
-    patchUserStub.resetHistory();
-    findCredentialByIdStub.resetHistory();
-    findUserByIdStub.resetHistory();
-    findUserByNameStub.resetHistory();
-    findUserCredentialStub.resetHistory();
-    getCredentialsStub.resetHistory();
-    removeCredentialStub.resetHistory();
-    validateUserFake.resetHistory();
-
-    return t.mock("./user", {
-      "../data": {
-        addCredential: addCredentialStub,
-        addUser: addUserStub,
-        patchUser: patchUserStub,
-        findCredentialById: findCredentialByIdStub,
-        findUserById: findUserByIdStub,
-        findUserByName: findUserByNameStub,
-        findUserCredential: findUserCredentialStub,
-        getCredentials: getCredentialsStub,
-        removeCredential: removeCredentialStub,
-      },
-      "./user-validation": {
-        validateUser: validateUserFake,
-      },
-    });
-  };
+  t.beforeEach(async () => {
+    sinon.resetBehavior();
+    sinon.resetHistory();
+  });
 
   t.test("fetchUserById", async (t) => {
     t.test("returns user from the database by ID", async (t) => {
       const foundUser = {};
       findUserByIdStub.withArgs("123abc").resolves(foundUser);
 
-      const { fetchUserById } = importModule();
+      const { fetchUserById } = importModule(t);
       const result = await fetchUserById("123abc");
 
       t.equal(result, foundUser);
@@ -60,7 +60,7 @@ test("services/user", async (t) => {
       const foundUser = {};
       findUserByNameStub.withArgs("bob").resolves(foundUser);
 
-      const { fetchUserByName } = importModule();
+      const { fetchUserByName } = importModule(t);
       const result = await fetchUserByName("bob");
 
       t.equal(result, foundUser);
@@ -69,7 +69,7 @@ test("services/user", async (t) => {
 
   t.test("createUser", async (t) => {
     t.test("validates the user", async (t) => {
-      const { createUser } = importModule();
+      const { createUser } = importModule(t);
       createUser("bob", "Bob User");
 
       t.ok(validateUserFake.called);
@@ -81,7 +81,7 @@ test("services/user", async (t) => {
     });
 
     t.test("returns expected user with generated ID", async (t) => {
-      const { createUser } = importModule();
+      const { createUser } = importModule(t);
       const user = createUser("bob", "Bob User");
 
       t.match(user, {
@@ -109,7 +109,7 @@ test("services/user", async (t) => {
     });
 
     t.test("validates the user", async (t) => {
-      const { registerUser } = importModule();
+      const { registerUser } = importModule(t);
       await registerUser(registeringUser, {});
 
       t.ok(validateUserFake.called);
@@ -117,7 +117,7 @@ test("services/user", async (t) => {
     });
 
     t.test("adds the user to the database", async (t) => {
-      const { registerUser } = importModule();
+      const { registerUser } = importModule(t);
       await registerUser(registeringUser, {});
 
       t.ok(addUserStub.called);
@@ -126,7 +126,7 @@ test("services/user", async (t) => {
 
     t.test("adds the user credential to the database", async (t) => {
       const firstCredential = {};
-      const { registerUser } = importModule();
+      const { registerUser } = importModule(t);
       await registerUser(registeringUser, firstCredential);
 
       t.ok(addCredentialStub.called);
@@ -135,7 +135,7 @@ test("services/user", async (t) => {
     });
 
     t.test("returns the added user", async (t) => {
-      const { registerUser } = importModule();
+      const { registerUser } = importModule(t);
       const result = await registerUser(registeringUser, {});
 
       t.equal(result, addedUser);
@@ -149,7 +149,7 @@ test("services/user", async (t) => {
       const foundUser = {};
       findUserByIdStub.withArgs("123abc").resolves(foundUser);
 
-      const { updateUser } = importModule();
+      const { updateUser } = importModule(t);
       await updateUser(updatingUser);
 
       t.ok(validateUserFake.called);
@@ -159,7 +159,7 @@ test("services/user", async (t) => {
     t.test("throws error if user doesn't exist", async (t) => {
       findUserByIdStub.withArgs("123abc").resolves();
 
-      const { updateUser } = importModule();
+      const { updateUser } = importModule(t);
       t.rejects(() => updateUser(updatingUser), {
         message: "User with ID 123abc does not exist.",
       });
@@ -169,7 +169,7 @@ test("services/user", async (t) => {
       const foundUser = {};
       findUserByIdStub.withArgs("123abc").resolves(foundUser);
 
-      const { updateUser } = importModule();
+      const { updateUser } = importModule(t);
       await updateUser(updatingUser);
 
       t.ok(patchUserStub.called);
@@ -182,7 +182,7 @@ test("services/user", async (t) => {
       const foundCredential = {};
       findCredentialByIdStub.withArgs("xyz789").resolves(foundCredential);
 
-      const { fetchCredentialById } = importModule();
+      const { fetchCredentialById } = importModule(t);
       const result = await fetchCredentialById("xyz789");
 
       t.equal(result, foundCredential);
@@ -194,7 +194,7 @@ test("services/user", async (t) => {
       const foundCredentials = [{}, {}];
       getCredentialsStub.withArgs("123abc").resolves(foundCredentials);
 
-      const { fetchCredentialsByUserId } = importModule();
+      const { fetchCredentialsByUserId } = importModule(t);
       const result = await fetchCredentialsByUserId("123abc");
 
       t.equal(result, foundCredentials);
@@ -206,7 +206,7 @@ test("services/user", async (t) => {
       const foundUser = {};
       findUserByNameStub.withArgs("bob").resolves(foundUser);
 
-      const { fetchCredentialsByUsername } = importModule();
+      const { fetchCredentialsByUsername } = importModule(t);
       await fetchCredentialsByUsername("bob");
 
       t.ok(findUserByNameStub.called);
@@ -221,7 +221,7 @@ test("services/user", async (t) => {
         const foundCredentials = [{}, {}];
         getCredentialsStub.withArgs("123abc").resolves(foundCredentials);
 
-        const { fetchCredentialsByUsername } = importModule();
+        const { fetchCredentialsByUsername } = importModule(t);
         const result = await fetchCredentialsByUsername("bob");
 
         t.equal(result, foundCredentials);
@@ -233,7 +233,7 @@ test("services/user", async (t) => {
       async (t) => {
         findUserByNameStub.withArgs("bob").resolves();
 
-        const { fetchCredentialsByUsername } = importModule();
+        const { fetchCredentialsByUsername } = importModule(t);
         const result = await fetchCredentialsByUsername("bob");
 
         t.notOk(getCredentialsStub.called);
@@ -248,7 +248,7 @@ test("services/user", async (t) => {
       async (t) => {
         findUserCredentialStub.withArgs("123abc", "xyz789").resolves({});
 
-        const { addUserCredential } = importModule();
+        const { addUserCredential } = importModule(t);
         t.rejects(
           () => addUserCredential("123abc", { credentialID: "xyz789" }),
           {
@@ -262,7 +262,7 @@ test("services/user", async (t) => {
       findUserCredentialStub.withArgs("123abc", "xyz789").resolves();
       findUserByIdStub.withArgs("123abc").resolves();
 
-      const { addUserCredential } = importModule();
+      const { addUserCredential } = importModule(t);
       t.rejects(() => addUserCredential("123abc", { credentialID: "xyz789" }), {
         message: "User with ID 123abc not found.",
       });
@@ -273,7 +273,7 @@ test("services/user", async (t) => {
       const foundUser = {};
       findUserByIdStub.withArgs("123abc").resolves(foundUser);
 
-      const { addUserCredential } = importModule();
+      const { addUserCredential } = importModule(t);
       const newCredential = { credentialID: "xyz789" };
       await addUserCredential("123abc", newCredential);
 
@@ -289,7 +289,7 @@ test("services/user", async (t) => {
       async (t) => {
         findUserCredentialStub.withArgs("123abc", "xyz789").resolves();
 
-        const { removeUserCredential } = importModule();
+        const { removeUserCredential } = importModule(t);
         t.rejects(() => removeUserCredential("123abc", "xyz789"), {
           message:
             "Credential (id = xyz789) not associated with user (id = 123abc).",
@@ -306,7 +306,7 @@ test("services/user", async (t) => {
           [{}]
         );
 
-        const { removeUserCredential } = importModule();
+        const { removeUserCredential } = importModule(t);
         t.rejects(() => removeUserCredential("123abc", "xyz789"), {
           message:
             "Cannot remove the last credential (id = xyz789) associated with user (id = 123abc).",
@@ -321,11 +321,12 @@ test("services/user", async (t) => {
         [{}, {}]
       );
 
-      const { removeUserCredential } = importModule();
+      const { removeUserCredential } = importModule(t);
       await removeUserCredential("123abc", "xyz789");
 
       t.ok(removeCredentialStub.called);
-      t.same(removeCredentialStub.firstCall.args, ["123abc", "xyz789"]);
+      t.equal(removeCredentialStub.firstCall.args[0], "123abc");
+      t.equal(removeCredentialStub.firstCall.args[1], "xyz789");
     });
   });
 });
