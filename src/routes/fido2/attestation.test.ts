@@ -11,12 +11,13 @@ import crypto from "crypto";
 
 import {
   createTestExpressApp,
-  verifyFido2ErrorResponse,
   verifyFido2SuccessResponse,
   verifyRequest,
   verifyServerErrorFido2ServerResponse,
+  verifyUserErrorFido2ServerResponse,
 } from "../../utils/testing";
 import { ValidationError } from "../../types/error";
+import { StatusCodes } from "http-status-codes";
 
 type MockOptions = {
   mockExpress?: boolean;
@@ -212,10 +213,10 @@ test("routes/fido2/attestation", async (t) => {
         const { app } = createAttestationTestExpressApp(t);
         const response = await performOptionsPostRequest(app);
 
-        verifyFido2ErrorResponse(
+        verifyUserErrorFido2ServerResponse(
           t,
           response,
-          400,
+          StatusCodes.BAD_REQUEST,
           "User: username: Sorry, can't do it"
         );
       }
@@ -231,7 +232,11 @@ test("routes/fido2/attestation", async (t) => {
         });
         const response = await performOptionsPostRequest(app);
 
-        verifyServerErrorFido2ServerResponse(t, response);
+        verifyServerErrorFido2ServerResponse(
+          t,
+          response,
+          StatusCodes.INTERNAL_SERVER_ERROR
+        );
       }
     );
 
@@ -261,10 +266,10 @@ test("routes/fido2/attestation", async (t) => {
           });
           const response = await performOptionsPostRequest(app);
 
-          verifyFido2ErrorResponse(
+          verifyUserErrorFido2ServerResponse(
             t,
             response,
-            400,
+            StatusCodes.BAD_REQUEST,
             "User with ID 123abc no longer exists"
           );
         }
@@ -310,10 +315,10 @@ test("routes/fido2/attestation", async (t) => {
             username: "bob",
           });
 
-          verifyFido2ErrorResponse(
+          verifyUserErrorFido2ServerResponse(
             t,
             response,
-            400,
+            StatusCodes.BAD_REQUEST,
             "A user with username 'bob' already exists"
           );
         }
@@ -409,7 +414,12 @@ test("routes/fido2/attestation", async (t) => {
           response: {},
         });
 
-        verifyFido2ErrorResponse(t, response, 400, "Missing: credential ID");
+        verifyUserErrorFido2ServerResponse(
+          t,
+          response,
+          StatusCodes.BAD_REQUEST,
+          "Missing: credential ID"
+        );
       }
     );
 
@@ -421,10 +431,10 @@ test("routes/fido2/attestation", async (t) => {
           id: testCredential.credentialID,
         });
 
-        verifyFido2ErrorResponse(
+        verifyUserErrorFido2ServerResponse(
           t,
           response,
-          400,
+          StatusCodes.BAD_REQUEST,
           "Missing: authentication response"
         );
       }
@@ -460,7 +470,12 @@ test("routes/fido2/attestation", async (t) => {
           response: {},
         });
 
-        verifyFido2ErrorResponse(t, response, 400, "No active registration");
+        verifyUserErrorFido2ServerResponse(
+          t,
+          response,
+          StatusCodes.BAD_REQUEST,
+          "No active registration"
+        );
       }
     );
 
@@ -505,10 +520,10 @@ test("routes/fido2/attestation", async (t) => {
           response: {},
         });
 
-        verifyFido2ErrorResponse(
+        verifyUserErrorFido2ServerResponse(
           t,
           response,
-          400,
+          StatusCodes.BAD_REQUEST,
           "Registration failed: BOOM!"
         );
         // test for warning log message

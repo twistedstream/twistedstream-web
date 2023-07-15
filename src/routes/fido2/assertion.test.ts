@@ -14,11 +14,12 @@ import crypto from "crypto";
 
 import {
   createTestExpressApp,
-  verifyFido2ErrorResponse,
   verifyFido2SuccessResponse,
   verifyRequest,
   verifyServerErrorFido2ServerResponse,
+  verifyUserErrorFido2ServerResponse,
 } from "../../utils/testing";
+import { StatusCodes } from "http-status-codes";
 
 type MockOptions = {
   mockExpress?: boolean;
@@ -144,11 +145,11 @@ function verifyFailedAuthenticationFido2ErrorResponse(
   test: Tap.Test,
   response: SupertestResponse
 ) {
-  verifyFido2ErrorResponse(
+  verifyUserErrorFido2ServerResponse(
     test,
     response,
-    400,
-    "Bad Request: We couldn't sign you in"
+    StatusCodes.BAD_REQUEST,
+    "We couldn't sign you in"
   );
 }
 
@@ -193,7 +194,12 @@ test("routes/fido2/assertion", async (t) => {
           username: "bob",
         });
 
-        verifyFido2ErrorResponse(t, response, 403, "User is already signed in");
+        verifyUserErrorFido2ServerResponse(
+          t,
+          response,
+          StatusCodes.FORBIDDEN,
+          "User is already signed in"
+        );
       }
     );
 
@@ -257,7 +263,11 @@ test("routes/fido2/assertion", async (t) => {
             username: "bob",
           });
 
-          verifyServerErrorFido2ServerResponse(t, response);
+          verifyServerErrorFido2ServerResponse(
+            t,
+            response,
+            StatusCodes.INTERNAL_SERVER_ERROR
+          );
         }
       );
     });
@@ -444,7 +454,12 @@ test("routes/fido2/assertion", async (t) => {
           response: {},
         });
 
-        verifyFido2ErrorResponse(t, response, 400, "Missing: credential ID");
+        verifyUserErrorFido2ServerResponse(
+          t,
+          response,
+          StatusCodes.BAD_REQUEST,
+          "Missing: credential ID"
+        );
       }
     );
 
@@ -475,7 +490,12 @@ test("routes/fido2/assertion", async (t) => {
           id: testCredential.credentialID,
         });
 
-        verifyFido2ErrorResponse(t, response, 400, "No active authentication");
+        verifyUserErrorFido2ServerResponse(
+          t,
+          response,
+          StatusCodes.BAD_REQUEST,
+          "No active authentication"
+        );
       }
     );
 
@@ -570,7 +590,11 @@ test("routes/fido2/assertion", async (t) => {
           id: testCredential.credentialID,
         });
 
-        verifyServerErrorFido2ServerResponse(t, response);
+        verifyServerErrorFido2ServerResponse(
+          t,
+          response,
+          StatusCodes.INTERNAL_SERVER_ERROR
+        );
       }
     );
 

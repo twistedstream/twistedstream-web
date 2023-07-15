@@ -120,26 +120,57 @@ export function verifyAuthenticationRequiredResponse(
 export function verifyFido2ErrorResponse(
   test: Tap.Test,
   response: SupertestResponse,
-  statusCode: number,
+  statusCode: StatusCodes,
   errorMessage: string | RegExp
-) {
+): any {
   test.equal(response.statusCode, statusCode);
   test.match(response.headers["content-type"], "application/json");
   const json = JSON.parse(response.text);
   test.equal(json.status, "failed");
   test.match(json.errorMessage, errorMessage);
+
+  delete json.status;
+  delete json.errorMessage;
+  return json;
+}
+
+export function verifyUserErrorFido2ServerResponse(
+  test: Tap.Test,
+  response: SupertestResponse,
+  statusCode: StatusCodes,
+  errorMessage: string | RegExp
+): any {
+  test.ok(statusCode >= 400);
+  test.ok(statusCode < 500);
+
+  const json = verifyFido2ErrorResponse(
+    test,
+    response,
+    statusCode,
+    errorMessage
+  );
+
+  // assert no correlation ID
+  test.equal(json.correlation_id, undefined);
 }
 
 export function verifyServerErrorFido2ServerResponse(
   test: Tap.Test,
-  response: SupertestResponse
-) {
-  verifyFido2ErrorResponse(
+  response: SupertestResponse,
+  statusCode: StatusCodes
+): any {
+  test.ok(statusCode >= 500);
+
+  const json = verifyFido2ErrorResponse(
     test,
     response,
-    StatusCodes.INTERNAL_SERVER_ERROR,
+    statusCode,
     "Something unexpected happened"
   );
+
+  // assert correlation ID
+  test.ok(json.correlation_id);
+  test.ok(json.correlation_id.length > 0);
 }
 
 export function verifyFido2SuccessResponse(
@@ -151,6 +182,6 @@ export function verifyFido2SuccessResponse(
   test.match(response.headers["content-type"], "application/json");
   const json = JSON.parse(response.text);
   test.equal(json.status, "ok");
-  test.equal(json.errorMessage, "");
+  test.notOk(json.errorMessage, "");
   test.match(json, expectedData);
 }

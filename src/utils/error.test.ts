@@ -109,7 +109,7 @@ test("utils/error", async (t) => {
           new ErrorWithStatusCode(StatusCodes.INTERNAL_SERVER_ERROR)
         );
 
-        t.equal(result.correlation_id.length, 25);
+        t.equal(result.correlation_id?.length, 25);
       });
 
       t.test("generates unique correlation IDs", async (t) => {

@@ -4,7 +4,7 @@ import ShortUniqueId from "short-unique-id";
 type ErrorHandlerData = {
   message: string;
   statusCode: number;
-  correlation_id: string;
+  correlation_id?: string;
 };
 
 const uid = new ShortUniqueId({ length: 25 });
@@ -54,7 +54,7 @@ export function buildErrorHandlerData(err: any): ErrorHandlerData {
       ? <string>err.message
       : "Something unexpected happened";
 
-  let correlation_id: string = "";
+  let correlation_id: string | undefined;
   if (statusCode >= StatusCodes.INTERNAL_SERVER_ERROR) {
     correlation_id = uid();
   }

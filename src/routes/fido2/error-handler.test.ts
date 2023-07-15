@@ -5,10 +5,12 @@ import { Request, Response } from "express";
 
 import {
   createTestExpressApp,
-  verifyFido2ErrorResponse,
+  verifyServerErrorFido2ServerResponse,
+  verifyUserErrorFido2ServerResponse,
 } from "../../utils/testing";
 import { BadRequestError } from "../../utils/error";
 import * as utilsError from "../../utils/error";
+import { StatusCodes } from "http-status-codes";
 
 // test objects
 
@@ -77,7 +79,12 @@ test("routes/fido2: error handler", async (t) => {
 
       const response = await request(app).get("/foo");
 
-      verifyFido2ErrorResponse(t, response, 404, "Can't find it");
+      verifyUserErrorFido2ServerResponse(
+        t,
+        response,
+        StatusCodes.NOT_FOUND,
+        "Can't find it"
+      );
     });
 
     t.test("does not log the error", async (t) => {
@@ -97,10 +104,9 @@ test("routes/fido2: error handler", async (t) => {
       buildErrorHandlerDataStub.returns({
         message: "Really bad request",
         statusCode: 400,
-        correlation_id: "",
       });
 
-      const { app, renderArgs } = createTestExpressApp();
+      const { app } = createTestExpressApp();
       app.get("/foo", (_req: Request, _res: Response) => {
         throw BadRequestError("");
       });
@@ -108,7 +114,12 @@ test("routes/fido2: error handler", async (t) => {
 
       const response = await request(app).get("/foo");
 
-      verifyFido2ErrorResponse(t, response, 400, "Really bad request");
+      verifyUserErrorFido2ServerResponse(
+        t,
+        response,
+        StatusCodes.BAD_REQUEST,
+        "Really bad request"
+      );
     });
 
     t.test("does not log the error", async (t) => {
@@ -129,7 +140,7 @@ test("routes/fido2: error handler", async (t) => {
   t.test("5** errors", async (t) => {
     t.test("renders JSON with the expected data", async (t) => {
       buildErrorHandlerDataStub.returns({
-        message: "What'd you do?",
+        message: "Something unexpected happened",
         statusCode: 500,
         correlation_id: "ERROR_ID",
       });
@@ -142,7 +153,11 @@ test("routes/fido2: error handler", async (t) => {
 
       const response = await request(app).get("/foo");
 
-      verifyFido2ErrorResponse(t, response, 500, "What'd you do?");
+      verifyServerErrorFido2ServerResponse(
+        t,
+        response,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
     });
 
     t.test("logs the error", async (t) => {
