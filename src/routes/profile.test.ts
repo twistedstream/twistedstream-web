@@ -102,6 +102,16 @@ function createProfileTestExpressApp(
   });
 }
 
+function performGetRequest(app: Express): SuperTest {
+  return request(app).get("/");
+}
+
+function performPostRequest(app: Express): SuperTest {
+  return request(app)
+    .post("/")
+    .set("Content-Type", "application/x-www-form-urlencoded");
+}
+
 // tests
 
 test("routes/profile", async (t) => {
@@ -132,10 +142,6 @@ test("routes/profile", async (t) => {
   });
 
   t.test("GET /", async (t) => {
-    function performGetRequest(app: Express): SuperTest {
-      return request(app).get("/");
-    }
-
     t.test("requires authenticated session", async (t) => {
       const { app } = createProfileTestExpressApp(t);
 
@@ -185,12 +191,6 @@ test("routes/profile", async (t) => {
   });
 
   t.test("POST /", async (t) => {
-    function performPostRequest(app: Express): SuperTest {
-      return request(app)
-        .post("/")
-        .set("Content-Type", "application/x-www-form-urlencoded");
-    }
-
     t.test("requires authenticated session", async (t) => {
       const { app } = createProfileTestExpressApp(t);
 

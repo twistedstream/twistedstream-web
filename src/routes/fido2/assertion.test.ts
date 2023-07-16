@@ -153,6 +153,20 @@ function verifyFailedAuthenticationFido2ErrorResponse(
   );
 }
 
+function performOptionsPostRequest(app: Express): SuperTest {
+  return request(app)
+    .post("/options")
+    .set("Content-Type", "application/json")
+    .accept("application/json");
+}
+
+function performResultPostRequest(app: Express): SuperTest {
+  return request(app)
+    .post("/result")
+    .set("Content-Type", "application/json")
+    .accept("application/json");
+}
+
 // tests
 
 test("routes/fido2/assertion", async (t) => {
@@ -179,13 +193,6 @@ test("routes/fido2/assertion", async (t) => {
   });
 
   t.test("POST /options", async (t) => {
-    function performOptionsPostRequest(app: Express): SuperTest {
-      return request(app)
-        .post("/options")
-        .set("Content-Type", "application/json")
-        .accept("application/json");
-    }
-
     t.test(
       "if active user session, renders JSON with expected user error",
       async (t) => {
@@ -439,13 +446,6 @@ test("routes/fido2/assertion", async (t) => {
   });
 
   t.test("POST /result", async (t) => {
-    function performResultPostRequest(app: Express): SuperTest {
-      return request(app)
-        .post("/result")
-        .set("Content-Type", "application/json")
-        .accept("application/json");
-    }
-
     t.test(
       "if credential ID is missing from request, renders JSON with expected user error",
       async (t) => {
