@@ -189,62 +189,11 @@ test("routes/fido2/attestation", async (t) => {
         .accept("application/json");
     }
 
-    t.test("instantiates a new user", async (t) => {
-      createUserStub.returns({});
-
-      const { app } = createAttestationTestExpressApp(t);
-      await performOptionsPostRequest(app).send({
-        username: "bob",
-        displayName: "Bob User",
-      });
-
-      t.ok(createUserStub.called);
-      t.equal(createUserStub.firstCall.args[0], "bob");
-      t.equal(createUserStub.firstCall.args[1], "Bob User");
-    });
-
-    t.test(
-      "if a validation error occurs while instantiating a user, renders JSON with expected user error",
-      async (t) => {
-        createUserStub.throws(
-          new ValidationError("User", "username", "Sorry, can't do it")
-        );
-
-        const { app } = createAttestationTestExpressApp(t);
-        const response = await performOptionsPostRequest(app);
-
-        verifyUserErrorFido2ServerResponse(
-          t,
-          response,
-          StatusCodes.BAD_REQUEST,
-          "User: username: Sorry, can't do it"
-        );
-      }
-    );
-
-    t.test(
-      "if an unknown error occurs while instantiating a user, renders JSON with expected user error",
-      async (t) => {
-        createUserStub.throws(new Error("BOOM!"));
-
-        const { app } = createAttestationTestExpressApp(t, {
-          suppressErrorOutput: true,
-        });
-        const response = await performOptionsPostRequest(app);
-
-        verifyServerErrorFido2ServerResponse(
-          t,
-          response,
-          StatusCodes.INTERNAL_SERVER_ERROR
-        );
-      }
-    );
-
     t.test("if active user session", async (t) => {
       t.test("fetches exiting user by ID", async (t) => {
         createUserStub.returns({});
         fetchUserByIdStub.resolves({});
-        fetchCredentialsByUserIdStub.resolves([]);
+        fetchCredentialsByUserIdStub.resolves([{ ...testCredential }]);
 
         const { app } = createAttestationTestExpressApp(t, {
           withAuth: true,
@@ -278,7 +227,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test("fetches user's existing credentials", async (t) => {
         createUserStub.returns({});
         fetchUserByIdStub.resolves({});
-        fetchCredentialsByUserIdStub.resolves([]);
+        fetchCredentialsByUserIdStub.resolves([{ ...testCredential }]);
 
         const { app } = createAttestationTestExpressApp(t, {
           withAuth: true,
@@ -288,9 +237,81 @@ test("routes/fido2/attestation", async (t) => {
         t.ok(fetchCredentialsByUserIdStub.called);
         t.equal(fetchCredentialsByUserIdStub.firstCall.firstArg, "123abc");
       });
+
+      t.test(
+        "if no credentials of existing user, render JSON with expected server error",
+        async (t) => {
+          createUserStub.returns({});
+          fetchUserByIdStub.resolves({});
+          fetchCredentialsByUserIdStub.resolves([]);
+
+          const { app } = createAttestationTestExpressApp(t, {
+            withAuth: true,
+            suppressErrorOutput: true,
+          });
+          const response = await performOptionsPostRequest(app);
+
+          verifyServerErrorFido2ServerResponse(
+            t,
+            response,
+            StatusCodes.INTERNAL_SERVER_ERROR
+          );
+        }
+      );
     });
 
     t.test("if no active user session", async (t) => {
+      t.test("instantiates a new user", async (t) => {
+        createUserStub.returns({});
+
+        const { app } = createAttestationTestExpressApp(t);
+        await performOptionsPostRequest(app).send({
+          username: "bob",
+          displayName: "Bob User",
+        });
+
+        t.ok(createUserStub.called);
+        t.equal(createUserStub.firstCall.args[0], "bob");
+        t.equal(createUserStub.firstCall.args[1], "Bob User");
+      });
+
+      t.test(
+        "if a validation error occurs while instantiating a user, renders JSON with expected user error",
+        async (t) => {
+          createUserStub.throws(
+            new ValidationError("User", "username", "Sorry, can't do it")
+          );
+
+          const { app } = createAttestationTestExpressApp(t);
+          const response = await performOptionsPostRequest(app);
+
+          verifyUserErrorFido2ServerResponse(
+            t,
+            response,
+            StatusCodes.BAD_REQUEST,
+            "User: username: Sorry, can't do it"
+          );
+        }
+      );
+
+      t.test(
+        "if an unknown error occurs while instantiating a user, renders JSON with expected server error",
+        async (t) => {
+          createUserStub.throws(new Error("BOOM!"));
+
+          const { app } = createAttestationTestExpressApp(t, {
+            suppressErrorOutput: true,
+          });
+          const response = await performOptionsPostRequest(app);
+
+          verifyServerErrorFido2ServerResponse(
+            t,
+            response,
+            StatusCodes.INTERNAL_SERVER_ERROR
+          );
+        }
+      );
+
       t.test("fetches exiting user by specified username", async (t) => {
         createUserStub.returns({});
         fetchUserByNameStub.resolves({});

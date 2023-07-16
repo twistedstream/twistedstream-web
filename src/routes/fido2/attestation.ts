@@ -36,33 +36,39 @@ router.post(
   "/options",
   json(),
   async (req: AuthenticatedRequest, res: Response) => {
-    // validate request
     const { username, displayName, attestation } = req.body;
-    let registeringUser: User;
-    try {
-      registeringUser = createUser(username, displayName);
-    } catch (err: any) {
-      if (err.type === "validation") {
-        throw BadRequestError(err.message);
-      }
-      throw err;
-    }
 
-    let excludeCredentials: RegisteredAuthenticator[] = [];
+    let registeringUser: User | undefined;
+    let excludeCredentials: RegisteredAuthenticator[];
+
     if (req.user) {
-      // session user exists, so we'll be enrolling another credential
-      const existingUser = await fetchUserById(req.user.id);
-      if (!existingUser) {
+      // registering user is an existing user
+      registeringUser = await fetchUserById(req.user.id);
+      if (!registeringUser) {
         throw BadRequestError(`User with ID ${req.user.id} no longer exists`);
       }
 
-      // registering user is existing user
-      registeringUser = existingUser;
-      const credentials = await fetchCredentialsByUserId(req.user.id);
-
-      // tell client to exclude existing user credentials
-      excludeCredentials = credentials;
+      // going to exclude existing credentials
+      excludeCredentials = await fetchCredentialsByUserId(req.user.id);
+      if (excludeCredentials.length === 0) {
+        // NOTE: this shouldn't happen unless there's a data integrity issue
+        throw new Error(
+          `Existing user ${registeringUser.id} is missing credentials.`
+        );
+      }
     } else {
+      // register user will be a new user
+      try {
+        registeringUser = createUser(username, displayName);
+      } catch (err: any) {
+        if (err.type === "validation") {
+          throw BadRequestError(err.message);
+        }
+        throw err;
+      }
+      // no existing credentials to exclude
+      excludeCredentials = [];
+
       const existingUser = await fetchUserByName(username);
       if (existingUser) {
         throw BadRequestError(
