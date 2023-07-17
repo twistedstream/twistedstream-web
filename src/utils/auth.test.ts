@@ -1,6 +1,7 @@
 import { test } from "tap";
 import sinon from "sinon";
 
+import { testUser } from "../utils/testing";
 import {
   capturePreAuthState,
   beginSignIn,
@@ -13,14 +14,6 @@ import {
   auth,
   requiresAuth,
 } from "./auth";
-
-// test objects
-
-const testUser = {
-  id: "123abc",
-  username: "bob",
-  displayName: "Bob User",
-};
 
 // tests
 

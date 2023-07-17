@@ -3,37 +3,19 @@ import sinon from "sinon";
 import request, { Response as SupertestResponse } from "supertest";
 import { StatusCodes } from "http-status-codes";
 import base64 from "@hexagon/base64";
-import crypto from "crypto";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 import * as simpleWebAuthnServerDefaults from "@simplewebauthn/server";
 
+import { testUser, testCredential1 as testCredential } from "../utils/testing";
+
 // test objects
 
-const testUser = {
-  username: "bob",
-  displayName: "Bob User",
-};
-
-const testCredential1 = {
-  created: new Date(2023, 1, 1),
-  credentialID: base64.fromArrayBuffer(crypto.randomBytes(8).buffer, true),
-  credentialPublicKey: base64.fromArrayBuffer(
-    crypto.randomBytes(42).buffer,
-    true
-  ),
-  counter: 42,
-  aaguid: "AUTH_GUID",
-  credentialDeviceType: "singleDevice",
-  credentialBackedUp: false,
-  transports: ["ble", "usb"],
-};
-
-const testValidatedCredential1 = {
-  ...testCredential1,
-  credentialID: base64.toArrayBuffer(testCredential1.credentialID, true),
+const testValidatedCredential = {
+  ...testCredential,
+  credentialID: base64.toArrayBuffer(testCredential.credentialID, true),
   credentialPublicKey: base64.toArrayBuffer(
-    testCredential1.credentialPublicKey,
+    testCredential.credentialPublicKey,
     true
   ),
 };
@@ -45,7 +27,7 @@ const verifyAuthenticationResponseStub = sinon.stub();
 
 // NOTE: Tap should be run with --bail to stop on first failed assertion
 
-test("Register, sign out, sign in", async (t) => {
+test("Navigate, register a new user, sign out, sign in", async (t) => {
   const { default: app } = t.mock("../app", {
     "@simplewebauthn/server": {
       ...simpleWebAuthnServerDefaults,
@@ -74,7 +56,7 @@ test("Register, sign out, sign in", async (t) => {
     t.match(response.headers["content-type"], "text/html");
   });
 
-  t.test("Go to register page", async (t) => {
+  t.test("Go to registration page", async (t) => {
     response = await request(app).get("/register");
     cookie = response.headers["set-cookie"];
 
@@ -128,7 +110,7 @@ test("Register, sign out, sign in", async (t) => {
 
     t.test("XHR call to POST /result", async (t) => {
       verifyRegistrationResponseStub.returns({
-        registrationInfo: { ...testValidatedCredential1 },
+        registrationInfo: { ...testValidatedCredential },
       });
 
       response = await request(app)
@@ -137,7 +119,7 @@ test("Register, sign out, sign in", async (t) => {
         .set("cookie", cookie)
         .accept("application/json")
         .send({
-          id: testCredential1.credentialID,
+          id: testCredential.credentialID,
           response: {
             // ignored since we're stubbing verifyRegistrationResponse
           },
@@ -185,7 +167,7 @@ test("Register, sign out, sign in", async (t) => {
         allowCredentials: [
           {
             type: "public-key",
-            id: testCredential1.credentialID,
+            id: testCredential.credentialID,
           },
         ],
         userVerification: "preferred",
@@ -201,7 +183,7 @@ test("Register, sign out, sign in", async (t) => {
         .set("cookie", cookie)
         .accept("application/json")
         .send({
-          id: testCredential1.credentialID,
+          id: testCredential.credentialID,
         });
       cookie = response.headers["set-cookie"];
 

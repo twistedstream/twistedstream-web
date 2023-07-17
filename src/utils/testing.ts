@@ -4,6 +4,12 @@ import path from "path";
 import querystring from "querystring";
 import sinon from "sinon";
 import { StatusCodes } from "http-status-codes";
+import {
+  AuthenticatorTransport,
+  CredentialDeviceType,
+} from "@simplewebauthn/typescript-types";
+import base64 from "@hexagon/base64";
+import crypto from "crypto";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
@@ -28,6 +34,48 @@ type TestExpressAppOptions = {
 };
 type ViewRenderArgs = { viewName?: string; options?: any };
 type ExpressRequestExpectations = { url: string; method: "GET" | "POST" };
+
+// reusable test objects
+
+export const testUser = {
+  id: "123abc",
+  username: "bob",
+  displayName: "Bob User",
+};
+
+export const testCredential1 = {
+  created: new Date(2023, 1, 1),
+  credentialID: base64.fromArrayBuffer(crypto.randomBytes(8).buffer, true),
+  credentialPublicKey: base64.fromArrayBuffer(
+    crypto.randomBytes(42).buffer,
+    true
+  ),
+  counter: 24,
+  aaguid: "AUTH_GUID_1",
+  credentialDeviceType: <CredentialDeviceType>"multiDevice",
+  credentialBackedUp: true,
+  transports: <AuthenticatorTransport[]>["internal"],
+  // associated with test user
+  userID: testUser.id,
+};
+
+export const testCredential2 = {
+  created: new Date(2023, 1, 1),
+  credentialID: base64.fromArrayBuffer(crypto.randomBytes(8).buffer, true),
+  credentialPublicKey: base64.fromArrayBuffer(
+    crypto.randomBytes(42).buffer,
+    true
+  ),
+  counter: 42,
+  aaguid: "AUTH_GUID_2",
+  credentialDeviceType: <CredentialDeviceType>"singleDevice",
+  credentialBackedUp: false,
+  transports: <AuthenticatorTransport[]>["usb", "nfc"],
+  // associated with test user
+  userID: testUser.id,
+};
+
+// helper functions
 
 /**
  * Creates an Express object that can be used for testing

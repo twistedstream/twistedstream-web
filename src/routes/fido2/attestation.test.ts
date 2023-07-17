@@ -2,15 +2,12 @@ import { test } from "tap";
 import sinon from "sinon";
 import request, { Test as SuperTest } from "supertest";
 import { Express } from "express";
-import {
-  AuthenticatorTransport,
-  CredentialDeviceType,
-} from "@simplewebauthn/typescript-types";
 import base64 from "@hexagon/base64";
-import crypto from "crypto";
 
 import {
   createTestExpressApp,
+  testCredential1,
+  testUser,
   verifyFido2SuccessResponse,
   verifyRequest,
   verifyServerErrorFido2ServerResponse,
@@ -31,25 +28,8 @@ type AttestationTestExpressAppOptions = {
 
 // test objects
 
-const testUser = {
-  id: "123abc",
-  username: "bob",
-  displayName: "Bob User",
-};
-
-const testCredential = {
-  created: new Date(2023, 1, 1),
-  credentialID: base64.fromArrayBuffer(crypto.randomBytes(8).buffer, true),
-  credentialPublicKey: base64.fromArrayBuffer(
-    crypto.randomBytes(42).buffer,
-    true
-  ),
-  counter: 42,
-  aaguid: "AUTH_GUID",
-  credentialDeviceType: <CredentialDeviceType>"singleDevice",
-  credentialBackedUp: false,
-  transports: <AuthenticatorTransport[]>["ble", "usb"],
-};
+const testCredential: any = { ...testCredential1 };
+delete testCredential.userID;
 
 const testValidatedCredential = {
   ...testCredential,
@@ -565,7 +545,7 @@ test("routes/fido2/attestation", async (t) => {
         await performResultPostRequest(app).send({
           id: testCredential.credentialID,
           response: {
-            transports: ["ble", "usb"],
+            transports: ["internal"],
           },
         });
 
@@ -573,6 +553,7 @@ test("routes/fido2/attestation", async (t) => {
         t.equal(addUserCredentialFake.firstCall.args[0], "123abc");
         t.match(addUserCredentialFake.firstCall.args[1], {
           ...testCredential,
+          userId: undefined,
           created: /.*/,
         });
       });
@@ -589,7 +570,7 @@ test("routes/fido2/attestation", async (t) => {
         await performResultPostRequest(app).send({
           id: testCredential.credentialID,
           response: {
-            transports: ["ble", "usb"],
+            transports: ["internal"],
           },
         });
 
@@ -613,7 +594,7 @@ test("routes/fido2/attestation", async (t) => {
         await performResultPostRequest(app).send({
           id: testCredential.credentialID,
           response: {
-            transports: ["ble", "usb"],
+            transports: ["internal"],
           },
         });
 

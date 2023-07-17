@@ -5,15 +5,12 @@ import request, {
   Response as SupertestResponse,
 } from "supertest";
 import { Express } from "express";
-import {
-  AuthenticatorTransport,
-  CredentialDeviceType,
-} from "@simplewebauthn/typescript-types";
 import base64 from "@hexagon/base64";
-import crypto from "crypto";
 
 import {
   createTestExpressApp,
+  testCredential1 as testCredential,
+  testUser,
   verifyFido2SuccessResponse,
   verifyRequest,
   verifyServerErrorFido2ServerResponse,
@@ -32,28 +29,6 @@ type AssertionTestExpressAppOptions = {
 };
 
 // test objects
-
-const testUser = {
-  id: "123abc",
-  username: "bob",
-  displayName: "Bob User",
-};
-
-const testCredential = {
-  created: new Date(2023, 1, 1),
-  credentialID: base64.fromArrayBuffer(crypto.randomBytes(8).buffer, true),
-  credentialPublicKey: base64.fromArrayBuffer(
-    crypto.randomBytes(42).buffer,
-    true
-  ),
-  counter: 42,
-  aaguid: "AUTH_GUID",
-  credentialDeviceType: <CredentialDeviceType>"singleDevice",
-  credentialBackedUp: false,
-  transports: <AuthenticatorTransport[]>["ble", "usb"],
-  // associated with test user
-  userID: testUser.id,
-};
 
 const expressRouter = {
   post: sinon.fake(),
