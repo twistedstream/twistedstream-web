@@ -9,7 +9,7 @@ import base64 from "@hexagon/base64";
 
 import { baseUrl, companyName, rpID } from "../../utils/config";
 import { logger } from "../../utils/logger";
-import { BadRequestError, assert } from "../../utils/error";
+import { BadRequestError, assertValue } from "../../utils/error";
 import {
   beginSignup,
   getRegistration,
@@ -151,7 +151,7 @@ router.post(
     logger.debug(verification, "/attestation/result: verification");
 
     // build credential object
-    const registrationInfo = assert(verification.registrationInfo);
+    const registrationInfo = assertValue(verification.registrationInfo);
     const { aaguid, counter, credentialDeviceType, credentialBackedUp } =
       registrationInfo;
     const validatedCredential: Authenticator = {

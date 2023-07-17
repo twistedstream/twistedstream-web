@@ -6,7 +6,7 @@ import {
   NotFoundError,
   UnauthorizedError,
   ForbiddenError,
-  assert,
+  assertValue,
   buildErrorHandlerData,
 } from "./error";
 import { StatusCodes } from "http-status-codes";
@@ -60,19 +60,19 @@ test("utils/error", async (t) => {
     });
   });
 
-  t.test("assert", async (t) => {
+  t.test("assertValue", async (t) => {
     t.test("throws if value is undefined", async (t) => {
-      t.throws(() => assert(undefined), "Unexpected undefined value");
+      t.throws(() => assertValue(undefined), "Unexpected undefined value");
     });
 
     t.test("throws if value is null", async (t) => {
-      t.throws(() => assert(null), "Unexpected null value");
+      t.throws(() => assertValue(null), "Unexpected null value");
     });
 
     t.test("returns real value", async (t) => {
       const value = {};
 
-      const result = assert(value);
+      const result = assertValue(value);
 
       t.equal(result, value);
     });

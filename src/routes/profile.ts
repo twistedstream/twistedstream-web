@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { urlencoded } from "body-parser";
 
-import { BadRequestError, assert } from "../utils/error";
+import { BadRequestError, assertValue } from "../utils/error";
 import {
   fetchCredentialsByUserId,
   removeUserCredential,
@@ -21,8 +21,8 @@ router.get(
   "/",
   requiresAuth(),
   async (req: AuthenticatedRequest, res: Response) => {
-    const user = assert(req.user);
-    const credential = assert(req.credential);
+    const user = assertValue(req.user);
+    const credential = assertValue(req.credential);
 
     const credentials = await fetchCredentialsByUserId(user.id);
     const passkeys = [...credentials].map((c) => ({
@@ -56,8 +56,8 @@ router.post(
     }>,
     res: Response
   ) => {
-    const user = assert(req.user);
-    const credential = assert(req.credential);
+    const user = assertValue(req.user);
+    const credential = assertValue(req.credential);
 
     const { update, display_name } = req.body;
     if (update === "profile" && display_name) {
