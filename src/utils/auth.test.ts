@@ -1,7 +1,7 @@
 import { test } from "tap";
 import sinon from "sinon";
 
-import { testUser } from "../utils/testing";
+import { testUser } from "./testing/unit";
 import {
   capturePreAuthState,
   beginSignIn,

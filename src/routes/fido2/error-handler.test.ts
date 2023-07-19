@@ -7,7 +7,7 @@ import {
   createTestExpressApp,
   verifyServerErrorFido2ServerResponse,
   verifyUserErrorFido2ServerResponse,
-} from "../../utils/testing";
+} from "../../utils/testing/unit";
 import { BadRequestError } from "../../utils/error";
 import * as utilsError from "../../utils/error";
 import { StatusCodes } from "http-status-codes";

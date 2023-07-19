@@ -13,8 +13,8 @@ import crypto from "crypto";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
-import { Authenticator, User } from "../types/user";
-import { AuthenticatedRequest } from "../types/express";
+import { Authenticator, User } from "../../types/user";
+import { AuthenticatedRequest } from "../../types/express";
 
 type AuthSetup = {
   originalUrl: string;
@@ -37,13 +37,13 @@ type ExpressRequestExpectations = { url: string; method: "GET" | "POST" };
 
 // reusable test objects
 
-export const testUser = {
+export const testUser: User = {
   id: "123abc",
   username: "bob",
   displayName: "Bob User",
 };
 
-export const testCredential1 = {
+export const testCredential1: Authenticator = {
   created: new Date(2023, 1, 1),
   credentialID: base64.fromArrayBuffer(crypto.randomBytes(8).buffer, true),
   credentialPublicKey: base64.fromArrayBuffer(
@@ -55,11 +55,9 @@ export const testCredential1 = {
   credentialDeviceType: <CredentialDeviceType>"multiDevice",
   credentialBackedUp: true,
   transports: <AuthenticatorTransport[]>["internal"],
-  // associated with test user
-  userID: testUser.id,
 };
 
-export const testCredential2 = {
+export const testCredential2: Authenticator = {
   created: new Date(2023, 1, 1),
   credentialID: base64.fromArrayBuffer(crypto.randomBytes(8).buffer, true),
   credentialPublicKey: base64.fromArrayBuffer(
@@ -71,8 +69,6 @@ export const testCredential2 = {
   credentialDeviceType: <CredentialDeviceType>"singleDevice",
   credentialBackedUp: false,
   transports: <AuthenticatorTransport[]>["usb", "nfc"],
-  // associated with test user
-  userID: testUser.id,
 };
 
 // helper functions
@@ -127,7 +123,7 @@ export function createTestExpressApp({
     const { default: errorHandler } = errorHandlerSetup.test.mock(
       errorHandlerSetup.modulePath,
       {
-        "../utils/logger": { logger },
+        "../../utils/logger": { logger },
       }
     );
     errorHandler(app);

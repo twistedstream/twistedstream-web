@@ -15,7 +15,7 @@ import {
   verifyRequest,
   verifyServerErrorFido2ServerResponse,
   verifyUserErrorFido2ServerResponse,
-} from "../../utils/testing";
+} from "../../utils/testing/unit";
 import { StatusCodes } from "http-status-codes";
 
 type MockOptions = {
@@ -110,7 +110,7 @@ function createAssertionTestExpressApp(
     },
     errorHandlerSetup: {
       test,
-      modulePath: "../routes/fido2/error-handler",
+      modulePath: "../../routes/fido2/error-handler",
       suppressErrorOutput,
     },
   });
@@ -290,7 +290,9 @@ test("routes/fido2/assertion", async (t) => {
             {
               id: base64.toArrayBuffer(testCredential.credentialID, true),
               type: "public-key",
-              transports: [...testCredential.transports],
+              transports: testCredential.transports
+                ? [...testCredential.transports]
+                : [],
             },
           ]
         );
@@ -539,7 +541,10 @@ test("routes/fido2/assertion", async (t) => {
 
     t.test("fetches matching existing user", async (t) => {
       getAuthenticationStub.returns({});
-      fetchCredentialByIdStub.resolves({ ...testCredential });
+      fetchCredentialByIdStub.resolves({
+        ...testCredential,
+        userID: testUser.id,
+      });
       fetchUserByIdStub.resolves({});
 
       const { app } = createAssertionTestExpressApp(t);

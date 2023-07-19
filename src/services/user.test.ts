@@ -3,32 +3,25 @@ import sinon from "sinon";
 
 // test objects
 
-const addCredentialStub = sinon.stub();
-const addUserStub = sinon.stub();
-const patchUserStub = sinon.stub();
-const findCredentialByIdStub = sinon.stub();
-const findUserByIdStub = sinon.stub();
-const findUserByNameStub = sinon.stub();
-const findUserCredentialStub = sinon.stub();
-const getCredentialsStub = sinon.stub();
-const removeCredentialStub = sinon.stub();
+const dataProvider = {
+  addCredential: sinon.stub(),
+  addUser: sinon.stub(),
+  patchUser: sinon.stub(),
+  findCredentialById: sinon.stub(),
+  findUserById: sinon.stub(),
+  findUserByName: sinon.stub(),
+  findUserCredential: sinon.stub(),
+  getCredentials: sinon.stub(),
+  removeCredential: sinon.stub(),
+};
+
 const validateUserFake = sinon.fake();
 
 // helpers
 
 function importModule(test: Tap.Test) {
   return test.mock("./user", {
-    "../data": {
-      addCredential: addCredentialStub,
-      addUser: addUserStub,
-      patchUser: patchUserStub,
-      findCredentialById: findCredentialByIdStub,
-      findUserById: findUserByIdStub,
-      findUserByName: findUserByNameStub,
-      findUserCredential: findUserCredentialStub,
-      getCredentials: getCredentialsStub,
-      removeCredential: removeCredentialStub,
-    },
+    "../data": { getProvider: () => dataProvider },
     "./user-validation": {
       validateUser: validateUserFake,
     },
@@ -46,7 +39,7 @@ test("services/user", async (t) => {
   t.test("fetchUserById", async (t) => {
     t.test("returns user from the database by ID", async (t) => {
       const foundUser = {};
-      findUserByIdStub.withArgs("123abc").resolves(foundUser);
+      dataProvider.findUserById.withArgs("123abc").resolves(foundUser);
 
       const { fetchUserById } = importModule(t);
       const result = await fetchUserById("123abc");
@@ -58,7 +51,7 @@ test("services/user", async (t) => {
   t.test("fetchUserByName", async (t) => {
     t.test("returns user from the database by name", async (t) => {
       const foundUser = {};
-      findUserByNameStub.withArgs("bob").resolves(foundUser);
+      dataProvider.findUserByName.withArgs("bob").resolves(foundUser);
 
       const { fetchUserByName } = importModule(t);
       const result = await fetchUserByName("bob");
@@ -105,7 +98,7 @@ test("services/user", async (t) => {
         username: "bob",
         displayName: "Bob User",
       };
-      addUserStub.withArgs(registeringUser).resolves(addedUser);
+      dataProvider.addUser.withArgs(registeringUser).resolves(addedUser);
     });
 
     t.test("validates the user", async (t) => {
@@ -120,8 +113,8 @@ test("services/user", async (t) => {
       const { registerUser } = importModule(t);
       await registerUser(registeringUser, {});
 
-      t.ok(addUserStub.called);
-      t.equal(addUserStub.firstCall.firstArg, registeringUser);
+      t.ok(dataProvider.addUser.called);
+      t.equal(dataProvider.addUser.firstCall.firstArg, registeringUser);
     });
 
     t.test("adds the user credential to the database", async (t) => {
@@ -129,9 +122,9 @@ test("services/user", async (t) => {
       const { registerUser } = importModule(t);
       await registerUser(registeringUser, firstCredential);
 
-      t.ok(addCredentialStub.called);
-      t.equal(addCredentialStub.firstCall.args[0], "123abc");
-      t.equal(addCredentialStub.firstCall.args[1], firstCredential);
+      t.ok(dataProvider.addCredential.called);
+      t.equal(dataProvider.addCredential.firstCall.args[0], "123abc");
+      t.equal(dataProvider.addCredential.firstCall.args[1], firstCredential);
     });
 
     t.test("returns the added user", async (t) => {
@@ -147,7 +140,7 @@ test("services/user", async (t) => {
 
     t.test("validates the user", async (t) => {
       const foundUser = {};
-      findUserByIdStub.withArgs("123abc").resolves(foundUser);
+      dataProvider.findUserById.withArgs("123abc").resolves(foundUser);
 
       const { updateUser } = importModule(t);
       await updateUser(updatingUser);
@@ -157,7 +150,7 @@ test("services/user", async (t) => {
     });
 
     t.test("throws error if user doesn't exist", async (t) => {
-      findUserByIdStub.withArgs("123abc").resolves();
+      dataProvider.findUserById.withArgs("123abc").resolves();
 
       const { updateUser } = importModule(t);
       t.rejects(() => updateUser(updatingUser), {
@@ -167,20 +160,22 @@ test("services/user", async (t) => {
 
     t.test("updates the user in the database", async (t) => {
       const foundUser = {};
-      findUserByIdStub.withArgs("123abc").resolves(foundUser);
+      dataProvider.findUserById.withArgs("123abc").resolves(foundUser);
 
       const { updateUser } = importModule(t);
       await updateUser(updatingUser);
 
-      t.ok(patchUserStub.called);
-      t.equal(patchUserStub.firstCall.firstArg, updatingUser);
+      t.ok(dataProvider.patchUser.called);
+      t.equal(dataProvider.patchUser.firstCall.firstArg, updatingUser);
     });
   });
 
   t.test("fetchCredentialById", async (t) => {
     t.test("returns credential from the database by ID", async (t) => {
       const foundCredential = {};
-      findCredentialByIdStub.withArgs("xyz789").resolves(foundCredential);
+      dataProvider.findCredentialById
+        .withArgs("xyz789")
+        .resolves(foundCredential);
 
       const { fetchCredentialById } = importModule(t);
       const result = await fetchCredentialById("xyz789");
@@ -192,7 +187,7 @@ test("services/user", async (t) => {
   t.test("fetchCredentialsByUserId", async (t) => {
     t.test("returns credentials from the database by user ID", async (t) => {
       const foundCredentials = [{}, {}];
-      getCredentialsStub.withArgs("123abc").resolves(foundCredentials);
+      dataProvider.getCredentials.withArgs("123abc").resolves(foundCredentials);
 
       const { fetchCredentialsByUserId } = importModule(t);
       const result = await fetchCredentialsByUserId("123abc");
@@ -204,22 +199,24 @@ test("services/user", async (t) => {
   t.test("fetchCredentialsByUsername", async (t) => {
     t.test("gets user by name from database", async (t) => {
       const foundUser = {};
-      findUserByNameStub.withArgs("bob").resolves(foundUser);
+      dataProvider.findUserByName.withArgs("bob").resolves(foundUser);
 
       const { fetchCredentialsByUsername } = importModule(t);
       await fetchCredentialsByUsername("bob");
 
-      t.ok(findUserByNameStub.called);
-      t.equal(findUserByNameStub.firstCall.firstArg, "bob");
+      t.ok(dataProvider.findUserByName.called);
+      t.equal(dataProvider.findUserByName.firstCall.firstArg, "bob");
     });
 
     t.test(
       "returns user's credentials from database if one was found",
       async (t) => {
         const foundUser = { id: "123abc" };
-        findUserByNameStub.withArgs("bob").resolves(foundUser);
+        dataProvider.findUserByName.withArgs("bob").resolves(foundUser);
         const foundCredentials = [{}, {}];
-        getCredentialsStub.withArgs("123abc").resolves(foundCredentials);
+        dataProvider.getCredentials
+          .withArgs("123abc")
+          .resolves(foundCredentials);
 
         const { fetchCredentialsByUsername } = importModule(t);
         const result = await fetchCredentialsByUsername("bob");
@@ -231,12 +228,12 @@ test("services/user", async (t) => {
     t.test(
       "returns no credentials from database if no user was found",
       async (t) => {
-        findUserByNameStub.withArgs("bob").resolves();
+        dataProvider.findUserByName.withArgs("bob").resolves();
 
         const { fetchCredentialsByUsername } = importModule(t);
         const result = await fetchCredentialsByUsername("bob");
 
-        t.notOk(getCredentialsStub.called);
+        t.notOk(dataProvider.getCredentials.called);
         t.same(result, []);
       }
     );
@@ -246,7 +243,9 @@ test("services/user", async (t) => {
     t.test(
       "throws error if credential is already associated with the user",
       async (t) => {
-        findUserCredentialStub.withArgs("123abc", "xyz789").resolves({});
+        dataProvider.findUserCredential
+          .withArgs("123abc", "xyz789")
+          .resolves({});
 
         const { addUserCredential } = importModule(t);
         t.rejects(
@@ -259,8 +258,8 @@ test("services/user", async (t) => {
     );
 
     t.test("throws error if user does not yet exist", async (t) => {
-      findUserCredentialStub.withArgs("123abc", "xyz789").resolves();
-      findUserByIdStub.withArgs("123abc").resolves();
+      dataProvider.findUserCredential.withArgs("123abc", "xyz789").resolves();
+      dataProvider.findUserById.withArgs("123abc").resolves();
 
       const { addUserCredential } = importModule(t);
       t.rejects(() => addUserCredential("123abc", { credentialID: "xyz789" }), {
@@ -269,17 +268,17 @@ test("services/user", async (t) => {
     });
 
     t.test("adds credential to user in database", async (t) => {
-      findUserCredentialStub.withArgs("123abc", "xyz789").resolves();
+      dataProvider.findUserCredential.withArgs("123abc", "xyz789").resolves();
       const foundUser = {};
-      findUserByIdStub.withArgs("123abc").resolves(foundUser);
+      dataProvider.findUserById.withArgs("123abc").resolves(foundUser);
 
       const { addUserCredential } = importModule(t);
       const newCredential = { credentialID: "xyz789" };
       await addUserCredential("123abc", newCredential);
 
-      t.ok(addCredentialStub.called);
-      t.equal(addCredentialStub.firstCall.args[0], "123abc");
-      t.equal(addCredentialStub.firstCall.args[1], newCredential);
+      t.ok(dataProvider.addCredential.called);
+      t.equal(dataProvider.addCredential.firstCall.args[0], "123abc");
+      t.equal(dataProvider.addCredential.firstCall.args[1], newCredential);
     });
   });
 
@@ -287,7 +286,7 @@ test("services/user", async (t) => {
     t.test(
       "throws error if credential is not associated with the user",
       async (t) => {
-        findUserCredentialStub.withArgs("123abc", "xyz789").resolves();
+        dataProvider.findUserCredential.withArgs("123abc", "xyz789").resolves();
 
         const { removeUserCredential } = importModule(t);
         t.rejects(() => removeUserCredential("123abc", "xyz789"), {
@@ -300,8 +299,10 @@ test("services/user", async (t) => {
     t.test(
       "throws error if attempting to remove last credential",
       async (t) => {
-        findUserCredentialStub.withArgs("123abc", "xyz789").resolves({});
-        getCredentialsStub.withArgs("123abc").resolves(
+        dataProvider.findUserCredential
+          .withArgs("123abc", "xyz789")
+          .resolves({});
+        dataProvider.getCredentials.withArgs("123abc").resolves(
           // returns a single credential
           [{}]
         );
@@ -315,8 +316,8 @@ test("services/user", async (t) => {
     );
 
     t.test("removes credential from user in database", async (t) => {
-      findUserCredentialStub.withArgs("123abc", "xyz789").resolves({});
-      getCredentialsStub.withArgs("123abc").resolves(
+      dataProvider.findUserCredential.withArgs("123abc", "xyz789").resolves({});
+      dataProvider.getCredentials.withArgs("123abc").resolves(
         // returns a multiple credentials
         [{}, {}]
       );
@@ -324,9 +325,8 @@ test("services/user", async (t) => {
       const { removeUserCredential } = importModule(t);
       await removeUserCredential("123abc", "xyz789");
 
-      t.ok(removeCredentialStub.called);
-      t.equal(removeCredentialStub.firstCall.args[0], "123abc");
-      t.equal(removeCredentialStub.firstCall.args[1], "xyz789");
+      t.ok(dataProvider.removeCredential.called);
+      t.equal(dataProvider.removeCredential.firstCall.args[0], "xyz789");
     });
   });
 });

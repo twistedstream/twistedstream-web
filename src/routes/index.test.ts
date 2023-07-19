@@ -2,7 +2,7 @@ import { test } from "tap";
 import sinon from "sinon";
 import request from "supertest";
 
-import { createTestExpressApp, verifyRequest } from "../utils/testing";
+import { createTestExpressApp, verifyRequest } from "../utils/testing/unit";
 
 type MockOptions = {
   mockExpress?: boolean;
@@ -66,7 +66,7 @@ function createIndexTestExpressApp(test: Tap.Test) {
     },
     errorHandlerSetup: {
       test,
-      modulePath: "../error-handler",
+      modulePath: "../../error-handler",
     },
   });
 }

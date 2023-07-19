@@ -9,7 +9,7 @@ import crypto from "crypto";
 import {
   verifyAuthenticationRequiredResponse,
   createTestExpressApp,
-} from "../utils/testing";
+} from "../utils/testing/unit";
 import { ValidationError } from "../types/error";
 
 type MockOptions = {
@@ -96,7 +96,7 @@ function createProfileTestExpressApp(
     },
     errorHandlerSetup: {
       test,
-      modulePath: "../error-handler",
+      modulePath: "../../error-handler",
       suppressErrorOutput,
     },
   });

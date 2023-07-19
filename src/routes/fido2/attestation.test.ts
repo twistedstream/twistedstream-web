@@ -6,13 +6,13 @@ import base64 from "@hexagon/base64";
 
 import {
   createTestExpressApp,
-  testCredential1,
+  testCredential1 as testCredential,
   testUser,
   verifyFido2SuccessResponse,
   verifyRequest,
   verifyServerErrorFido2ServerResponse,
   verifyUserErrorFido2ServerResponse,
-} from "../../utils/testing";
+} from "../../utils/testing/unit";
 import { ValidationError } from "../../types/error";
 import { StatusCodes } from "http-status-codes";
 
@@ -27,9 +27,6 @@ type AttestationTestExpressAppOptions = {
 };
 
 // test objects
-
-const testCredential: any = { ...testCredential1 };
-delete testCredential.userID;
 
 const testValidatedCredential = {
   ...testCredential,
@@ -130,7 +127,7 @@ function createAttestationTestExpressApp(
     },
     errorHandlerSetup: {
       test,
-      modulePath: "../routes/fido2/error-handler",
+      modulePath: "../../routes/fido2/error-handler",
       suppressErrorOutput,
     },
   });
@@ -360,7 +357,9 @@ test("routes/fido2/attestation", async (t) => {
           {
             id: base64.toArrayBuffer(testCredential.credentialID, true),
             type: "public-key",
-            transports: [...testCredential.transports],
+            transports: testCredential.transports
+              ? [...testCredential.transports]
+              : [],
           },
         ],
       });

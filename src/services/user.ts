@@ -2,7 +2,11 @@ import base64 from "@hexagon/base64";
 import crypto from "crypto";
 
 import { User, Authenticator, RegisteredAuthenticator } from "../types/user";
-import {
+import { getProvider } from "../data";
+import { validateUser } from "./user-validation";
+
+const data = getProvider();
+const {
   addCredential,
   addUser,
   findCredentialById,
@@ -12,8 +16,7 @@ import {
   findUserCredential,
   getCredentials,
   removeCredential,
-} from "../data";
-import { validateUser } from "./user-validation";
+} = data;
 
 // service
 
@@ -117,5 +120,5 @@ export async function removeUserCredential(
     );
   }
 
-  await removeCredential(existingUserId, existingCredentialId);
+  await removeCredential(existingCredentialId);
 }
