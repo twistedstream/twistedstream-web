@@ -1,32 +1,31 @@
-import { Router, Response } from "express";
-import { json } from "body-parser";
+import base64 from "@hexagon/base64";
 import {
   VerifiedRegistrationResponse,
   generateRegistrationOptions,
   verifyRegistrationResponse,
 } from "@simplewebauthn/server";
-import base64 from "@hexagon/base64";
+import { json } from "body-parser";
+import { Response, Router } from "express";
 
-import { baseUrl, companyName, rpID } from "../../utils/config";
-import { logger } from "../../utils/logger";
-import { BadRequestError, assertValue } from "../../utils/error";
+import {
+  addUserCredential,
+  createUser,
+  fetchCredentialsByUserId,
+  fetchUserById,
+  fetchUserByName,
+  registerUser,
+} from "../../services/user";
+import { AuthenticatedRequest } from "../../types/express";
+import { Authenticator, RegisteredAuthenticator, User } from "../../types/user";
 import {
   beginSignup,
   getRegistration,
   getReturnTo,
   signIn,
 } from "../../utils/auth";
-import {
-  fetchUserByName,
-  createUser,
-  registerUser,
-  fetchUserById,
-  fetchCredentialsByUserId,
-  addUserCredential,
-} from "../../services/user";
-import { Authenticator, RegisteredAuthenticator } from "../../types/user";
-import { User } from "../../types/user";
-import { AuthenticatedRequest } from "../../types/express";
+import { baseUrl, companyName, rpID } from "../../utils/config";
+import { BadRequestError, assertValue } from "../../utils/error";
+import { logger } from "../../utils/logger";
 
 const router = Router();
 

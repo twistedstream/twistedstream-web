@@ -1,20 +1,20 @@
-import express, { Express, NextFunction, Request, Response } from "express";
-import { Response as SupertestResponse } from "supertest";
-import path from "path";
-import querystring from "querystring";
-import sinon from "sinon";
-import { StatusCodes } from "http-status-codes";
+import base64 from "@hexagon/base64";
 import {
   AuthenticatorTransport,
   CredentialDeviceType,
 } from "@simplewebauthn/typescript-types";
-import base64 from "@hexagon/base64";
 import crypto from "crypto";
+import express, { Express, NextFunction, Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
+import path from "path";
+import querystring from "querystring";
+import sinon from "sinon";
+import { Response as SupertestResponse } from "supertest";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
-import { Authenticator, User } from "../../types/user";
 import { AuthenticatedRequest } from "../../types/express";
+import { Authenticator, User } from "../../types/user";
 
 type AuthSetup = {
   originalUrl: string;

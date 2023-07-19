@@ -1,11 +1,11 @@
 // NOTE: The config import should always run first to load the environment
-import { port, environment, rpID, baseUrl } from "./utils/config";
+import { baseUrl, environment, port, rpID } from "./utils/config";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
+import fs from "fs";
 import http from "http";
 import https from "https";
-import fs from "fs";
 import path from "path";
 import app from "./app";
 import { logger } from "./utils/logger";

@@ -1,16 +1,16 @@
-import { test } from "tap";
+import { Request, Response } from "express";
 import sinon from "sinon";
 import request from "supertest";
-import { Request, Response } from "express";
+import { test } from "tap";
 
+import { StatusCodes } from "http-status-codes";
+import * as utilsError from "../../utils/error";
+import { BadRequestError } from "../../utils/error";
 import {
   createTestExpressApp,
   verifyServerErrorFido2ServerResponse,
   verifyUserErrorFido2ServerResponse,
 } from "../../utils/testing/unit";
-import { BadRequestError } from "../../utils/error";
-import * as utilsError from "../../utils/error";
-import { StatusCodes } from "http-status-codes";
 
 // test objects
 

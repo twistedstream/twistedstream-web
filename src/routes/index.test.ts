@@ -1,6 +1,6 @@
-import { test } from "tap";
 import sinon from "sinon";
 import request from "supertest";
+import { test } from "tap";
 
 import { createTestExpressApp, verifyRequest } from "../utils/testing/unit";
 

@@ -1,8 +1,8 @@
 import base64 from "@hexagon/base64";
 import crypto from "crypto";
 
-import { User, Authenticator, RegisteredAuthenticator } from "../types/user";
 import { getProvider } from "../data";
+import { Authenticator, RegisteredAuthenticator, User } from "../types/user";
 import { validateUser } from "./user-validation";
 
 const data = getProvider();

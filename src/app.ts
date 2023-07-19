@@ -1,11 +1,11 @@
 import express, { Express } from "express";
-import expressPino from "express-pino-logger";
 import { engine } from "express-handlebars";
+import expressPino from "express-pino-logger";
 
-import { packageVersion, companyName } from "./utils/config";
+import errorHandler from "./error-handler";
+import { companyName, packageVersion } from "./utils/config";
 import { logger } from "./utils/logger";
 import website from "./website";
-import errorHandler from "./error-handler";
 
 const app: Express = express();
 

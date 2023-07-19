@@ -1,17 +1,17 @@
-import { Router, Response } from "express";
 import { urlencoded } from "body-parser";
+import { Response, Router } from "express";
 
-import { BadRequestError, assertValue } from "../utils/error";
 import {
   fetchCredentialsByUserId,
   removeUserCredential,
   updateUser,
 } from "../services/user";
-import { requiresAuth } from "../utils/auth";
 import {
   AuthenticatedRequest,
   AuthenticatedRequestWithTypedBody,
 } from "../types/express";
+import { requiresAuth } from "../utils/auth";
+import { BadRequestError, assertValue } from "../utils/error";
 
 const router = Router();
 

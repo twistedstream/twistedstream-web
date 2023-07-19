@@ -1,16 +1,16 @@
-import { test } from "tap";
-import sinon from "sinon";
-import { Express } from "express";
-import request, { Test as SuperTest } from "supertest";
-import { CredentialDeviceType } from "@simplewebauthn/typescript-types";
 import base64 from "@hexagon/base64";
+import { CredentialDeviceType } from "@simplewebauthn/typescript-types";
 import crypto from "crypto";
+import { Express } from "express";
+import sinon from "sinon";
+import request, { Test as SuperTest } from "supertest";
+import { test } from "tap";
 
-import {
-  verifyAuthenticationRequiredResponse,
-  createTestExpressApp,
-} from "../utils/testing/unit";
 import { ValidationError } from "../types/error";
+import {
+  createTestExpressApp,
+  verifyAuthenticationRequiredResponse,
+} from "../utils/testing/unit";
 
 type MockOptions = {
   mockExpress?: boolean;

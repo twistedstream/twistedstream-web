@@ -1,15 +1,15 @@
 import { test } from "tap";
 
+import { StatusCodes } from "http-status-codes";
 import {
   BadRequestError,
   ErrorWithStatusCode,
+  ForbiddenError,
   NotFoundError,
   UnauthorizedError,
-  ForbiddenError,
   assertValue,
   buildErrorHandlerData,
 } from "./error";
-import { StatusCodes } from "http-status-codes";
 
 test("utils/error", async (t) => {
   t.test("ErrorWithStatusCode", async (t) => {

@@ -1,6 +1,6 @@
-import { test } from "tap";
-import sinon from "sinon";
 import { NextFunction } from "express";
+import sinon from "sinon";
+import { test } from "tap";
 
 // test objects
 

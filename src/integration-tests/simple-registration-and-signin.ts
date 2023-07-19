@@ -1,9 +1,8 @@
-import { test } from "tap";
 import sinon from "sinon";
+import { test } from "tap";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
-import { testCredential1, testUser } from "../utils/testing/unit";
 import {
   assertHtmlResponse,
   assertNoUsersOrCredentials,
@@ -15,6 +14,7 @@ import {
   doSignOut,
   navigatePage,
 } from "../utils/testing/integration";
+import { testCredential1, testUser } from "../utils/testing/unit";
 
 // NOTE: Tap should be run with --bail to stop on first failed assertion
 

@@ -1,5 +1,5 @@
-import { test } from "tap";
 import sinon from "sinon";
+import { test } from "tap";
 
 // NOTE: Env vars are being sourced from test.env
 

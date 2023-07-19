@@ -1,6 +1,5 @@
 import { UserVerificationRequirement } from "@simplewebauthn/typescript-types";
-import { User } from "./user";
-import { Authenticator } from "./user";
+import { Authenticator, User } from "./user";
 
 export interface RegisteringSession {
   registeringUser: User;

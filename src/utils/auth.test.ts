@@ -1,19 +1,19 @@
-import { test } from "tap";
 import sinon from "sinon";
+import { test } from "tap";
 
-import { testUser } from "./testing/unit";
 import {
-  capturePreAuthState,
+  auth,
   beginSignIn,
   beginSignup,
-  signIn,
-  signOut,
-  getReturnTo,
+  capturePreAuthState,
   getAuthentication,
   getRegistration,
-  auth,
+  getReturnTo,
   requiresAuth,
+  signIn,
+  signOut,
 } from "./auth";
+import { testUser } from "./testing/unit";
 
 // tests
 

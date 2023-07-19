@@ -1,10 +1,10 @@
-import { Router, Response, NextFunction } from "express";
 import cookieSession from "cookie-session";
+import { NextFunction, Response, Router } from "express";
 
-import { cookieSecret } from "./utils/config";
 import routes from "./routes";
 import { AuthenticatedRequest } from "./types/express";
 import { auth } from "./utils/auth";
+import { cookieSecret } from "./utils/config";
 
 const router = Router();
 

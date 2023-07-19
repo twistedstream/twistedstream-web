@@ -1,9 +1,11 @@
-import { test } from "tap";
+import base64 from "@hexagon/base64";
+import { Express } from "express";
 import sinon from "sinon";
 import request, { Test as SuperTest } from "supertest";
-import { Express } from "express";
-import base64 from "@hexagon/base64";
+import { test } from "tap";
 
+import { StatusCodes } from "http-status-codes";
+import { ValidationError } from "../../types/error";
 import {
   createTestExpressApp,
   testCredential1 as testCredential,
@@ -13,8 +15,6 @@ import {
   verifyServerErrorFido2ServerResponse,
   verifyUserErrorFido2ServerResponse,
 } from "../../utils/testing/unit";
-import { ValidationError } from "../../types/error";
-import { StatusCodes } from "http-status-codes";
 
 type MockOptions = {
   mockExpress?: boolean;

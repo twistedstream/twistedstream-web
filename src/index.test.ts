@@ -1,5 +1,5 @@
-import { test } from "tap";
 import sinon from "sinon";
+import { test } from "tap";
 
 // test objects
 

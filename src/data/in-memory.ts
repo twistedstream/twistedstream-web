@@ -1,6 +1,6 @@
-import { User, Authenticator, RegisteredAuthenticator } from "../types/user";
-import { logger } from "../utils/logger";
 import { IDataProvider } from "../types/data";
+import { Authenticator, RegisteredAuthenticator, User } from "../types/user";
+import { logger } from "../utils/logger";
 
 export class InMemoryDataProvider implements IDataProvider {
   _users: User[];

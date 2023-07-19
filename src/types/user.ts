@@ -1,6 +1,6 @@
 import {
-  CredentialDeviceType,
   AuthenticatorTransport,
+  CredentialDeviceType,
 } from "@simplewebauthn/typescript-types";
 
 export interface User {

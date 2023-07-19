@@ -1,8 +1,9 @@
 import assert from "assert";
+
+import { InMemoryDataProvider } from "../data/in-memory";
 import { IDataProvider } from "../types/data";
 import { dataProviderName } from "../utils/config";
 import { logger } from "../utils/logger";
-import { InMemoryDataProvider } from "../data/in-memory";
 
 let provider: IDataProvider;
 

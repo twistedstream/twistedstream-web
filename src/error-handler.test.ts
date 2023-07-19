@@ -1,11 +1,11 @@
-import { test } from "tap";
+import { Request, Response } from "express";
 import sinon from "sinon";
 import request from "supertest";
-import { Request, Response } from "express";
+import { test } from "tap";
 
-import { createTestExpressApp } from "./utils/testing/unit";
-import { BadRequestError } from "./utils/error";
 import * as utilsError from "./utils/error";
+import { BadRequestError } from "./utils/error";
+import { createTestExpressApp } from "./utils/testing/unit";
 
 // test objects
 

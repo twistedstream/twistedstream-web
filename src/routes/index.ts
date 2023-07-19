@@ -1,13 +1,13 @@
-import { Router, Request, Response } from "express";
+import { Request, Response, Router } from "express";
+import { capturePreAuthState, signOut } from "../utils/auth";
 import {
   companyName,
+  githubProfileUrl,
   linkedInProfileUrl,
   twitterProfileUrl,
-  githubProfileUrl,
 } from "../utils/config";
 import fido2 from "./fido2";
 import profile from "./profile";
-import { capturePreAuthState, signOut } from "../utils/auth";
 
 const router = Router();
 

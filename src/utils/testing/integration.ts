@@ -1,11 +1,11 @@
-import sinon from "sinon";
-import { StatusCodes } from "http-status-codes";
-import request, { Response as SupertestResponse } from "supertest";
-import * as simpleWebAuthnServerDefaults from "@simplewebauthn/server";
 import base64 from "@hexagon/base64";
+import * as simpleWebAuthnServerDefaults from "@simplewebauthn/server";
+import { StatusCodes } from "http-status-codes";
+import sinon from "sinon";
+import request, { Response as SupertestResponse } from "supertest";
 
-import { IntegrationTestState } from "../../types/test";
 import { InMemoryDataProvider } from "../../data/in-memory";
+import { IntegrationTestState } from "../../types/test";
 import { Authenticator, RegisteredAuthenticator, User } from "../../types/user";
 
 // general

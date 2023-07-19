@@ -1,5 +1,5 @@
-import { test } from "tap";
 import sinon from "sinon";
+import { test } from "tap";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
@@ -15,9 +15,9 @@ import {
   postForm,
 } from "../utils/testing/integration";
 import {
-  testUser,
   testCredential1,
   testCredential2,
+  testUser,
 } from "../utils/testing/unit";
 
 // NOTE: Tap should be run with --bail to stop on first failed assertion

@@ -1,9 +1,9 @@
-import { IRouter, Request, Response, NextFunction } from "express";
+import { IRouter, NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { logger } from "../../utils/logger";
-import { buildErrorHandlerData, NotFoundError } from "../../utils/error";
 import { AuthenticatedRequest } from "../../types/express";
+import { buildErrorHandlerData, NotFoundError } from "../../utils/error";
+import { logger } from "../../utils/logger";
 
 const errorHandler = (router: IRouter) => {
   // Catch unhandled requests and convert to 404
