@@ -5,8 +5,12 @@ import sinon from "sinon";
 import request, { Response as SupertestResponse } from "supertest";
 
 import { InMemoryDataProvider } from "../../data/in-memory";
+import {
+  Authenticator,
+  RegisteredAuthenticator,
+  User,
+} from "../../types/entity";
 import { IntegrationTestState } from "../../types/test";
-import { Authenticator, RegisteredAuthenticator, User } from "../../types/user";
 
 // general
 

@@ -2,7 +2,7 @@ import base64 from "@hexagon/base64";
 import crypto from "crypto";
 
 import { getProvider } from "../data";
-import { Authenticator, RegisteredAuthenticator, User } from "../types/user";
+import { Authenticator, RegisteredAuthenticator, User } from "../types/entity";
 import { validateUser } from "./user-validation";
 
 const data = getProvider();

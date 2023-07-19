@@ -2,13 +2,13 @@ import { NextFunction, Request, Response } from "express";
 import querystring from "querystring";
 
 import { UserVerificationRequirement } from "@simplewebauthn/typescript-types";
-import { AuthenticatedRequest } from "../types/express";
 import {
   AuthenticatedSession,
   AuthenticatingSession,
   RegisteringSession,
-} from "../types/session";
-import { Authenticator, User } from "../types/user";
+} from "../types/auth";
+import { Authenticator, User } from "../types/entity";
+import { AuthenticatedRequest } from "../types/express";
 
 // auth helpers
 

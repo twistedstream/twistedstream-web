@@ -7,8 +7,8 @@ import { Response as SupertestResponse } from "supertest";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
+import { Authenticator, User } from "../../types/entity";
 import { AuthenticatedRequest } from "../../types/express";
-import { Authenticator, User } from "../../types/user";
 
 type AuthSetup = {
   originalUrl: string;

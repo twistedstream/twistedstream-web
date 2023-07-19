@@ -13,8 +13,8 @@ import {
   fetchUserById,
   fetchUserByName,
 } from "../../services/user";
+import { RegisteredAuthenticator, User } from "../../types/entity";
 import { AuthenticatedRequest } from "../../types/express";
-import { RegisteredAuthenticator, User } from "../../types/user";
 import {
   beginSignIn,
   getAuthentication,

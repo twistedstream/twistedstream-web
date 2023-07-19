@@ -1,5 +1,5 @@
 import { IDataProvider } from "../types/data";
-import { Authenticator, RegisteredAuthenticator, User } from "../types/user";
+import { Authenticator, RegisteredAuthenticator, User } from "../types/entity";
 import { logger } from "../utils/logger";
 
 export class InMemoryDataProvider implements IDataProvider {

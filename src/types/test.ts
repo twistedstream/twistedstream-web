@@ -1,5 +1,5 @@
 import { SinonStub } from "sinon";
-import { RegisteredAuthenticator, User } from "./user";
+import { RegisteredAuthenticator, User } from "./entity";
 
 export type IntegrationTestState = {
   app: any;

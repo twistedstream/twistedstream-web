@@ -15,8 +15,12 @@ import {
   fetchUserByName,
   registerUser,
 } from "../../services/user";
+import {
+  Authenticator,
+  RegisteredAuthenticator,
+  User,
+} from "../../types/entity";
 import { AuthenticatedRequest } from "../../types/express";
-import { Authenticator, RegisteredAuthenticator, User } from "../../types/user";
 import {
   beginSignup,
   getRegistration,

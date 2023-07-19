@@ -4,7 +4,7 @@ import {
   CredentialDeviceType,
 } from "@simplewebauthn/typescript-types";
 import crypto from "crypto";
-import { Authenticator, User } from "../../types/user";
+import { Authenticator, User } from "../../types/entity";
 
 // reusable test objects
 

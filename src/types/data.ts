@@ -1,4 +1,4 @@
-import { Authenticator, RegisteredAuthenticator, User } from "../types/user";
+import { Authenticator, RegisteredAuthenticator, User } from "./entity";
 
 export interface IDataProvider {
   findUserById(userID: string): Promise<User | undefined>;
