@@ -3,6 +3,7 @@ import { test } from "tap";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
+import { testCredential1, testUser1 } from "../utils/testing/data";
 import {
   assertHtmlResponse,
   assertNoUsersOrCredentials,
@@ -14,7 +15,6 @@ import {
   doSignOut,
   navigatePage,
 } from "../utils/testing/integration";
-import { testCredential1, testUser } from "../utils/testing/unit";
 
 // NOTE: Tap should be run with --bail to stop on first failed assertion
 
@@ -53,12 +53,12 @@ test("Navigate, register a new user, sign out, sign in", async (t) => {
   });
 
   t.test("Register a new account", async (t) => {
-    await doRegistration(t, state, testUser, testCredential1, true);
+    await doRegistration(t, state, testUser1, testCredential1, true);
 
     // we should have a new user with a new cred
     t.equal(state.users.length, 1);
     t.equal(state.credentials.length, 1);
-    assertUserAndAssociatedCredentials(t, state, testUser, [testCredential1]);
+    assertUserAndAssociatedCredentials(t, state, testUser1, [testCredential1]);
   });
 
   t.test("Sign out", async (t) => {
@@ -66,7 +66,7 @@ test("Navigate, register a new user, sign out, sign in", async (t) => {
   });
 
   t.test("Sign in", async (t) => {
-    await doSignIn(t, state, testUser.username, testCredential1);
+    await doSignIn(t, state, testUser1.username, testCredential1);
   });
 
   t.test("Go to profile page, and access content", async (t) => {

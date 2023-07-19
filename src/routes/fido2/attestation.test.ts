@@ -7,9 +7,11 @@ import { test } from "tap";
 import { StatusCodes } from "http-status-codes";
 import { ValidationError } from "../../types/error";
 import {
-  createTestExpressApp,
   testCredential1 as testCredential,
-  testUser,
+  testUser1,
+} from "../../utils/testing/data";
+import {
+  createTestExpressApp,
   verifyFido2SuccessResponse,
   verifyRequest,
   verifyServerErrorFido2ServerResponse,
@@ -38,7 +40,7 @@ const testValidatedCredential = {
 };
 
 const testRegistration = {
-  registeringUser: { ...testUser },
+  registeringUser: { ...testUser1 },
   challenge: "CHALLENGE!",
 };
 
@@ -118,7 +120,7 @@ function createAttestationTestExpressApp(
     authSetup: withAuth
       ? {
           originalUrl: "/",
-          activeUser: { ...testUser },
+          activeUser: { ...testUser1 },
           activeCredential: { ...testCredential },
         }
       : undefined,
@@ -574,7 +576,7 @@ test("routes/fido2/attestation", async (t) => {
         });
 
         t.ok(registerUserStub.called);
-        t.same(registerUserStub.firstCall.args[0], { ...testUser });
+        t.same(registerUserStub.firstCall.args[0], { ...testUser1 });
         t.match(registerUserStub.firstCall.args[1], {
           ...testCredential,
           created: /.*/,

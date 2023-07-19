@@ -35,6 +35,8 @@ export function createUser(username: string, displayName: string) {
     id: base64.fromArrayBuffer(crypto.randomBytes(16).buffer, true),
     username,
     displayName,
+    // default new users to not be admin
+    isAdmin: false,
   };
   validateUser(newUser);
 

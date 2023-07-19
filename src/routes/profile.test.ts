@@ -1,12 +1,10 @@
-import base64 from "@hexagon/base64";
-import { CredentialDeviceType } from "@simplewebauthn/typescript-types";
-import crypto from "crypto";
 import { Express } from "express";
 import sinon from "sinon";
 import request, { Test as SuperTest } from "supertest";
 import { test } from "tap";
 
 import { ValidationError } from "../types/error";
+import { testCredential1, testUser1 } from "../utils/testing/data";
 import {
   createTestExpressApp,
   verifyAuthenticationRequiredResponse,
@@ -23,25 +21,6 @@ type ProfileTestExpressAppOptions = {
 };
 
 // test objects
-
-const testUser = {
-  id: "123abc",
-  username: "bob",
-  displayName: "Bob User",
-};
-
-const testCredential = {
-  created: new Date(2023, 1, 1),
-  credentialID: base64.fromArrayBuffer(crypto.randomBytes(8).buffer, true),
-  credentialPublicKey: base64.fromArrayBuffer(
-    crypto.randomBytes(42).buffer,
-    true
-  ),
-  counter: 42,
-  aaguid: "AUTH_GUID",
-  credentialDeviceType: <CredentialDeviceType>"singleDevice",
-  credentialBackedUp: false,
-};
 
 const expressRouter = {
   get: sinon.fake(),
@@ -87,8 +66,8 @@ function createProfileTestExpressApp(
     authSetup: withAuth
       ? {
           originalUrl: "/",
-          activeUser: { ...testUser },
-          activeCredential: { ...testCredential },
+          activeUser: { ...testUser1 },
+          activeCredential: { ...testCredential1 },
         }
       : undefined,
     middlewareSetup: (app) => {
@@ -151,7 +130,7 @@ test("routes/profile", async (t) => {
 
     t.test("renders HTML with expected view state", async (t) => {
       fetchCredentialsByUserIdStub.withArgs("123abc").resolves([
-        { ...testCredential },
+        { ...testCredential1 },
         {
           credentialID: "987zyx",
           credentialDeviceType: "multiDevice",
@@ -174,9 +153,10 @@ test("routes/profile", async (t) => {
         id: "123abc",
         username: "bob",
         displayName: "Bob User",
+        isAdmin: false,
         activePasskey: {
-          id: testCredential.credentialID,
-          type: "singleDevice",
+          id: testCredential1.credentialID,
+          type: "multiDevice",
           created: new Date(2023, 1, 1),
         },
         otherPasskeys: [
@@ -220,6 +200,7 @@ test("routes/profile", async (t) => {
             id: "123abc",
             username: "bob",
             displayName: "Bad Bob",
+            isAdmin: false,
           });
           t.equal(response.status, 400);
           t.match(response.headers["content-type"], "text/html");
@@ -252,6 +233,7 @@ test("routes/profile", async (t) => {
             id: "123abc",
             username: "bob",
             displayName: "Bad Bob",
+            isAdmin: false,
           });
           t.equal(response.status, 500);
           t.match(response.headers["content-type"], "text/html");
@@ -277,6 +259,7 @@ test("routes/profile", async (t) => {
             id: "123abc",
             username: "bob",
             displayName: "Good Bob",
+            isAdmin: false,
           });
           t.equal(response.status, 302);
           t.equal(response.headers.location, "/");
@@ -293,7 +276,7 @@ test("routes/profile", async (t) => {
           });
 
           const response = await performPostRequest(app).send({
-            delete_cred: testCredential.credentialID,
+            delete_cred: testCredential1.credentialID,
           });
           const { viewName, options } = renderArgs;
 

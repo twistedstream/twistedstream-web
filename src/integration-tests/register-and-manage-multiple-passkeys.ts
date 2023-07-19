@@ -4,6 +4,11 @@ import { test } from "tap";
 import "express-async-errors";
 
 import {
+  testCredential1,
+  testCredential2,
+  testUser1,
+} from "../utils/testing/data";
+import {
   assertHtmlResponse,
   assertRedirectResponse,
   assertUserAndAssociatedCredentials,
@@ -14,11 +19,6 @@ import {
   navigatePage,
   postForm,
 } from "../utils/testing/integration";
-import {
-  testCredential1,
-  testCredential2,
-  testUser,
-} from "../utils/testing/unit";
 
 // NOTE: Tap should be run with --bail to stop on first failed assertion
 
@@ -31,8 +31,8 @@ test("Register and manage multiple authenticators", async (t) => {
   // start with an already registered user
   const state = createIntegrationTestState(
     t,
-    [{ ...testUser }],
-    [{ ...testCredential1, userID: testUser.id }]
+    [{ ...testUser1 }],
+    [{ ...testCredential1, userID: testUser1.id }]
   );
 
   t.test("Initial data state", async () => {
@@ -42,7 +42,7 @@ test("Register and manage multiple authenticators", async (t) => {
   });
 
   t.test("Sign in with existing passkey", async (t) => {
-    await doSignIn(t, state, testUser.username, testCredential1);
+    await doSignIn(t, state, testUser1.username, testCredential1);
   });
 
   t.test("Go to profile page", async (t) => {
@@ -51,12 +51,12 @@ test("Register and manage multiple authenticators", async (t) => {
   });
 
   t.test("Register another passkey", async (t) => {
-    await doRegistration(t, state, testUser, testCredential2, false);
+    await doRegistration(t, state, testUser1, testCredential2, false);
 
     // we should now have a second cred registered to the existing user
     t.equal(state.users.length, 1);
     t.equal(state.credentials.length, 2);
-    assertUserAndAssociatedCredentials(t, state, testUser, [
+    assertUserAndAssociatedCredentials(t, state, testUser1, [
       testCredential1,
       testCredential2,
     ]);
@@ -67,7 +67,7 @@ test("Register and manage multiple authenticators", async (t) => {
   });
 
   t.test("Sign in with new passkey", async (t) => {
-    await doSignIn(t, state, testUser.username, testCredential2);
+    await doSignIn(t, state, testUser1.username, testCredential2);
   });
 
   t.test("Delete original passkey", async (t) => {
@@ -80,6 +80,6 @@ test("Register and manage multiple authenticators", async (t) => {
     // we should now have only the second cred registered to the existing user
     t.equal(state.users.length, 1);
     t.equal(state.credentials.length, 1);
-    assertUserAndAssociatedCredentials(t, state, testUser, [testCredential2]);
+    assertUserAndAssociatedCredentials(t, state, testUser1, [testCredential2]);
   });
 });

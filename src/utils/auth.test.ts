@@ -13,7 +13,7 @@ import {
   signIn,
   signOut,
 } from "./auth";
-import { testUser } from "./testing/unit";
+import { testUser1 } from "./testing/data";
 
 // tests
 
@@ -33,7 +33,7 @@ test("utils/auth", async (t) => {
     t.test("saves registration state in session", async (t) => {
       const req: any = {};
 
-      beginSignup(req, "CHALLENGE!", { ...testUser });
+      beginSignup(req, "CHALLENGE!", { ...testUser1 });
 
       t.ok(req.session);
       const { registration } = req.session;
@@ -42,6 +42,7 @@ test("utils/auth", async (t) => {
         id: "123abc",
         username: "bob",
         displayName: "Bob User",
+        isAdmin: false,
       });
       t.equal(registration.challenge, "CHALLENGE!");
     });
@@ -52,7 +53,7 @@ test("utils/auth", async (t) => {
       t.test("when existing user", async (t) => {
         const req: any = {};
 
-        beginSignIn(req, "CHALLENGE!", { ...testUser }, "preferred");
+        beginSignIn(req, "CHALLENGE!", { ...testUser1 }, "preferred");
 
         t.ok(req.session);
         const { authentication } = req.session;
@@ -85,7 +86,7 @@ test("utils/auth", async (t) => {
       const req: any = {};
       const credential: any = {};
 
-      signIn(req, { ...testUser }, credential);
+      signIn(req, { ...testUser1 }, credential);
 
       t.ok(req.session);
       const { authentication } = req.session;
@@ -102,7 +103,7 @@ test("utils/auth", async (t) => {
       const req: any = { registration: {}, return_to: "/foo" };
       const credential: any = {};
 
-      signIn(req, { ...testUser }, credential);
+      signIn(req, { ...testUser1 }, credential);
 
       t.ok(req.session);
       t.notOk(req.session.registration);
