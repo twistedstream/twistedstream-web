@@ -3,8 +3,8 @@ import { Authenticator, RegisteredAuthenticator, User } from "../types/user";
 import { logger } from "../utils/logger";
 
 export class InMemoryDataProvider implements IDataProvider {
-  _users: User[];
-  _credentials: RegisteredAuthenticator[];
+  private _users: User[];
+  private _credentials: RegisteredAuthenticator[];
 
   constructor(users: User[], credentials: RegisteredAuthenticator[]) {
     this._users = users;
