@@ -21,6 +21,7 @@ const capturePreAuthStateFake = sinon.fake();
 const signOutFake = sinon.fake();
 const fido2Route = sinon.fake();
 const profileRoute = sinon.fake();
+const sharesRoute = sinon.fake();
 
 // helpers
 
@@ -41,6 +42,7 @@ function importModule(
   if (mockChildRoutes) {
     dependencies["./fido2"] = fido2Route;
     dependencies["./profile"] = profileRoute;
+    dependencies["./shares"] = sharesRoute;
   }
   if (mockModules) {
     dependencies["../utils/auth"] = {
@@ -117,11 +119,13 @@ test("routes/index", async (t) => {
     });
 
     const calls = expressRouter.use.getCalls();
-    t.equal(calls.length, 2);
+    t.equal(calls.length, 3);
     t.equal(calls[0].args[0], "/fido2");
     t.equal(calls[0].args[1], fido2Route);
     t.equal(calls[1].args[0], "/profile");
     t.equal(calls[1].args[1], profileRoute);
+    t.equal(calls[2].args[0], "/shares");
+    t.equal(calls[2].args[1], sharesRoute);
   });
 
   t.test("GET /", async (t) => {

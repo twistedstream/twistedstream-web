@@ -1,6 +1,7 @@
 import { Response, Router } from "express";
 
 import { AuthenticatedRequest } from "../types/express";
+import { requiresAuth } from "../utils/auth";
 
 const router = Router();
 
@@ -10,7 +11,11 @@ const router = Router();
 
 // TODO: authorization middleware
 
-router.get("/", (_req: AuthenticatedRequest, _res: Response) => {
+router.get("/", requiresAuth(), (_req: AuthenticatedRequest, res: Response) => {
+  res.render("shares", {
+    title: "Shares",
+  });
+
   // TODO: return HTML listing all shares (shared to and shared with)
 });
 

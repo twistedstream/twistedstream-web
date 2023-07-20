@@ -8,6 +8,7 @@ import {
 } from "../utils/config";
 import fido2 from "./fido2";
 import profile from "./profile";
+import shares from "./shares";
 
 const router = Router();
 
@@ -71,5 +72,6 @@ router.get("/logout", (req: Request, res: Response) => {
 
 router.use("/fido2", fido2);
 router.use("/profile", profile);
+router.use("/shares", shares);
 
 export default router;
