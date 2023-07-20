@@ -1,9 +1,17 @@
 import { Authenticator, RegisteredAuthenticator, User } from "./entity";
 
 export interface IDataProvider {
+  // users
+
   findUserById(userID: string): Promise<User | undefined>;
 
   findUserByName(username: string): Promise<User | undefined>;
+
+  insertUser(user: User): Promise<User>;
+
+  updateUser(user: User): Promise<void>;
+
+  // credentials
 
   findCredentialById(
     credentialID: string
@@ -14,13 +22,9 @@ export interface IDataProvider {
     credentialID: string
   ): Promise<RegisteredAuthenticator | undefined>;
 
-  getCredentials(userID: string): Promise<RegisteredAuthenticator[]>;
+  findCredentialsByUser(userID: string): Promise<RegisteredAuthenticator[]>;
 
-  addUser(user: User): Promise<User>;
+  insertCredential(userID: string, credential: Authenticator): Promise<void>;
 
-  patchUser(user: User): Promise<void>;
-
-  addCredential(userID: string, credential: Authenticator): Promise<void>;
-
-  removeCredential(credentialID: string): Promise<void>;
+  deleteCredential(credentialID: string): Promise<void>;
 }

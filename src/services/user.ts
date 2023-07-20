@@ -7,15 +7,15 @@ import { validateUser } from "./user-validation";
 
 const data = getProvider();
 const {
-  addCredential,
-  addUser,
+  insertCredential,
+  insertUser,
   findCredentialById,
   findUserById,
   findUserByName,
-  patchUser,
+  updateUser,
   findUserCredential,
-  getCredentials,
-  removeCredential,
+  findCredentialsByUser,
+  deleteCredential,
 } = data;
 
 // service
@@ -49,13 +49,13 @@ export async function registerUser(
 ): Promise<User> {
   validateUser(registeringUser);
 
-  const addedUser = await addUser(registeringUser);
-  await addCredential(addedUser.id, firstCredential);
+  const addedUser = await insertUser(registeringUser);
+  await insertCredential(addedUser.id, firstCredential);
 
   return addedUser;
 }
 
-export async function updateUser(user: User): Promise<void> {
+export async function modifyUser(user: User): Promise<void> {
   // validate
   validateUser(user);
 
@@ -65,7 +65,7 @@ export async function updateUser(user: User): Promise<void> {
   }
 
   // update user in DB
-  await patchUser(user);
+  await updateUser(user);
 }
 
 export async function fetchCredentialById(
@@ -77,7 +77,7 @@ export async function fetchCredentialById(
 export async function fetchCredentialsByUserId(
   userID: string
 ): Promise<RegisteredAuthenticator[]> {
-  return getCredentials(userID);
+  return findCredentialsByUser(userID);
 }
 
 export async function fetchCredentialsByUsername(
@@ -86,7 +86,7 @@ export async function fetchCredentialsByUsername(
   const user = await findUserByName(username);
 
   if (user) {
-    return getCredentials(user.id);
+    return findCredentialsByUser(user.id);
   }
   return [];
 }
@@ -104,7 +104,7 @@ export async function addUserCredential(
     throw new Error(`User with ID ${existingUserId} not found.`);
   }
 
-  await addCredential(existingUserId, newCredential);
+  await insertCredential(existingUserId, newCredential);
 }
 
 export async function removeUserCredential(
@@ -116,11 +116,11 @@ export async function removeUserCredential(
       `Credential (id = ${existingCredentialId}) not associated with user (id = ${existingUserId}).`
     );
   }
-  if ((await getCredentials(existingUserId)).length === 1) {
+  if ((await findCredentialsByUser(existingUserId)).length === 1) {
     throw new Error(
       `Cannot remove the last credential (id = ${existingCredentialId}) associated with user (id = ${existingUserId}).`
     );
   }
 
-  await removeCredential(existingCredentialId);
+  await deleteCredential(existingCredentialId);
 }

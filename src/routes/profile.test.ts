@@ -28,7 +28,7 @@ const expressRouter = {
 };
 const routerFake = sinon.fake.returns(expressRouter);
 const fetchCredentialsByUserIdStub = sinon.stub();
-const updateUserStub = sinon.stub();
+const modifyUserStub = sinon.stub();
 const removeUserCredentialStub = sinon.stub();
 
 // helpers
@@ -46,7 +46,7 @@ function importModule(
   if (mockModules) {
     dependencies["../services/user"] = {
       fetchCredentialsByUserId: fetchCredentialsByUserIdStub,
-      updateUser: updateUserStub,
+      modifyUser: modifyUserStub,
       removeUserCredential: removeUserCredentialStub,
     };
   }
@@ -182,7 +182,7 @@ test("routes/profile", async (t) => {
       t.test(
         "if a validation error occurs while updating profile, renders HTML with expected user error",
         async (t) => {
-          updateUserStub.rejects(
+          modifyUserStub.rejects(
             new ValidationError("User", "displayName", "Sorry, can't do it")
           );
 
@@ -196,7 +196,7 @@ test("routes/profile", async (t) => {
           });
           const { viewName, options } = renderArgs;
 
-          t.same(updateUserStub.firstCall.firstArg, {
+          t.same(modifyUserStub.firstCall.firstArg, {
             id: "123abc",
             username: "bob",
             displayName: "Bad Bob",
@@ -216,7 +216,7 @@ test("routes/profile", async (t) => {
       t.test(
         "if an unknown error occurs while updating profile, renders HTML with expected server error",
         async (t) => {
-          updateUserStub.rejects(new Error("BOOM!"));
+          modifyUserStub.rejects(new Error("BOOM!"));
 
           const { app, renderArgs } = createProfileTestExpressApp(t, {
             withAuth: true,
@@ -229,7 +229,7 @@ test("routes/profile", async (t) => {
           });
           const { viewName, options } = renderArgs;
 
-          t.same(updateUserStub.firstCall.firstArg, {
+          t.same(modifyUserStub.firstCall.firstArg, {
             id: "123abc",
             username: "bob",
             displayName: "Bad Bob",
@@ -246,7 +246,7 @@ test("routes/profile", async (t) => {
       t.test(
         "if successful, updates profile and responds with expected redirect",
         async (t) => {
-          updateUserStub.resolves();
+          modifyUserStub.resolves();
 
           const { app } = createProfileTestExpressApp(t, { withAuth: true });
 
@@ -255,7 +255,7 @@ test("routes/profile", async (t) => {
             display_name: "Good Bob",
           });
 
-          t.same(updateUserStub.firstCall.firstArg, {
+          t.same(modifyUserStub.firstCall.firstArg, {
             id: "123abc",
             username: "bob",
             displayName: "Good Bob",

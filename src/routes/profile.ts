@@ -3,8 +3,8 @@ import { Response, Router } from "express";
 
 import {
   fetchCredentialsByUserId,
+  modifyUser,
   removeUserCredential,
-  updateUser,
 } from "../services/user";
 import {
   AuthenticatedRequest,
@@ -64,7 +64,7 @@ router.post(
       // update user profile
       user.displayName = display_name;
       try {
-        await updateUser(user);
+        await modifyUser(user);
       } catch (err: any) {
         if (err.type === "validation") {
           throw BadRequestError(err.message);

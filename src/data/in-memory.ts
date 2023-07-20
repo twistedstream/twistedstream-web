@@ -15,11 +15,11 @@ export class InMemoryDataProvider implements IDataProvider {
     this.findUserByName = this.findUserByName.bind(this);
     this.findCredentialById = this.findCredentialById.bind(this);
     this.findUserCredential = this.findUserCredential.bind(this);
-    this.getCredentials = this.getCredentials.bind(this);
-    this.addUser = this.addUser.bind(this);
-    this.patchUser = this.patchUser.bind(this);
-    this.addCredential = this.addCredential.bind(this);
-    this.removeCredential = this.removeCredential.bind(this);
+    this.findCredentialsByUser = this.findCredentialsByUser.bind(this);
+    this.insertUser = this.insertUser.bind(this);
+    this.updateUser = this.updateUser.bind(this);
+    this.insertCredential = this.insertCredential.bind(this);
+    this.deleteCredential = this.deleteCredential.bind(this);
   }
 
   async findUserById(userID: string): Promise<User | undefined> {
@@ -60,19 +60,21 @@ export class InMemoryDataProvider implements IDataProvider {
     }
   }
 
-  async getCredentials(userID: string): Promise<RegisteredAuthenticator[]> {
+  async findCredentialsByUser(
+    userID: string
+  ): Promise<RegisteredAuthenticator[]> {
     const credentials = this._credentials.filter((p) => p.userID === userID);
     return [...credentials];
   }
 
-  async addUser(user: User): Promise<User> {
+  async insertUser(user: User): Promise<User> {
     this._users.push({ ...user });
     logger.debug(this._users, "Users after add");
 
     return { ...user };
   }
 
-  async patchUser(user: User): Promise<void> {
+  async updateUser(user: User): Promise<void> {
     const foundUser = this._users.find((u) => u.id === user.id);
     if (foundUser) {
       foundUser.username = user.username;
@@ -80,7 +82,7 @@ export class InMemoryDataProvider implements IDataProvider {
     }
   }
 
-  async addCredential(
+  async insertCredential(
     userID: string,
     credential: Authenticator
   ): Promise<void> {
@@ -92,7 +94,7 @@ export class InMemoryDataProvider implements IDataProvider {
     logger.debug(this._credentials, "Credentials after add");
   }
 
-  async removeCredential(credentialID: string): Promise<void> {
+  async deleteCredential(credentialID: string): Promise<void> {
     const indexToDelete = this._credentials.findIndex(
       (c) => c.credentialID === credentialID
     );
