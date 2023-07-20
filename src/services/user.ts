@@ -1,5 +1,4 @@
-import base64 from "@hexagon/base64";
-import crypto from "crypto";
+import { v4 } from "uuid";
 
 import { getProvider } from "../data";
 import { Authenticator, RegisteredAuthenticator, User } from "../types/entity";
@@ -32,7 +31,7 @@ export async function fetchUserByName(
 
 export function createUser(username: string, displayName: string) {
   const newUser: User = {
-    id: base64.fromArrayBuffer(crypto.randomBytes(16).buffer, true),
+    id: v4(),
     username,
     displayName,
     // default new users to not be admin
