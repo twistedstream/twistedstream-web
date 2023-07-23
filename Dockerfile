@@ -28,4 +28,4 @@ ENV NODE_ENV="production"
 ENV PORT="8000"
 USER node
 
-CMD ["node", "index.js"]
+CMD ["node", "server.js"]
