@@ -1,19 +1,19 @@
 import sinon from "sinon";
 import { test } from "tap";
 
-import {
-  auth,
-  beginSignIn,
-  beginSignup,
-  capturePreAuthState,
-  getAuthentication,
-  getRegistration,
-  getReturnTo,
-  requiresAuth,
-  signIn,
-  signOut,
-} from "./auth";
-import { testUser1 } from "./testing/data";
+import { testNowDate, testUser1 } from "./testing/data";
+
+// test objects
+
+const nowFake = sinon.fake.returns(testNowDate);
+
+// helpers
+
+function importModule(test: Tap.Test) {
+  return test.mock("./auth", {
+    "../utils/time": { now: nowFake },
+  });
+}
 
 // tests
 
@@ -22,6 +22,7 @@ test("utils/auth", async (t) => {
     t.test("captured return_to query in session", async (t) => {
       const req: any = { query: { return_to: "/foo" } };
 
+      const { capturePreAuthState } = importModule(t);
       capturePreAuthState(req);
 
       t.ok(req.session);
@@ -33,6 +34,7 @@ test("utils/auth", async (t) => {
     t.test("saves registration state in session", async (t) => {
       const req: any = {};
 
+      const { beginSignup } = importModule(t);
       beginSignup(req, "CHALLENGE!", { ...testUser1 });
 
       t.ok(req.session);
@@ -40,6 +42,7 @@ test("utils/auth", async (t) => {
       t.ok(registration);
       t.same(registration.registeringUser, {
         id: "123abc",
+        created: testNowDate,
         username: "bob",
         displayName: "Bob User",
         isAdmin: false,
@@ -53,6 +56,7 @@ test("utils/auth", async (t) => {
       t.test("when existing user", async (t) => {
         const req: any = {};
 
+        const { beginSignIn } = importModule(t);
         beginSignIn(req, "CHALLENGE!", { ...testUser1 }, "preferred");
 
         t.ok(req.session);
@@ -69,6 +73,7 @@ test("utils/auth", async (t) => {
       t.test("when no existing user", async (t) => {
         const req: any = {};
 
+        const { beginSignIn } = importModule(t);
         beginSignIn(req, "CHALLENGE!", undefined, "preferred");
 
         t.ok(req.session);
@@ -86,6 +91,7 @@ test("utils/auth", async (t) => {
       const req: any = {};
       const credential: any = {};
 
+      const { signIn } = importModule(t);
       signIn(req, { ...testUser1 }, credential);
 
       t.ok(req.session);
@@ -103,6 +109,7 @@ test("utils/auth", async (t) => {
       const req: any = { registration: {}, return_to: "/foo" };
       const credential: any = {};
 
+      const { signIn } = importModule(t);
       signIn(req, { ...testUser1 }, credential);
 
       t.ok(req.session);
@@ -115,6 +122,7 @@ test("utils/auth", async (t) => {
     t.test("clears the session", async (t) => {
       const req: any = { session: {} };
 
+      const { signOut } = importModule(t);
       signOut(req);
 
       t.notOk(req.session);
@@ -125,6 +133,7 @@ test("utils/auth", async (t) => {
     t.test("returns expected value", async (t) => {
       const req: any = { session: { return_to: "/foo" } };
 
+      const { getReturnTo } = importModule(t);
       const result = getReturnTo(req);
 
       t.equal(result, "/foo");
@@ -133,6 +142,7 @@ test("utils/auth", async (t) => {
     t.test("returns expected default", async (t) => {
       const req: any = {};
 
+      const { getReturnTo } = importModule(t);
       const result = getReturnTo(req);
 
       t.equal(result, "/");
@@ -144,6 +154,7 @@ test("utils/auth", async (t) => {
       const authentication = {};
       const req: any = { session: { authentication } };
 
+      const { getAuthentication } = importModule(t);
       const result = getAuthentication(req);
 
       t.equal(result, authentication);
@@ -152,6 +163,7 @@ test("utils/auth", async (t) => {
     t.test("returns expected default", async (t) => {
       const req: any = {};
 
+      const { getAuthentication } = importModule(t);
       const result = getAuthentication(req);
 
       t.notOk(result);
@@ -163,6 +175,7 @@ test("utils/auth", async (t) => {
       const registration = {};
       const req: any = { session: { registration } };
 
+      const { getRegistration } = importModule(t);
       const result = getRegistration(req);
 
       t.equal(result, registration);
@@ -171,6 +184,7 @@ test("utils/auth", async (t) => {
     t.test("returns expected default", async (t) => {
       const req: any = {};
 
+      const { getRegistration } = importModule(t);
       const result = getRegistration(req);
 
       t.notOk(result);
@@ -191,6 +205,7 @@ test("utils/auth", async (t) => {
         nextCalled = true;
       };
 
+      const { auth } = importModule(t);
       const middleware = auth();
 
       middleware(req, res, next);
@@ -209,6 +224,7 @@ test("utils/auth", async (t) => {
           nextCalled = true;
         };
 
+        const { auth } = importModule(t);
         const middleware = auth();
 
         middleware(req, res, next);
@@ -232,6 +248,7 @@ test("utils/auth", async (t) => {
           nextCalled = true;
         };
 
+        const { requiresAuth } = importModule(t);
         const middleware = requiresAuth();
 
         middleware(req, res, next);
@@ -251,6 +268,7 @@ test("utils/auth", async (t) => {
         nextCalled = true;
       };
 
+      const { requiresAuth } = importModule(t);
       const middleware = requiresAuth();
 
       middleware(req, res, next);

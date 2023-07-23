@@ -6,7 +6,11 @@ import { test } from "tap";
 
 import { StatusCodes } from "http-status-codes";
 import { ValidationError } from "../../types/error";
-import { testCredential1, testUser1 } from "../../utils/testing/data";
+import {
+  testCredential1,
+  testNowDate,
+  testUser1,
+} from "../../utils/testing/data";
 import {
   createTestExpressApp,
   verifyFido2SuccessResponse,
@@ -50,6 +54,7 @@ const logger = {
   warn: sinon.fake(),
   info: sinon.fake(),
 };
+const nowFake = sinon.fake.returns(testNowDate);
 const createUserStub = sinon.stub();
 const fetchUserByIdStub = sinon.stub();
 const fetchCredentialsByUserIdStub = sinon.stub();
@@ -76,6 +81,7 @@ function importModule(
     };
   }
   if (mockModules) {
+    dependencies["../../utils/time"] = { now: nowFake };
     dependencies["../../utils/logger"] = { logger };
     dependencies["../../services/user"] = {
       createUser: createUserStub,
@@ -549,10 +555,9 @@ test("routes/fido2/attestation", async (t) => {
 
         t.ok(addUserCredentialFake.called);
         t.equal(addUserCredentialFake.firstCall.args[0], "123abc");
-        t.match(addUserCredentialFake.firstCall.args[1], {
+        t.same(addUserCredentialFake.firstCall.args[1], {
           ...testCredential1,
-          userId: undefined,
-          created: /.*/,
+          created: testNowDate,
         });
       });
     });
@@ -574,9 +579,9 @@ test("routes/fido2/attestation", async (t) => {
 
         t.ok(registerUserStub.called);
         t.same(registerUserStub.firstCall.args[0], { ...testUser1 });
-        t.match(registerUserStub.firstCall.args[1], {
+        t.same(registerUserStub.firstCall.args[1], {
           ...testCredential1,
-          created: /.*/,
+          created: testNowDate,
         });
       });
 
@@ -602,9 +607,9 @@ test("routes/fido2/attestation", async (t) => {
           method: "POST",
         });
         t.equal(signInFake.firstCall.args[1], user);
-        t.match(signInFake.firstCall.args[2], {
+        t.same(signInFake.firstCall.args[2], {
           ...testCredential1,
-          created: /.*/,
+          created: testNowDate,
         });
       });
     });

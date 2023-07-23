@@ -9,6 +9,7 @@ import {
 } from "../types/auth";
 import { Authenticator, User } from "../types/entity";
 import { AuthenticatedRequest } from "../types/express";
+import { now } from "../utils/time";
 
 // auth helpers
 
@@ -63,7 +64,7 @@ export function signIn(
   req.session.authentication = <AuthenticatedSession>{
     user: { id, username },
     credential,
-    time: Date.now(),
+    time: now().getTime(),
   };
 
   // clear temp session values

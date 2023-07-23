@@ -1,7 +1,7 @@
-import { v4 } from "uuid";
-
 import { getProvider } from "../data";
 import { Authenticator, RegisteredAuthenticator, User } from "../types/entity";
+import { unique } from "../utils/identifier";
+import { now } from "../utils/time";
 import { validateUser } from "./user-validation";
 
 const data = getProvider();
@@ -31,7 +31,8 @@ export async function fetchUserByName(
 
 export function createUser(username: string, displayName: string) {
   const newUser: User = {
-    id: v4(),
+    id: unique(),
+    created: now(),
     username,
     displayName,
     // default new users to not be admin

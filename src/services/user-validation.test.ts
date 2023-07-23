@@ -9,6 +9,7 @@ test("services/user-validation", async (t) => {
         () =>
           validateUser({
             id: "123abc",
+            created: new Date(2023, 1, 1),
             username: "",
             displayName: "Bob User",
             isAdmin: false,
@@ -24,6 +25,7 @@ test("services/user-validation", async (t) => {
         () =>
           validateUser({
             id: "123abc",
+            created: new Date(2023, 1, 1),
             username: "b",
             displayName: "Bob User",
             isAdmin: false,
@@ -39,6 +41,7 @@ test("services/user-validation", async (t) => {
         () =>
           validateUser({
             id: "123abc",
+            created: new Date(2023, 1, 1),
             username: "bob",
             displayName: "",
             isAdmin: false,
@@ -54,6 +57,7 @@ test("services/user-validation", async (t) => {
         () =>
           validateUser({
             id: "123abc",
+            created: new Date(2023, 1, 1),
             username: "bob",
             displayName: "B",
             isAdmin: false,
@@ -68,6 +72,7 @@ test("services/user-validation", async (t) => {
       t.doesNotThrow(() =>
         validateUser({
           id: "123abc",
+          created: new Date(2023, 1, 1),
           username: "bob",
           displayName: "Bob User",
           isAdmin: false,

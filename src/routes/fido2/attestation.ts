@@ -30,6 +30,7 @@ import {
 import { baseUrl, companyName, rpID } from "../../utils/config";
 import { BadRequestError, assertValue } from "../../utils/error";
 import { logger } from "../../utils/logger";
+import { now } from "../../utils/time";
 
 const router = Router();
 
@@ -158,7 +159,7 @@ router.post(
     const { aaguid, counter, credentialDeviceType, credentialBackedUp } =
       registrationInfo;
     const validatedCredential: Authenticator = {
-      created: new Date(Date.now()),
+      created: now(),
       credentialID: base64.fromArrayBuffer(registrationInfo.credentialID, true),
       credentialPublicKey: base64.fromArrayBuffer(
         registrationInfo.credentialPublicKey,

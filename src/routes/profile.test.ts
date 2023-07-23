@@ -4,7 +4,7 @@ import request, { Test as SuperTest } from "supertest";
 import { test } from "tap";
 
 import { ValidationError } from "../types/error";
-import { testCredential1, testUser1 } from "../utils/testing/data";
+import { testCredential1, testNowDate, testUser1 } from "../utils/testing/data";
 import {
   createTestExpressApp,
   verifyAuthenticationRequiredResponse,
@@ -151,6 +151,7 @@ test("routes/profile", async (t) => {
       t.equal(options.title, "Profile");
       t.same(options.profile, {
         id: "123abc",
+        created: testNowDate,
         username: "bob",
         displayName: "Bob User",
         isAdmin: false,
@@ -198,6 +199,7 @@ test("routes/profile", async (t) => {
 
           t.same(modifyUserStub.firstCall.firstArg, {
             id: "123abc",
+            created: testNowDate,
             username: "bob",
             displayName: "Bad Bob",
             isAdmin: false,
@@ -231,6 +233,7 @@ test("routes/profile", async (t) => {
 
           t.same(modifyUserStub.firstCall.firstArg, {
             id: "123abc",
+            created: testNowDate,
             username: "bob",
             displayName: "Bad Bob",
             isAdmin: false,
@@ -257,6 +260,7 @@ test("routes/profile", async (t) => {
 
           t.same(modifyUserStub.firstCall.firstArg, {
             id: "123abc",
+            created: testNowDate,
             username: "bob",
             displayName: "Good Bob",
             isAdmin: false,

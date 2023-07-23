@@ -1,6 +1,8 @@
 import sinon from "sinon";
 import { test } from "tap";
 
+import { testNowDate, testUserIdentifier } from "../utils/testing/data";
+
 // test objects
 
 const dataProvider = {
@@ -16,12 +18,16 @@ const dataProvider = {
 };
 
 const validateUserFake = sinon.fake();
+const uniqueFake = sinon.fake.returns(testUserIdentifier);
+const nowFake = sinon.fake.returns(testNowDate);
 
 // helpers
 
 function importModule(test: Tap.Test) {
   return test.mock("./user", {
     "../data": { getProvider: () => dataProvider },
+    "../utils/identifier": { unique: uniqueFake },
+    "../utils/time": { now: nowFake },
     "./user-validation": {
       validateUser: validateUserFake,
     },
@@ -61,26 +67,46 @@ test("services/user", async (t) => {
   });
 
   t.test("createUser", async (t) => {
+    t.test("generates a unique ID", async (t) => {
+      const { createUser } = importModule(t);
+      createUser("bob", "Bob User");
+
+      t.ok(uniqueFake.called);
+      t.equal(uniqueFake.firstCall.args.length, 0);
+    });
+
+    t.test("sets created to now", async (t) => {
+      const { createUser } = importModule(t);
+      createUser("bob", "Bob User");
+
+      t.ok(nowFake.called);
+      t.equal(nowFake.firstCall.args.length, 0);
+    });
+
     t.test("validates the user", async (t) => {
       const { createUser } = importModule(t);
       createUser("bob", "Bob User");
 
       t.ok(validateUserFake.called);
-      t.match(validateUserFake.firstCall.firstArg, {
-        id: /^[\S]{22}/,
+      t.same(validateUserFake.firstCall.firstArg, {
+        id: testUserIdentifier,
         username: "bob",
         displayName: "Bob User",
+        created: testNowDate,
+        isAdmin: false,
       });
     });
 
-    t.test("returns expected user with generated ID", async (t) => {
+    t.test("returns expected user data", async (t) => {
       const { createUser } = importModule(t);
       const user = createUser("bob", "Bob User");
 
-      t.match(user, {
-        id: /^[\S]{22}/,
+      t.same(user, {
+        id: testUserIdentifier,
         username: "bob",
         displayName: "Bob User",
+        created: testNowDate,
+        isAdmin: false,
       });
     });
   });

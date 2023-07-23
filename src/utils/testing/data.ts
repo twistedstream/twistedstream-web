@@ -8,8 +8,13 @@ import { Authenticator, User } from "../../types/entity";
 
 // reusable test objects
 
+export const testNowDate: Date = new Date(2023, 1, 1);
+
+export const testUserIdentifier: string = "123abc";
+
 export const testUser1: User = {
-  id: "123abc",
+  id: testUserIdentifier,
+  created: testNowDate,
   username: "bob",
   displayName: "Bob User",
   isAdmin: false,
