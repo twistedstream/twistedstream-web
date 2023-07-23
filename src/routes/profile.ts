@@ -28,7 +28,7 @@ router.get(
     const passkeys = [...credentials].map((c) => ({
       id: c.credentialID,
       type: c.credentialDeviceType,
-      created: c.created,
+      created: c.created.toISOString(),
     }));
 
     const viewProfile = {

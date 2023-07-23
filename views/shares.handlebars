@@ -19,16 +19,57 @@
       <div class="row mt-3">
         <div class="col text-center">
           <h3>Files shared with me</h3>
-          <p>(files)</p>
+
+          {{#if sharesWithMe}}
+          <table class="table d-flex justify-content-center">
+            <tr>
+              <th>title</th>
+              <th>created</th>
+              <th>shared by</th>
+              <th>accepted</th>
+            </tr>
+            {{#each sharesWithMe}}
+            <tr>
+              <td><a href="{{url}}" target="_blank">{{title}}</a></td>
+              <td>{{created}}</td>
+              <td>{{from}}</td>
+              <td>{{claimed}}</td>
+            </tr>
+            {{/each}}
+          </table>
+          {{else}}
+          (none)
+          {{/if}}
         </div>
       </div>
 
+      {{#if user.isAdmin}}
       <div class="row mt-3">
         <div class="col text-center">
           <h3>Files I've shared</h3>
-          <p>(files)</p>
+          {{#if sharesFromMe}}
+          <table class="table d-flex justify-content-center">
+            <tr>
+              <th>title</th>
+              <th>created</th>
+              <th>shared to</th>
+              <th>claimed</th>
+            </tr>
+            {{#each sharesFromMe}}
+            <tr>
+              <td><a href="{{url}}" target="_blank">{{title}}</a></td>
+              <td>{{created}}</td>
+              <td>{{to}}</td>
+              <td>{{claimed}}</td>
+            </tr>
+            {{/each}}
+          </table>
+          {{else}}
+          (none)
+          {{/if}}
         </div>
       </div>
+      {{/if}}
     </div>
   {{/inline}}
 

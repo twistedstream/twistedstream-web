@@ -8,10 +8,7 @@ import request, {
 import { test } from "tap";
 
 import { StatusCodes } from "http-status-codes";
-import {
-  testCredential1 as testCredential,
-  testUser1,
-} from "../../utils/testing/data";
+import { testCredential1, testUser1 } from "../../utils/testing/data";
 import {
   createTestExpressApp,
   verifyFido2SuccessResponse,
@@ -104,7 +101,7 @@ function createAssertionTestExpressApp(
       ? {
           originalUrl: "/",
           activeUser: testUser1,
-          activeCredential: testCredential,
+          activeCredential: testCredential1,
         }
       : undefined,
     middlewareSetup: (app) => {
@@ -190,7 +187,7 @@ test("routes/fido2/assertion", async (t) => {
     t.test("if username is passed in the request", async (t) => {
       t.test("fetches user with trimmed username", async (t) => {
         fetchUserByNameStub.resolves({});
-        fetchCredentialsByUsernameStub.resolves([{ ...testCredential }]);
+        fetchCredentialsByUsernameStub.resolves([{ ...testCredential1 }]);
 
         const { app } = createAssertionTestExpressApp(t);
         await performOptionsPostRequest(app).send({
@@ -223,7 +220,7 @@ test("routes/fido2/assertion", async (t) => {
 
       t.test("fetches user's credentials with trimmed username", async (t) => {
         fetchUserByNameStub.resolves({});
-        fetchCredentialsByUsernameStub.resolves([{ ...testCredential }]);
+        fetchCredentialsByUsernameStub.resolves([{ ...testCredential1 }]);
 
         const { app } = createAssertionTestExpressApp(t);
         await performOptionsPostRequest(app).send({
@@ -277,7 +274,7 @@ test("routes/fido2/assertion", async (t) => {
     t.test("generates authentication options", async (t) => {
       t.test("with expected allowed credentials", async (t) => {
         fetchUserByNameStub.resolves({});
-        fetchCredentialsByUsernameStub.resolves([{ ...testCredential }]);
+        fetchCredentialsByUsernameStub.resolves([{ ...testCredential1 }]);
         generateAuthenticationOptionsStub.returns({});
 
         const { app } = createAssertionTestExpressApp(t);
@@ -290,10 +287,10 @@ test("routes/fido2/assertion", async (t) => {
           generateAuthenticationOptionsStub.firstCall.args[0].allowCredentials,
           [
             {
-              id: base64.toArrayBuffer(testCredential.credentialID, true),
+              id: base64.toArrayBuffer(testCredential1.credentialID, true),
               type: "public-key",
-              transports: testCredential.transports
-                ? [...testCredential.transports]
+              transports: testCredential1.transports
+                ? [...testCredential1.transports]
                 : [],
             },
           ]
@@ -304,7 +301,7 @@ test("routes/fido2/assertion", async (t) => {
         "with expected user verification passed in the request",
         async (t) => {
           fetchUserByNameStub.resolves({});
-          fetchCredentialsByUsernameStub.resolves([{ ...testCredential }]);
+          fetchCredentialsByUsernameStub.resolves([{ ...testCredential1 }]);
           generateAuthenticationOptionsStub.returns({});
 
           const { app } = createAssertionTestExpressApp(t);
@@ -324,7 +321,7 @@ test("routes/fido2/assertion", async (t) => {
 
       t.test("with expected default user verification", async (t) => {
         fetchUserByNameStub.resolves({});
-        fetchCredentialsByUsernameStub.resolves([{ ...testCredential }]);
+        fetchCredentialsByUsernameStub.resolves([{ ...testCredential1 }]);
         generateAuthenticationOptionsStub.returns({});
 
         const { app } = createAssertionTestExpressApp(t);
@@ -346,7 +343,7 @@ test("routes/fido2/assertion", async (t) => {
         async (t) => {
           const existingUser = {};
           fetchUserByNameStub.resolves(existingUser);
-          fetchCredentialsByUsernameStub.resolves([{ ...testCredential }]);
+          fetchCredentialsByUsernameStub.resolves([{ ...testCredential1 }]);
           generateAuthenticationOptionsStub.returns({
             challenge: "CHALLENGE!",
           });
@@ -370,7 +367,7 @@ test("routes/fido2/assertion", async (t) => {
         "with expected user verification passed in the request",
         async (t) => {
           fetchUserByNameStub.resolves({});
-          fetchCredentialsByUsernameStub.resolves([{ ...testCredential }]);
+          fetchCredentialsByUsernameStub.resolves([{ ...testCredential1 }]);
           generateAuthenticationOptionsStub.returns({
             challenge: "CHALLENGE!",
           });
@@ -388,7 +385,7 @@ test("routes/fido2/assertion", async (t) => {
 
       t.test("with expected default user verification", async (t) => {
         fetchUserByNameStub.resolves({});
-        fetchCredentialsByUsernameStub.resolves([{ ...testCredential }]);
+        fetchCredentialsByUsernameStub.resolves([{ ...testCredential1 }]);
         generateAuthenticationOptionsStub.returns({
           challenge: "CHALLENGE!",
         });
@@ -407,7 +404,7 @@ test("routes/fido2/assertion", async (t) => {
       "if successful, renders JSON with expected options data",
       async (t) => {
         fetchUserByNameStub.resolves({});
-        fetchCredentialsByUsernameStub.resolves([{ ...testCredential }]);
+        fetchCredentialsByUsernameStub.resolves([{ ...testCredential1 }]);
         generateAuthenticationOptionsStub.returns({
           challenge: "CHALLENGE!",
         });
@@ -444,12 +441,15 @@ test("routes/fido2/assertion", async (t) => {
 
     t.test("gets the authentication state", async (t) => {
       getAuthenticationStub.returns({});
-      fetchCredentialByIdStub.resolves({ ...testCredential });
+      fetchCredentialByIdStub.resolves({
+        ...testCredential1,
+        user: { ...testUser1 },
+      });
       fetchUserByIdStub.resolves({});
 
       const { app } = createAssertionTestExpressApp(t);
       await performResultPostRequest(app).send({
-        id: testCredential.credentialID,
+        id: testCredential1.credentialID,
       });
 
       t.ok(getAuthenticationStub.called);
@@ -466,7 +466,7 @@ test("routes/fido2/assertion", async (t) => {
 
         const { app } = createAssertionTestExpressApp(t);
         const response = await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
         });
 
         verifyUserErrorFido2ServerResponse(
@@ -480,18 +480,21 @@ test("routes/fido2/assertion", async (t) => {
 
     t.test("fetches active credential by ID", async (t) => {
       getAuthenticationStub.returns({});
-      fetchCredentialByIdStub.resolves({ ...testCredential });
+      fetchCredentialByIdStub.resolves({
+        ...testCredential1,
+        user: { ...testUser1 },
+      });
       fetchUserByIdStub.resolves({});
 
       const { app } = createAssertionTestExpressApp(t);
       await performResultPostRequest(app).send({
-        id: testCredential.credentialID,
+        id: testCredential1.credentialID,
       });
 
       t.ok(fetchCredentialByIdStub.called);
       t.equal(
         fetchCredentialByIdStub.firstCall.firstArg,
-        testCredential.credentialID
+        testCredential1.credentialID
       );
     });
 
@@ -503,7 +506,7 @@ test("routes/fido2/assertion", async (t) => {
 
         const { app } = createAssertionTestExpressApp(t);
         const response = await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
         });
 
         verifyFailedAuthenticationFido2ErrorResponse(t, response);
@@ -511,7 +514,7 @@ test("routes/fido2/assertion", async (t) => {
         t.ok(logger.warn.called);
         t.match(
           logger.warn.firstCall.firstArg,
-          "No credential found with ID " + testCredential.credentialID
+          "No credential found with ID " + testCredential1.credentialID
         );
       }
     );
@@ -522,11 +525,14 @@ test("routes/fido2/assertion", async (t) => {
         getAuthenticationStub.returns({
           authenticatingUser: { id: "321cba" },
         });
-        fetchCredentialByIdStub.resolves({ ...testCredential });
+        fetchCredentialByIdStub.resolves({
+          ...testCredential1,
+          user: { ...testUser1 },
+        });
 
         const { app } = createAssertionTestExpressApp(t);
         const response = await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
         });
 
         verifyFailedAuthenticationFido2ErrorResponse(t, response);
@@ -535,7 +541,7 @@ test("routes/fido2/assertion", async (t) => {
         t.match(
           logger.warn.firstCall.firstArg,
           "Presented credential (id = " +
-            testCredential.credentialID +
+            testCredential1.credentialID +
             ") is not associated with specified user (id = 321cba)"
         );
       }
@@ -544,14 +550,14 @@ test("routes/fido2/assertion", async (t) => {
     t.test("fetches matching existing user", async (t) => {
       getAuthenticationStub.returns({});
       fetchCredentialByIdStub.resolves({
-        ...testCredential,
-        userID: testUser1.id,
+        ...testCredential1,
+        user: { ...testUser1 },
       });
       fetchUserByIdStub.resolves({});
 
       const { app } = createAssertionTestExpressApp(t);
       await performResultPostRequest(app).send({
-        id: testCredential.credentialID,
+        id: testCredential1.credentialID,
       });
 
       t.ok(fetchUserByIdStub.called);
@@ -562,14 +568,17 @@ test("routes/fido2/assertion", async (t) => {
       "if no matching existing user is found, renders JSON with expected server error",
       async (t) => {
         getAuthenticationStub.returns({});
-        fetchCredentialByIdStub.resolves({ ...testCredential });
+        fetchCredentialByIdStub.resolves({
+          ...testCredential1,
+          user: { ...testUser1 },
+        });
         fetchUserByIdStub.resolves(undefined);
 
         const { app } = createAssertionTestExpressApp(t, {
           suppressErrorOutput: true,
         });
         const response = await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
         });
 
         verifyServerErrorFido2ServerResponse(
@@ -584,30 +593,34 @@ test("routes/fido2/assertion", async (t) => {
       getAuthenticationStub.returns({
         challenge: "CHALLENGE!",
       });
-      fetchCredentialByIdStub.resolves({ ...testCredential });
+      fetchCredentialByIdStub.resolves({
+        ...testCredential1,
+        user: { ...testUser1 },
+      });
       fetchUserByIdStub.resolves({});
 
       const { app } = createAssertionTestExpressApp(t);
       await performResultPostRequest(app).send({
-        id: testCredential.credentialID,
+        id: testCredential1.credentialID,
       });
 
       t.ok(verifyAuthenticationResponseStub.called);
       t.same(verifyAuthenticationResponseStub.firstCall.firstArg, {
         response: {
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
         },
         expectedChallenge: "CHALLENGE!",
         expectedOrigin: "https://example.com",
         expectedRPID: "example.com",
         authenticator: {
-          ...testCredential,
+          ...testCredential1,
           credentialID: new Uint8Array(
-            base64.toArrayBuffer(testCredential.credentialID, true)
+            base64.toArrayBuffer(testCredential1.credentialID, true)
           ),
           credentialPublicKey: new Uint8Array(
-            base64.toArrayBuffer(testCredential.credentialPublicKey, true)
+            base64.toArrayBuffer(testCredential1.credentialPublicKey, true)
           ),
+          user: testUser1,
         },
       });
     });
@@ -616,14 +629,17 @@ test("routes/fido2/assertion", async (t) => {
       "if authentication response verification fails, renders JSON with expected user error",
       async (t) => {
         getAuthenticationStub.returns({});
-        fetchCredentialByIdStub.resolves({ ...testCredential });
+        fetchCredentialByIdStub.resolves({
+          ...testCredential1,
+          user: { ...testUser1 },
+        });
         fetchUserByIdStub.resolves({ ...testUser1 });
         const err = new Error("PKI sez nope");
         verifyAuthenticationResponseStub.throws(err);
 
         const { app } = createAssertionTestExpressApp(t);
         const response = await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
         });
 
         verifyFailedAuthenticationFido2ErrorResponse(t, response);
@@ -635,7 +651,7 @@ test("routes/fido2/assertion", async (t) => {
           "Authentication error with user (id = " +
             testUser1.id +
             ") and credential (id = " +
-            testCredential.credentialID +
+            testCredential1.credentialID +
             ")"
         );
       }
@@ -643,12 +659,15 @@ test("routes/fido2/assertion", async (t) => {
 
     t.test("gets return to URL", async (t) => {
       getAuthenticationStub.returns({});
-      fetchCredentialByIdStub.resolves({ ...testCredential });
+      fetchCredentialByIdStub.resolves({
+        ...testCredential1,
+        user: { ...testUser1 },
+      });
       fetchUserByIdStub.resolves({});
 
       const { app } = createAssertionTestExpressApp(t);
       await performResultPostRequest(app).send({
-        id: testCredential.credentialID,
+        id: testCredential1.credentialID,
       });
 
       t.ok(getReturnToStub.called);
@@ -660,12 +679,13 @@ test("routes/fido2/assertion", async (t) => {
 
     t.test("performs sign in", async (t) => {
       getAuthenticationStub.returns({});
-      fetchCredentialByIdStub.resolves(testCredential);
+      const activeCredential = { ...testCredential1, user: { ...testUser1 } };
+      fetchCredentialByIdStub.resolves(activeCredential);
       fetchUserByIdStub.resolves(testUser1);
 
       const { app } = createAssertionTestExpressApp(t);
       await performResultPostRequest(app).send({
-        id: testCredential.credentialID,
+        id: testCredential1.credentialID,
       });
 
       t.ok(signInFake.called);
@@ -674,20 +694,23 @@ test("routes/fido2/assertion", async (t) => {
         method: "POST",
       });
       t.equal(signInFake.firstCall.args[1], testUser1);
-      t.equal(signInFake.firstCall.args[2], testCredential);
+      t.equal(signInFake.firstCall.args[2], activeCredential);
     });
 
     t.test(
       "if successful, renders JSON with expected options data",
       async (t) => {
         getAuthenticationStub.returns({});
-        fetchCredentialByIdStub.resolves({ ...testCredential });
+        fetchCredentialByIdStub.resolves({
+          ...testCredential1,
+          user: { ...testUser1 },
+        });
         fetchUserByIdStub.resolves({});
         getReturnToStub.returns("/foo");
 
         const { app } = createAssertionTestExpressApp(t);
         const response = await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
         });
 
         verifyFido2SuccessResponse(t, response, {

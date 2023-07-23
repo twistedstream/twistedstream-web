@@ -157,13 +157,13 @@ test("routes/profile", async (t) => {
         activePasskey: {
           id: testCredential1.credentialID,
           type: "multiDevice",
-          created: new Date(2023, 1, 1),
+          created: "2023-02-01T06:00:00.000Z",
         },
         otherPasskeys: [
           {
             id: "987zyx",
             type: "multiDevice",
-            created: new Date(2023, 2, 1),
+            created: "2023-03-01T06:00:00.000Z",
           },
         ],
       });

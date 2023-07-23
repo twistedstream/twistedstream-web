@@ -26,7 +26,8 @@ test("Manage profile", async (t) => {
   const state = createIntegrationTestState(
     t,
     [{ ...testUser1 }],
-    [{ ...testCredential1, userID: testUser1.id }]
+    [{ ...testCredential1, user: testUser1 }],
+    []
   );
 
   t.test("Initial data state", async () => {

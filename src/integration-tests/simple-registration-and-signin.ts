@@ -25,7 +25,7 @@ test("Navigate, register a new user, sign out, sign in", async (t) => {
   });
 
   // start with no registered users
-  const state = createIntegrationTestState(t, [], []);
+  const state = createIntegrationTestState(t, [], [], []);
 
   t.test("Initial data state", async () => {
     // we should have no users or creds

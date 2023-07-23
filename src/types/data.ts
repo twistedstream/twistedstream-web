@@ -1,4 +1,4 @@
-import { Authenticator, RegisteredAuthenticator, User } from "./entity";
+import { Authenticator, RegisteredAuthenticator, Share, User } from "./entity";
 
 export interface IDataProvider {
   // users
@@ -27,4 +27,18 @@ export interface IDataProvider {
   insertCredential(userID: string, credential: Authenticator): Promise<void>;
 
   deleteCredential(credentialID: string): Promise<void>;
+
+  // shares
+
+  findSharesByClaimedUserId(userID: string): Promise<Share[]>;
+
+  /**
+  findSharesByFromUserId(userID: string): Promise<Share | undefined>;
+
+  findSharesById(shareId: string): Promise<Share | undefined>;
+
+  insertShare(share: Share): Promise<Share>;
+
+  deleteShare(shareId: string): Promise<void>;
+  */
 }

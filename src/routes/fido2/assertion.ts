@@ -136,7 +136,7 @@ router.post("/result", json(), async (req: Request, res: Response) => {
   }
   if (
     authentication.authenticatingUser &&
-    activeCredential.userID !== authentication.authenticatingUser.id
+    activeCredential.user.id !== authentication.authenticatingUser.id
   ) {
     logger.warn(
       `/assertion/result: Presented credential (id = ${activeCredential.credentialID}) is not associated with specified user (id = ${authentication.authenticatingUser.id})`
@@ -146,11 +146,11 @@ router.post("/result", json(), async (req: Request, res: Response) => {
   }
 
   // fetch associated user
-  const existingUser = await fetchUserById(activeCredential.userID);
+  const existingUser = await fetchUserById(activeCredential.user.id);
   if (!existingUser) {
     // NOTE: this shouldn't happen unless there's a data integrity issue
     throw new Error(
-      `Cannot find user (id = ${activeCredential.userID}) associated with active credential (id =${activeCredential.credentialID})`
+      `Cannot find user (id = ${activeCredential.user.id}) associated with active credential (id =${activeCredential.credentialID})`
     );
   }
 

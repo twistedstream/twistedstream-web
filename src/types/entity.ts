@@ -22,7 +22,7 @@ export interface Authenticator {
 }
 
 export interface RegisteredAuthenticator extends Authenticator {
-  userID: string;
+  user: User;
 }
 
 export type ShareType = "pdf";
@@ -30,10 +30,11 @@ export type ShareType = "pdf";
 export interface Share {
   id: string;
   created: Date;
-  fromUserId: string;
+  fromUser: User;
   toUsername?: string;
-  claimedUserId?: string;
+  claimedUser?: User;
   claimed?: Date;
   backingUrl: string;
+  title: string;
   type: ShareType;
 }

@@ -8,6 +8,7 @@ import { InMemoryDataProvider } from "../../data/in-memory";
 import {
   Authenticator,
   RegisteredAuthenticator,
+  Share,
   User,
 } from "../../types/entity";
 import { IntegrationTestState } from "../../types/test";
@@ -17,14 +18,15 @@ import { IntegrationTestState } from "../../types/test";
 export function createIntegrationTestState(
   test: Tap.Test,
   users: User[],
-  credentials: RegisteredAuthenticator[]
+  credentials: RegisteredAuthenticator[],
+  shares: Share[]
 ): IntegrationTestState {
   const verifyRegistrationResponseStub = sinon.stub();
   const verifyAuthenticationResponseStub = sinon.stub();
 
   const { default: app } = test.mock("../../app", {
     "../../data": {
-      getProvider: () => new InMemoryDataProvider(users, credentials),
+      getProvider: () => new InMemoryDataProvider(users, credentials, shares),
     },
     "@simplewebauthn/server": {
       ...simpleWebAuthnServerDefaults,
@@ -157,7 +159,8 @@ export function assertUserAndAssociatedCredentials(
   for (const credential of associatedCredentials) {
     const foundCredential = state.credentials.find(
       (c) =>
-        c.credentialID === credential.credentialID && c.userID === foundUser?.id
+        c.credentialID === credential.credentialID &&
+        c.user.id === foundUser?.id
     );
     test.ok(foundCredential);
   }
@@ -251,7 +254,7 @@ export async function doSignIn(
   const associatedUser = state.users.find((u) => u.username === username);
   test.ok(associatedUser, `No user in test state with name: ${username}`);
   const allowCredentials = state.credentials
-    .filter((c) => c.userID === associatedUser?.id)
+    .filter((c) => c.user.id === associatedUser?.id)
     .map((c) => ({
       type: "public-key",
       id: c.credentialID,

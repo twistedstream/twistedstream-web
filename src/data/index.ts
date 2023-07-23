@@ -12,7 +12,7 @@ export function getProvider(): IDataProvider {
     assert(dataProviderName, "Missing config: data provider name");
     switch (dataProviderName) {
       case "in-memory":
-        provider = new InMemoryDataProvider([], []);
+        provider = new InMemoryDataProvider([], [], []);
         break;
       // FUTURE: Google Sheets data provider
     }

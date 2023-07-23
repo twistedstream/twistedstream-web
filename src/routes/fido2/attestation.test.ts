@@ -6,10 +6,7 @@ import { test } from "tap";
 
 import { StatusCodes } from "http-status-codes";
 import { ValidationError } from "../../types/error";
-import {
-  testCredential1 as testCredential,
-  testUser1,
-} from "../../utils/testing/data";
+import { testCredential1, testUser1 } from "../../utils/testing/data";
 import {
   createTestExpressApp,
   verifyFido2SuccessResponse,
@@ -31,10 +28,10 @@ type AttestationTestExpressAppOptions = {
 // test objects
 
 const testValidatedCredential = {
-  ...testCredential,
-  credentialID: base64.toArrayBuffer(testCredential.credentialID, true),
+  ...testCredential1,
+  credentialID: base64.toArrayBuffer(testCredential1.credentialID, true),
   credentialPublicKey: base64.toArrayBuffer(
-    testCredential.credentialPublicKey,
+    testCredential1.credentialPublicKey,
     true
   ),
 };
@@ -121,7 +118,7 @@ function createAttestationTestExpressApp(
       ? {
           originalUrl: "/",
           activeUser: { ...testUser1 },
-          activeCredential: { ...testCredential },
+          activeCredential: { ...testCredential1 },
         }
       : undefined,
     middlewareSetup: (app) => {
@@ -179,7 +176,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test("fetches exiting user by ID", async (t) => {
         createUserStub.returns({});
         fetchUserByIdStub.resolves({});
-        fetchCredentialsByUserIdStub.resolves([{ ...testCredential }]);
+        fetchCredentialsByUserIdStub.resolves([{ ...testCredential1 }]);
 
         const { app } = createAttestationTestExpressApp(t, {
           withAuth: true,
@@ -213,7 +210,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test("fetches user's existing credentials", async (t) => {
         createUserStub.returns({});
         fetchUserByIdStub.resolves({});
-        fetchCredentialsByUserIdStub.resolves([{ ...testCredential }]);
+        fetchCredentialsByUserIdStub.resolves([{ ...testCredential1 }]);
 
         const { app } = createAttestationTestExpressApp(t, {
           withAuth: true,
@@ -339,7 +336,7 @@ test("routes/fido2/attestation", async (t) => {
         username: "bob",
         displayName: "Bob User",
       });
-      fetchCredentialsByUserIdStub.resolves([{ ...testCredential }]);
+      fetchCredentialsByUserIdStub.resolves([{ ...testCredential1 }]);
       generateRegistrationOptionsStub.returns({});
 
       const { app } = createAttestationTestExpressApp(t, { withAuth: true });
@@ -357,10 +354,10 @@ test("routes/fido2/attestation", async (t) => {
         attestationType: "platform",
         excludeCredentials: [
           {
-            id: base64.toArrayBuffer(testCredential.credentialID, true),
+            id: base64.toArrayBuffer(testCredential1.credentialID, true),
             type: "public-key",
-            transports: testCredential.transports
-              ? [...testCredential.transports]
+            transports: testCredential1.transports
+              ? [...testCredential1.transports]
               : [],
           },
         ],
@@ -430,7 +427,7 @@ test("routes/fido2/attestation", async (t) => {
       async (t) => {
         const { app } = createAttestationTestExpressApp(t);
         const response = await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
         });
 
         verifyUserErrorFido2ServerResponse(
@@ -450,7 +447,7 @@ test("routes/fido2/attestation", async (t) => {
 
       const { app } = createAttestationTestExpressApp(t);
       await performResultPostRequest(app).send({
-        id: testCredential.credentialID,
+        id: testCredential1.credentialID,
         response: {},
       });
 
@@ -468,7 +465,7 @@ test("routes/fido2/attestation", async (t) => {
 
         const { app } = createAttestationTestExpressApp(t);
         const response = await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
           response: {},
         });
 
@@ -489,7 +486,7 @@ test("routes/fido2/attestation", async (t) => {
 
       const { app } = createAttestationTestExpressApp(t);
       await performResultPostRequest(app).send({
-        id: testCredential.credentialID,
+        id: testCredential1.credentialID,
         response: {
           transports: ["ble", "usb"],
         },
@@ -498,7 +495,7 @@ test("routes/fido2/attestation", async (t) => {
       t.ok(verifyRegistrationResponseStub.called);
       t.same(verifyRegistrationResponseStub.firstCall.firstArg, {
         response: {
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
           response: {
             transports: ["ble", "usb"],
           },
@@ -518,7 +515,7 @@ test("routes/fido2/attestation", async (t) => {
 
         const { app } = createAttestationTestExpressApp(t);
         const response = await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
           response: {},
         });
 
@@ -544,7 +541,7 @@ test("routes/fido2/attestation", async (t) => {
 
         const { app } = createAttestationTestExpressApp(t, { withAuth: true });
         await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
           response: {
             transports: ["internal"],
           },
@@ -553,7 +550,7 @@ test("routes/fido2/attestation", async (t) => {
         t.ok(addUserCredentialFake.called);
         t.equal(addUserCredentialFake.firstCall.args[0], "123abc");
         t.match(addUserCredentialFake.firstCall.args[1], {
-          ...testCredential,
+          ...testCredential1,
           userId: undefined,
           created: /.*/,
         });
@@ -569,7 +566,7 @@ test("routes/fido2/attestation", async (t) => {
 
         const { app } = createAttestationTestExpressApp(t);
         await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
           response: {
             transports: ["internal"],
           },
@@ -578,7 +575,7 @@ test("routes/fido2/attestation", async (t) => {
         t.ok(registerUserStub.called);
         t.same(registerUserStub.firstCall.args[0], { ...testUser1 });
         t.match(registerUserStub.firstCall.args[1], {
-          ...testCredential,
+          ...testCredential1,
           created: /.*/,
         });
       });
@@ -593,7 +590,7 @@ test("routes/fido2/attestation", async (t) => {
 
         const { app } = createAttestationTestExpressApp(t);
         await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
           response: {
             transports: ["internal"],
           },
@@ -606,7 +603,7 @@ test("routes/fido2/attestation", async (t) => {
         });
         t.equal(signInFake.firstCall.args[1], user);
         t.match(signInFake.firstCall.args[2], {
-          ...testCredential,
+          ...testCredential1,
           created: /.*/,
         });
       });
@@ -620,7 +617,7 @@ test("routes/fido2/attestation", async (t) => {
 
       const { app } = createAttestationTestExpressApp(t);
       await performResultPostRequest(app).send({
-        id: testCredential.credentialID,
+        id: testCredential1.credentialID,
         response: {},
       });
 
@@ -642,7 +639,7 @@ test("routes/fido2/attestation", async (t) => {
 
         const { app } = createAttestationTestExpressApp(t);
         const response = await performResultPostRequest(app).send({
-          id: testCredential.credentialID,
+          id: testCredential1.credentialID,
           response: {},
         });
 
