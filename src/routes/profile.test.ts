@@ -3,8 +3,9 @@ import sinon from "sinon";
 import request, { Test as SuperTest } from "supertest";
 import { test } from "tap";
 
+import { DateTime } from "luxon";
 import { ValidationError } from "../types/error";
-import { testCredential1, testNowDate, testUser1 } from "../utils/testing/data";
+import { testCredential1, testUser1 } from "../utils/testing/data";
 import {
   createTestExpressApp,
   verifyAuthenticationRequiredResponse,
@@ -134,7 +135,11 @@ test("routes/profile", async (t) => {
         {
           credentialID: "987zyx",
           credentialDeviceType: "multiDevice",
-          created: new Date(2023, 2, 1),
+          created: DateTime.fromObject({
+            year: 2023,
+            month: 3,
+            day: 1,
+          }).toUTC(),
         },
       ]);
 
@@ -150,11 +155,11 @@ test("routes/profile", async (t) => {
       t.equal(viewName, "profile");
       t.equal(options.title, "Profile");
       t.same(options.profile, {
-        id: "123abc",
-        created: testNowDate,
-        username: "bob",
-        displayName: "Bob User",
-        isAdmin: false,
+        id: testUser1.id,
+        created: testUser1.created,
+        username: testUser1.username,
+        displayName: testUser1.displayName,
+        isAdmin: testUser1.isAdmin,
         activePasskey: {
           id: testCredential1.credentialID,
           type: "multiDevice",
@@ -198,11 +203,11 @@ test("routes/profile", async (t) => {
           const { viewName, options } = renderArgs;
 
           t.same(modifyUserStub.firstCall.firstArg, {
-            id: "123abc",
-            created: testNowDate,
-            username: "bob",
+            id: testUser1.id,
+            created: testUser1.created,
+            username: testUser1.username,
             displayName: "Bad Bob",
-            isAdmin: false,
+            isAdmin: testUser1.isAdmin,
           });
           t.equal(response.status, 400);
           t.match(response.headers["content-type"], "text/html");
@@ -232,11 +237,11 @@ test("routes/profile", async (t) => {
           const { viewName, options } = renderArgs;
 
           t.same(modifyUserStub.firstCall.firstArg, {
-            id: "123abc",
-            created: testNowDate,
-            username: "bob",
+            id: testUser1.id,
+            created: testUser1.created,
+            username: testUser1.username,
             displayName: "Bad Bob",
-            isAdmin: false,
+            isAdmin: testUser1.isAdmin,
           });
           t.equal(response.status, 500);
           t.match(response.headers["content-type"], "text/html");
@@ -259,9 +264,9 @@ test("routes/profile", async (t) => {
           });
 
           t.same(modifyUserStub.firstCall.firstArg, {
-            id: "123abc",
-            created: testNowDate,
-            username: "bob",
+            id: testUser1.id,
+            created: testUser1.created,
+            username: testUser1.username,
             displayName: "Good Bob",
             isAdmin: false,
           });

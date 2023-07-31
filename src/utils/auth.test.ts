@@ -1,6 +1,7 @@
 import sinon from "sinon";
 import { test } from "tap";
 
+import { DateTime } from "luxon";
 import { testNowDate, testUser1 } from "./testing/data";
 
 // test objects
@@ -41,10 +42,10 @@ test("utils/auth", async (t) => {
       const { registration } = req.session;
       t.ok(registration);
       t.same(registration.registeringUser, {
-        id: "123abc",
-        created: testNowDate,
-        username: "bob",
-        displayName: "Bob User",
+        id: testUser1.id,
+        created: testUser1.created,
+        username: testUser1.username,
+        displayName: testUser1.displayName,
         isAdmin: false,
       });
       t.equal(registration.challenge, "CHALLENGE!");
@@ -62,10 +63,7 @@ test("utils/auth", async (t) => {
         t.ok(req.session);
         const { authentication } = req.session;
         t.ok(authentication);
-        t.same(authentication.authenticatingUser, {
-          id: "123abc",
-          username: "bob",
-        });
+        t.same(authentication.authenticatingUser, testUser1);
         t.equal(authentication.challenge, "CHALLENGE!");
         t.equal(authentication.userVerification, "preferred");
       });
@@ -87,20 +85,16 @@ test("utils/auth", async (t) => {
   });
 
   t.test("signIn", async (t) => {
-    t.test("saves authenticated identity in session", async (t) => {
+    t.test("saves registered credential in session", async (t) => {
       const req: any = {};
       const credential: any = {};
 
       const { signIn } = importModule(t);
-      signIn(req, { ...testUser1 }, credential);
+      signIn(req, credential);
 
       t.ok(req.session);
       const { authentication } = req.session;
       t.ok(authentication);
-      t.same(authentication.user, {
-        id: "123abc",
-        username: "bob",
-      });
       t.equal(authentication.credential, credential);
       t.ok(authentication.time);
     });
@@ -193,12 +187,14 @@ test("utils/auth", async (t) => {
 
   t.test("auth", async (t) => {
     const user = {};
-    const credential = {};
+    const credential = { user };
     const res: any = {};
 
     t.test("sets expected req fields if user authenticated", async (t) => {
       const req: any = {
-        session: { authentication: { time: Date.now(), user, credential } },
+        session: {
+          authentication: { time: DateTime.now().toMillis(), credential },
+        },
       };
       let nextCalled = false;
       const next = () => {

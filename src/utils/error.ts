@@ -28,8 +28,8 @@ export const NotFoundError = () =>
 export const BadRequestError = (message: string) =>
   new ErrorWithStatusCode(StatusCodes.BAD_REQUEST, message);
 
-export const UnauthorizedError = () =>
-  new ErrorWithStatusCode(StatusCodes.UNAUTHORIZED);
+export const UnauthorizedError = (message?: string) =>
+  new ErrorWithStatusCode(StatusCodes.UNAUTHORIZED, message);
 
 export const ForbiddenError = (message: string) =>
   new ErrorWithStatusCode(StatusCodes.FORBIDDEN, message);

@@ -66,26 +66,26 @@ test("services/user", async (t) => {
     });
   });
 
-  t.test("createUser", async (t) => {
+  t.test("newUser", async (t) => {
     t.test("generates a unique ID", async (t) => {
-      const { createUser } = importModule(t);
-      createUser("bob", "Bob User");
+      const { newUser } = importModule(t);
+      newUser("bob", "Bob User");
 
       t.ok(uniqueFake.called);
       t.equal(uniqueFake.firstCall.args.length, 0);
     });
 
     t.test("sets created to now", async (t) => {
-      const { createUser } = importModule(t);
-      createUser("bob", "Bob User");
+      const { newUser } = importModule(t);
+      newUser("bob", "Bob User");
 
       t.ok(nowFake.called);
       t.equal(nowFake.firstCall.args.length, 0);
     });
 
     t.test("validates the user", async (t) => {
-      const { createUser } = importModule(t);
-      createUser("bob", "Bob User");
+      const { newUser } = importModule(t);
+      newUser("bob", "Bob User");
 
       t.ok(validateUserFake.called);
       t.same(validateUserFake.firstCall.firstArg, {
@@ -98,8 +98,8 @@ test("services/user", async (t) => {
     });
 
     t.test("returns expected user data", async (t) => {
-      const { createUser } = importModule(t);
-      const user = createUser("bob", "Bob User");
+      const { newUser } = importModule(t);
+      const user = newUser("bob", "Bob User");
 
       t.same(user, {
         id: testUserIdentifier,

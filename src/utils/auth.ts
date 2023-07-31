@@ -5,9 +5,14 @@ import { UserVerificationRequirement } from "@simplewebauthn/typescript-types";
 import {
   AuthenticatedSession,
   AuthenticatingSession,
+  RegisterableSession,
   RegisteringSession,
 } from "../types/auth";
-import { Authenticator, User } from "../types/entity";
+import {
+  RegisterableSource,
+  RegisteredAuthenticator,
+  User,
+} from "../types/entity";
 import { AuthenticatedRequest } from "../types/express";
 import { now } from "../utils/time";
 
@@ -17,6 +22,17 @@ export function capturePreAuthState(req: Request) {
   req.session = req.session || {};
   const { return_to } = req.query;
   req.session.return_to = return_to;
+}
+
+export function authorizeRegistration(
+  req: Request,
+  source: RegisterableSource
+) {
+  req.session = req.session || {};
+
+  req.session.registerable = <RegisterableSession>{
+    source,
+  };
 }
 
 export function beginSignup(
@@ -41,12 +57,7 @@ export function beginSignIn(
   req.session = req.session || {};
 
   req.session.authentication = <AuthenticatingSession>{
-    authenticatingUser: existingUser
-      ? {
-          id: existingUser.id,
-          username: existingUser.username,
-        }
-      : null,
+    authenticatingUser: existingUser,
     userVerification,
     challenge,
   };
@@ -54,30 +65,28 @@ export function beginSignIn(
 
 export function signIn(
   req: Request,
-  user: User,
-  credential: Authenticator
-): void {
+  credential: RegisteredAuthenticator
+): string {
   req.session = req.session || {};
 
   // update session
-  const { id, username } = user;
   req.session.authentication = <AuthenticatedSession>{
-    user: { id, username },
     credential,
-    time: now().getTime(),
+    time: now().toMillis(),
   };
+
+  // get return_to
+  const returnTo = req.session?.return_to || "/";
 
   // clear temp session values
   delete req.session.registration;
   delete req.session.return_to;
+
+  return returnTo;
 }
 
 export function signOut(req: Request) {
   req.session = null;
-}
-
-export function getReturnTo(req: Request): string {
-  return req.session?.return_to || "/";
 }
 
 export function getAuthentication(
@@ -88,6 +97,21 @@ export function getAuthentication(
 
 export function getRegistration(req: Request): RegisteringSession | undefined {
   return req.session?.registration;
+}
+
+export function getRegisterable(req: Request): RegisterableSession | undefined {
+  return req.session?.registerable;
+}
+
+export function clearRegisterable(req: Request) {
+  req.session = req.session || {};
+
+  delete req.session.registerable;
+}
+
+export function redirectToRegister(req: Request, res: Response) {
+  const return_to = req.originalUrl;
+  res.redirect(`/register?${querystring.stringify({ return_to })}`);
 }
 
 // middleware
@@ -102,7 +126,7 @@ export function auth() {
 
     // FUTURE: only set user if session hasn't expired
     if (authentication?.time) {
-      req.user = authentication.user;
+      req.user = authentication.credential.user;
       req.credential = authentication.credential;
     }
 

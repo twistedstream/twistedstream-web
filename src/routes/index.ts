@@ -1,12 +1,14 @@
 import { Request, Response, Router } from "express";
-import { capturePreAuthState, signOut } from "../utils/auth";
+import { capturePreAuthState, getRegisterable, signOut } from "../utils/auth";
 import {
   companyName,
   githubProfileUrl,
   linkedInProfileUrl,
   twitterProfileUrl,
 } from "../utils/config";
+import { UnauthorizedError } from "../utils/error";
 import fido2 from "./fido2";
+import invites from "./invites";
 import profile from "./profile";
 import shares from "./shares";
 
@@ -47,8 +49,17 @@ router.get("/github", (_req: Request, res: Response) => {
 router.get("/register", (req: Request, res: Response) => {
   capturePreAuthState(req);
 
+  const registerable = getRegisterable(req);
+  if (!registerable) {
+    throw UnauthorizedError("Registration not allowed without an invitation");
+  }
+
+  const { source } = registerable;
   res.render("register", {
     title: "Sign up",
+    source,
+    isInviteSource: source.sourceType === "invite",
+    isShareSource: source.sourceType === "share",
     return_to: req.query.return_to,
   });
 });
@@ -72,6 +83,7 @@ router.get("/logout", (req: Request, res: Response) => {
 
 router.use("/fido2", fido2);
 router.use("/profile", profile);
+router.use("/invites", invites);
 router.use("/shares", shares);
 
 export default router;

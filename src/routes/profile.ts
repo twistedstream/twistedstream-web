@@ -28,7 +28,7 @@ router.get(
     const passkeys = [...credentials].map((c) => ({
       id: c.credentialID,
       type: c.credentialDeviceType,
-      created: c.created.toISOString(),
+      created: c.created.toISO(),
     }));
 
     const viewProfile = {
@@ -51,7 +51,7 @@ router.post(
   async (
     req: AuthenticatedRequestWithTypedBody<{
       display_name?: string;
-      update?: string;
+      update?: "profile";
       delete_cred?: string;
     }>,
     res: Response

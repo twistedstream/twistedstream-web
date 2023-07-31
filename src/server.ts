@@ -6,11 +6,13 @@ import "express-async-errors";
 import fs from "fs";
 import http from "http";
 import https from "https";
+import { Server } from "net";
 import path from "path";
 import app from "./app";
+import { createRootUserAndInvite } from "./services/invite";
 import { logger } from "./utils/logger";
 
-let serverName: string, server;
+let serverName: string, server: Server;
 if (environment === "production") {
   // Docker: create simple HTTP server
   serverName = "HTTP";
@@ -37,3 +39,13 @@ server.listen(port, () => {
 });
 
 export default server;
+
+createRootUserAndInvite()
+  .then((firstInvite) => {
+    if (firstInvite) {
+      logger.info(`Root invite: ${baseUrl}/invites/${firstInvite.id}`);
+    }
+  })
+  .catch((err) => {
+    logger.error(err, "Error attempting to create root user and invite.");
+  });

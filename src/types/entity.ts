@@ -2,16 +2,18 @@ import {
   AuthenticatorTransport,
   CredentialDeviceType,
 } from "@simplewebauthn/typescript-types";
+import { DateTime } from "luxon";
 
 export interface User {
   id: string;
+  created: DateTime;
   username: string;
   displayName: string;
   isAdmin: boolean;
 }
 
 export interface Authenticator {
-  created: Date;
+  created: DateTime;
   credentialID: string;
   credentialPublicKey: string;
   counter: number;
@@ -27,13 +29,23 @@ export interface RegisteredAuthenticator extends Authenticator {
 
 export type ShareType = "pdf";
 
-export interface Share {
+export interface RegisterableSource {
   id: string;
-  created: Date;
-  fromUser: User;
+  sourceType: string;
+  isAdmin: boolean;
+  created: DateTime;
+  createdBy: User;
+}
+
+export interface Invite extends RegisterableSource {
+  claimedBy?: User;
+  claimed?: DateTime;
+}
+
+export interface Share extends RegisterableSource {
   toUsername?: string;
-  claimedUser?: User;
-  claimed?: Date;
+  claimedBy?: User;
+  claimed?: DateTime;
   backingUrl: string;
   title: string;
   type: ShareType;

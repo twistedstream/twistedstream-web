@@ -1,7 +1,15 @@
-import { Authenticator, RegisteredAuthenticator, Share, User } from "./entity";
+import {
+  Authenticator,
+  Invite,
+  RegisteredAuthenticator,
+  Share,
+  User,
+} from "./entity";
 
 export interface IDataProvider {
   // users
+
+  getUserCount(): Promise<number>;
 
   findUserById(userID: string): Promise<User | undefined>;
 
@@ -28,7 +36,17 @@ export interface IDataProvider {
 
   deleteCredential(credentialID: string): Promise<void>;
 
+  // invites
+
+  findInviteById(inviteId: string): Promise<Invite | undefined>;
+
+  insertInvite(invite: Invite): Promise<Invite>;
+
+  updateInvite(invite: Invite): Promise<void>;
+
   // shares
+
+  findShareById(shareId: string): Promise<Share | undefined>;
 
   findSharesByClaimedUserId(userID: string): Promise<Share[]>;
 

@@ -693,8 +693,7 @@ test("routes/fido2/assertion", async (t) => {
         url: "/result",
         method: "POST",
       });
-      t.equal(signInFake.firstCall.args[1], testUser1);
-      t.equal(signInFake.firstCall.args[2], activeCredential);
+      t.equal(signInFake.firstCall.args[1], activeCredential);
     });
 
     t.test(

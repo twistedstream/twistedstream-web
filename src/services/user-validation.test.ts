@@ -1,5 +1,6 @@
 import { test } from "tap";
 
+import { DateTime } from "luxon";
 import { validateUser } from "./user-validation";
 
 test("services/user-validation", async (t) => {
@@ -9,7 +10,7 @@ test("services/user-validation", async (t) => {
         () =>
           validateUser({
             id: "123abc",
-            created: new Date(2023, 1, 1),
+            created: DateTime.fromObject({ year: 2023, month: 2, day: 1 }),
             username: "",
             displayName: "Bob User",
             isAdmin: false,
@@ -25,7 +26,7 @@ test("services/user-validation", async (t) => {
         () =>
           validateUser({
             id: "123abc",
-            created: new Date(2023, 1, 1),
+            created: DateTime.fromObject({ year: 2023, month: 1, day: 1 }),
             username: "b",
             displayName: "Bob User",
             isAdmin: false,
@@ -41,7 +42,7 @@ test("services/user-validation", async (t) => {
         () =>
           validateUser({
             id: "123abc",
-            created: new Date(2023, 1, 1),
+            created: DateTime.fromObject({ year: 2023, month: 1, day: 1 }),
             username: "bob",
             displayName: "",
             isAdmin: false,
@@ -57,7 +58,7 @@ test("services/user-validation", async (t) => {
         () =>
           validateUser({
             id: "123abc",
-            created: new Date(2023, 1, 1),
+            created: DateTime.fromObject({ year: 2023, month: 1, day: 1 }),
             username: "bob",
             displayName: "B",
             isAdmin: false,
@@ -72,7 +73,7 @@ test("services/user-validation", async (t) => {
       t.doesNotThrow(() =>
         validateUser({
           id: "123abc",
-          created: new Date(2023, 1, 1),
+          created: DateTime.fromObject({ year: 2023, month: 1, day: 1 }),
           username: "bob",
           displayName: "Bob User",
           isAdmin: false,

@@ -9,10 +9,11 @@ import { Response, Router } from "express";
 
 import {
   addUserCredential,
-  createUser,
+  fetchCredentialById,
   fetchCredentialsByUserId,
   fetchUserById,
   fetchUserByName,
+  newUser,
   registerUser,
 } from "../../services/user";
 import {
@@ -23,12 +24,16 @@ import {
 import { AuthenticatedRequest } from "../../types/express";
 import {
   beginSignup,
+  getRegisterable,
   getRegistration,
-  getReturnTo,
   signIn,
 } from "../../utils/auth";
 import { baseUrl, companyName, rpID } from "../../utils/config";
-import { BadRequestError, assertValue } from "../../utils/error";
+import {
+  BadRequestError,
+  UnauthorizedError,
+  assertValue,
+} from "../../utils/error";
 import { logger } from "../../utils/logger";
 import { now } from "../../utils/time";
 
@@ -61,9 +66,16 @@ router.post(
         );
       }
     } else {
+      // retrieve invitation state from session
+      if (!getRegisterable(req)) {
+        throw UnauthorizedError(
+          "Cannot register a new user without a registerable session"
+        );
+      }
+
       // register user will be a new user
       try {
-        registeringUser = createUser(username, displayName);
+        registeringUser = newUser(username, displayName);
       } catch (err: any) {
         if (err.type === "validation") {
           throw BadRequestError(err.message);
@@ -177,25 +189,40 @@ router.post(
     );
 
     let { user } = req;
+    let return_to = "/";
     if (user) {
       // update existing user in rp with additional credential
       await addUserCredential(user.id, validatedCredential);
     } else {
+      // confirm we have a registerable session
+      const registerable = getRegisterable(req);
+      if (!registerable) {
+        throw BadRequestError("No active registerable session");
+      }
+      logger.debug(
+        registerable,
+        "/attestation/result: Registerable state retrieved from session"
+      );
+
       // create new user in rp with initial credential
-      user = await registerUser(
-        registration.registeringUser,
-        validatedCredential
+      const { registeringUser } = registration;
+      registeringUser.isAdmin = registerable.source.isAdmin;
+      user = await registerUser(registeringUser, validatedCredential);
+
+      // fetch registered credential
+      const credential = assertValue(
+        await fetchCredentialById(validatedCredential.credentialID)
       );
 
       // complete authentication
-      signIn(req, user, validatedCredential);
+      return_to = signIn(req, credential);
     }
 
     // build response
     const resultResponse = {
       status: "ok",
       errorMessage: "",
-      return_to: getReturnTo(req),
+      return_to,
     };
 
     res.json(resultResponse);

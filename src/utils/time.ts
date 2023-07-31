@@ -1,3 +1,5 @@
-export function now(): Date {
-  return new Date(Date.now());
+import { DateTime } from "luxon";
+
+export function now(): DateTime {
+  return DateTime.now().toUTC();
 }

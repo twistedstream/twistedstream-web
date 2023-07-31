@@ -18,6 +18,7 @@ const https = {
 const app = {};
 const logger = {
   info: sinon.fake(),
+  error: sinon.fake(),
 };
 
 const fs = {
@@ -25,6 +26,15 @@ const fs = {
 };
 const path = {
   resolve: sinon.stub(),
+};
+
+const createRootUserAndInviteStub = sinon.stub();
+
+const thenFakeHandler = sinon.fake();
+const catchFake = sinon.fake();
+const thenFake: any = (arg: any) => {
+  thenFakeHandler(arg);
+  return { catch: catchFake };
 };
 
 const rpID = "example.com";
@@ -37,7 +47,7 @@ function importModule(
   port: number,
   scheme: "http" | "https"
 ) {
-  const { default: server } = test.mock("./index", {
+  const { default: server } = test.mock("./server", {
     http,
     https,
     fs,
@@ -52,6 +62,9 @@ function importModule(
     "./utils/logger": {
       logger,
     },
+    "./services/invite": {
+      createRootUserAndInvite: createRootUserAndInviteStub,
+    },
   });
 
   return server;
@@ -59,7 +72,7 @@ function importModule(
 
 // tests
 
-test("index (server)", async (t) => {
+test("server", async (t) => {
   t.beforeEach(async () => {
     sinon.resetBehavior();
     sinon.resetHistory();
@@ -67,6 +80,8 @@ test("index (server)", async (t) => {
 
   t.test("HTTP server", async (t) => {
     function importHttpServer() {
+      createRootUserAndInviteStub.resolves();
+
       return importModule(t, "production", 4242, "http");
     }
 
@@ -102,6 +117,8 @@ test("index (server)", async (t) => {
 
   t.test("HTTPS server", async (t) => {
     function importHttpsServer() {
+      createRootUserAndInviteStub.resolves();
+
       return importModule(t, "development", 4433, "https");
     }
 
@@ -139,11 +156,53 @@ test("index (server)", async (t) => {
       const cb = <Function>httpsServer.listen.firstCall.args[1];
       cb();
 
+      t.ok(logger.info.called);
       t.same(logger.info.firstCall.firstArg, {
         port: 4433,
         rpID: "example.com",
         baseUrl: "https://example.com:4433",
       });
+    });
+  });
+
+  t.test("root user and invite", async (t) => {
+    t.beforeEach(async () => {
+      createRootUserAndInviteStub.returns({ then: thenFake });
+    });
+
+    t.test("is attempted to be created", async (t) => {
+      importModule(t, "production", 4242, "http");
+
+      t.ok(createRootUserAndInviteStub.called);
+      t.ok(thenFakeHandler.called);
+    });
+
+    t.test("logs if invite is returned", async (t) => {
+      importModule(t, "production", 4242, "http");
+      const onFulfilled = <Function>thenFakeHandler.firstCall.firstArg;
+      onFulfilled({ id: "INVITE_ID" });
+
+      t.ok(logger.info.called);
+      t.match(logger.info.firstCall.firstArg, "Root invite:");
+    });
+
+    t.test("does not log if no invite is returned", async (t) => {
+      importModule(t, "production", 4242, "http");
+      const onFulfilled = <Function>thenFakeHandler.firstCall.firstArg;
+      onFulfilled();
+
+      // no additional logging calls are made if first invite wasn't returned
+      t.notOk(logger.info.called);
+    });
+
+    t.test("logs if error is caught", async (t) => {
+      importModule(t, "production", 4242, "http");
+      const onRejected = <Function>catchFake.firstCall.firstArg;
+      const error = new Error("BOOM!");
+      onRejected(error);
+
+      t.ok(logger.error.called);
+      t.equal(logger.error.firstCall.firstArg, error);
     });
   });
 });

@@ -29,12 +29,12 @@ test("Register and manage multiple authenticators", async (t) => {
   });
 
   // start with an already registered user
-  const state = createIntegrationTestState(
-    t,
-    [{ ...testUser1 }],
-    [{ ...testCredential1, user: testUser1 }],
-    []
-  );
+  const state = createIntegrationTestState(t, {
+    users: [{ ...testUser1 }],
+    credentials: [{ ...testCredential1, user: testUser1 }],
+    invites: [],
+    shares: [],
+  });
 
   t.test("Initial data state", async () => {
     // we should have an existing user and cred

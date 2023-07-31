@@ -15,12 +15,7 @@ import {
 } from "../../services/user";
 import { RegisteredAuthenticator, User } from "../../types/entity";
 import { AuthenticatedRequest } from "../../types/express";
-import {
-  beginSignIn,
-  getAuthentication,
-  getReturnTo,
-  signIn,
-} from "../../utils/auth";
+import { beginSignIn, getAuthentication, signIn } from "../../utils/auth";
 import { baseUrl, rpID } from "../../utils/config";
 import { BadRequestError, ForbiddenError } from "../../utils/error";
 import { logger } from "../../utils/logger";
@@ -182,15 +177,15 @@ router.post("/result", json(), async (req: Request, res: Response) => {
   }
   logger.debug(verification, "/assertion/result: verification");
 
+  // complete authentication
+  const return_to = signIn(req, activeCredential);
+
   // build response
   const resultResponse = {
     status: "ok",
     errorMessage: "",
-    return_to: getReturnTo(req),
+    return_to,
   };
-
-  // complete authentication
-  signIn(req, existingUser, activeCredential);
 
   res.json(resultResponse);
 });

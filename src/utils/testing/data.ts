@@ -4,24 +4,37 @@ import {
   CredentialDeviceType,
 } from "@simplewebauthn/typescript-types";
 import crypto from "crypto";
+import { DateTime } from "luxon";
 import { Authenticator, User } from "../../types/entity";
 
 // reusable test objects
 
-export const testNowDate: Date = new Date(2023, 1, 1);
+export const testNowDate = DateTime.fromObject({
+  year: 2023,
+  month: 6,
+  day: 1,
+}).toUTC();
 
 export const testUserIdentifier: string = "123abc";
 
 export const testUser1: User = {
   id: testUserIdentifier,
-  created: testNowDate,
+  created: DateTime.fromObject({
+    year: 2023,
+    month: 1,
+    day: 1,
+  }).toUTC(),
   username: "bob",
   displayName: "Bob User",
   isAdmin: false,
 };
 
 export const testCredential1: Authenticator = {
-  created: new Date(2023, 1, 1),
+  created: DateTime.fromObject({
+    year: 2023,
+    month: 2,
+    day: 1,
+  }).toUTC(),
   credentialID: base64.fromArrayBuffer(crypto.randomBytes(8).buffer, true),
   credentialPublicKey: base64.fromArrayBuffer(
     crypto.randomBytes(42).buffer,
@@ -35,7 +48,11 @@ export const testCredential1: Authenticator = {
 };
 
 export const testCredential2: Authenticator = {
-  created: new Date(2023, 1, 1),
+  created: DateTime.fromObject({
+    year: 2023,
+    month: 3,
+    day: 1,
+  }).toUTC(),
   credentialID: base64.fromArrayBuffer(crypto.randomBytes(8).buffer, true),
   credentialPublicKey: base64.fromArrayBuffer(
     crypto.randomBytes(42).buffer,

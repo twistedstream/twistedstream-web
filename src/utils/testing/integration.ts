@@ -5,28 +5,24 @@ import sinon from "sinon";
 import request, { Response as SupertestResponse } from "supertest";
 
 import { InMemoryDataProvider } from "../../data/in-memory";
+import { Authenticator, User } from "../../types/entity";
 import {
-  Authenticator,
-  RegisteredAuthenticator,
-  Share,
-  User,
-} from "../../types/entity";
-import { IntegrationTestState } from "../../types/test";
+  InMemoryDataProviderOptions,
+  IntegrationTestState,
+} from "../../types/test";
 
 // general
 
 export function createIntegrationTestState(
   test: Tap.Test,
-  users: User[],
-  credentials: RegisteredAuthenticator[],
-  shares: Share[]
+  options: InMemoryDataProviderOptions
 ): IntegrationTestState {
   const verifyRegistrationResponseStub = sinon.stub();
   const verifyAuthenticationResponseStub = sinon.stub();
 
   const { default: app } = test.mock("../../app", {
     "../../data": {
-      getProvider: () => new InMemoryDataProvider(users, credentials, shares),
+      getProvider: () => new InMemoryDataProvider(options),
     },
     "@simplewebauthn/server": {
       ...simpleWebAuthnServerDefaults,
@@ -37,8 +33,8 @@ export function createIntegrationTestState(
 
   return {
     app,
-    users,
-    credentials,
+    users: options.users,
+    credentials: options.credentials,
     verifyRegistrationResponseStub,
     verifyAuthenticationResponseStub,
   };

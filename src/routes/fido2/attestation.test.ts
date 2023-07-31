@@ -55,7 +55,7 @@ const logger = {
   info: sinon.fake(),
 };
 const nowFake = sinon.fake.returns(testNowDate);
-const createUserStub = sinon.stub();
+const newUserStub = sinon.stub();
 const fetchUserByIdStub = sinon.stub();
 const fetchCredentialsByUserIdStub = sinon.stub();
 const fetchUserByNameStub = sinon.stub();
@@ -65,6 +65,7 @@ const verifyRegistrationResponseStub = sinon.stub();
 const registerUserStub = sinon.stub();
 const signInFake = sinon.fake();
 const addUserCredentialFake = sinon.fake();
+const fetchCredentialByIdStub = sinon.stub();
 const getReturnToStub = sinon.stub();
 const getRegistrationStub = sinon.stub();
 
@@ -84,12 +85,13 @@ function importModule(
     dependencies["../../utils/time"] = { now: nowFake };
     dependencies["../../utils/logger"] = { logger };
     dependencies["../../services/user"] = {
-      createUser: createUserStub,
+      newUser: newUserStub,
       fetchUserById: fetchUserByIdStub,
       fetchCredentialsByUserId: fetchCredentialsByUserIdStub,
       fetchUserByName: fetchUserByNameStub,
       registerUser: registerUserStub,
       addUserCredential: addUserCredentialFake,
+      fetchCredentialById: fetchCredentialByIdStub,
     };
     dependencies["@simplewebauthn/server"] = {
       generateRegistrationOptions: generateRegistrationOptionsStub,
@@ -180,7 +182,7 @@ test("routes/fido2/attestation", async (t) => {
   t.test("POST /options", async (t) => {
     t.test("if active user session", async (t) => {
       t.test("fetches exiting user by ID", async (t) => {
-        createUserStub.returns({});
+        newUserStub.returns({});
         fetchUserByIdStub.resolves({});
         fetchCredentialsByUserIdStub.resolves([{ ...testCredential1 }]);
 
@@ -196,7 +198,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test(
         "if user that doesn't actually exist, renders JSON with expected user error",
         async (t) => {
-          createUserStub.returns({});
+          newUserStub.returns({});
           fetchUserByIdStub.resolves();
 
           const { app } = createAttestationTestExpressApp(t, {
@@ -214,7 +216,7 @@ test("routes/fido2/attestation", async (t) => {
       );
 
       t.test("fetches user's existing credentials", async (t) => {
-        createUserStub.returns({});
+        newUserStub.returns({});
         fetchUserByIdStub.resolves({});
         fetchCredentialsByUserIdStub.resolves([{ ...testCredential1 }]);
 
@@ -230,7 +232,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test(
         "if no credentials of existing user, render JSON with expected server error",
         async (t) => {
-          createUserStub.returns({});
+          newUserStub.returns({});
           fetchUserByIdStub.resolves({});
           fetchCredentialsByUserIdStub.resolves([]);
 
@@ -251,7 +253,7 @@ test("routes/fido2/attestation", async (t) => {
 
     t.test("if no active user session", async (t) => {
       t.test("instantiates a new user", async (t) => {
-        createUserStub.returns({});
+        newUserStub.returns({});
 
         const { app } = createAttestationTestExpressApp(t);
         await performOptionsPostRequest(app).send({
@@ -259,15 +261,15 @@ test("routes/fido2/attestation", async (t) => {
           displayName: "Bob User",
         });
 
-        t.ok(createUserStub.called);
-        t.equal(createUserStub.firstCall.args[0], "bob");
-        t.equal(createUserStub.firstCall.args[1], "Bob User");
+        t.ok(newUserStub.called);
+        t.equal(newUserStub.firstCall.args[0], "bob");
+        t.equal(newUserStub.firstCall.args[1], "Bob User");
       });
 
       t.test(
         "if a validation error occurs while instantiating a user, renders JSON with expected user error",
         async (t) => {
-          createUserStub.throws(
+          newUserStub.throws(
             new ValidationError("User", "username", "Sorry, can't do it")
           );
 
@@ -286,7 +288,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test(
         "if an unknown error occurs while instantiating a user, renders JSON with expected server error",
         async (t) => {
-          createUserStub.throws(new Error("BOOM!"));
+          newUserStub.throws(new Error("BOOM!"));
 
           const { app } = createAttestationTestExpressApp(t, {
             suppressErrorOutput: true,
@@ -302,7 +304,7 @@ test("routes/fido2/attestation", async (t) => {
       );
 
       t.test("fetches exiting user by specified username", async (t) => {
-        createUserStub.returns({});
+        newUserStub.returns({});
         fetchUserByNameStub.resolves({});
 
         const { app } = createAttestationTestExpressApp(t);
@@ -317,7 +319,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test(
         "if user exists with same username, renders JSON with expected user error",
         async (t) => {
-          createUserStub.returns({});
+          newUserStub.returns({});
           fetchUserByNameStub.resolves({});
 
           const { app } = createAttestationTestExpressApp(t);
@@ -336,7 +338,7 @@ test("routes/fido2/attestation", async (t) => {
     });
 
     t.test("generates registration options", async (t) => {
-      createUserStub.returns({});
+      newUserStub.returns({});
       fetchUserByIdStub.resolves({
         id: "123abc",
         username: "bob",
@@ -372,7 +374,7 @@ test("routes/fido2/attestation", async (t) => {
 
     t.test("begins sign up", async (t) => {
       const registeringUser = {};
-      createUserStub.returns(registeringUser);
+      newUserStub.returns(registeringUser);
       fetchUserByNameStub.resolves();
       generateRegistrationOptionsStub.returns({
         challenge: "CHALLENGE!",
@@ -394,7 +396,7 @@ test("routes/fido2/attestation", async (t) => {
       "if successful, renders JSON with expected options data",
       async (t) => {
         const registeringUser = {};
-        createUserStub.returns(registeringUser);
+        newUserStub.returns(registeringUser);
         fetchUserByNameStub.resolves();
         generateRegistrationOptionsStub.returns({
           challenge: "CHALLENGE!",
@@ -450,6 +452,11 @@ test("routes/fido2/attestation", async (t) => {
       verifyRegistrationResponseStub.returns({
         registrationInfo: { ...testValidatedCredential },
       });
+      fetchCredentialByIdStub.resolves({
+        ...testCredential1,
+        created: testNowDate,
+        user: { ...testUser1 },
+      });
 
       const { app } = createAttestationTestExpressApp(t);
       await performResultPostRequest(app).send({
@@ -488,6 +495,11 @@ test("routes/fido2/attestation", async (t) => {
       getRegistrationStub.returns(testRegistration);
       verifyRegistrationResponseStub.returns({
         registrationInfo: { ...testValidatedCredential },
+      });
+      fetchCredentialByIdStub.resolves({
+        ...testCredential1,
+        created: testNowDate,
+        user: { ...testUser1 },
       });
 
       const { app } = createAttestationTestExpressApp(t);
@@ -568,6 +580,11 @@ test("routes/fido2/attestation", async (t) => {
         verifyRegistrationResponseStub.returns({
           registrationInfo: { ...testValidatedCredential },
         });
+        fetchCredentialByIdStub.resolves({
+          ...testCredential1,
+          created: testNowDate,
+          user: { ...testUser1 },
+        });
 
         const { app } = createAttestationTestExpressApp(t);
         await performResultPostRequest(app).send({
@@ -585,13 +602,44 @@ test("routes/fido2/attestation", async (t) => {
         });
       });
 
+      t.test("fetches registered credential", async (t) => {
+        getRegistrationStub.returns(testRegistration);
+        verifyRegistrationResponseStub.returns({
+          registrationInfo: { ...testValidatedCredential },
+        });
+        fetchCredentialByIdStub.resolves({
+          ...testCredential1,
+          created: testNowDate,
+          user: { ...testUser1 },
+        });
+
+        const { app } = createAttestationTestExpressApp(t);
+        await performResultPostRequest(app).send({
+          id: testCredential1.credentialID,
+          response: {
+            transports: ["internal"],
+          },
+        });
+
+        t.ok(fetchCredentialByIdStub.called);
+        t.equal(
+          fetchCredentialByIdStub.firstCall.firstArg,
+          testCredential1.credentialID
+        );
+      });
+
       t.test("performs sign-in", async (t) => {
         getRegistrationStub.returns(testRegistration);
         verifyRegistrationResponseStub.returns({
           registrationInfo: { ...testValidatedCredential },
         });
         const user = {};
-        registerUserStub.returns(user);
+        registerUserStub.resolves(user);
+        fetchCredentialByIdStub.resolves({
+          ...testCredential1,
+          created: testNowDate,
+          user: { ...testUser1 },
+        });
 
         const { app } = createAttestationTestExpressApp(t);
         await performResultPostRequest(app).send({
@@ -606,10 +654,10 @@ test("routes/fido2/attestation", async (t) => {
           url: "/result",
           method: "POST",
         });
-        t.equal(signInFake.firstCall.args[1], user);
-        t.same(signInFake.firstCall.args[2], {
+        t.same(signInFake.firstCall.args[1], {
           ...testCredential1,
           created: testNowDate,
+          user: { ...testUser1 },
         });
       });
     });
@@ -618,6 +666,11 @@ test("routes/fido2/attestation", async (t) => {
       getRegistrationStub.returns(testRegistration);
       verifyRegistrationResponseStub.returns({
         registrationInfo: { ...testValidatedCredential },
+      });
+      fetchCredentialByIdStub.resolves({
+        ...testCredential1,
+        created: testNowDate,
+        user: { ...testUser1 },
       });
 
       const { app } = createAttestationTestExpressApp(t);
@@ -639,6 +692,11 @@ test("routes/fido2/attestation", async (t) => {
         getRegistrationStub.returns(testRegistration);
         verifyRegistrationResponseStub.returns({
           registrationInfo: { ...testValidatedCredential },
+        });
+        fetchCredentialByIdStub.resolves({
+          ...testCredential1,
+          created: testNowDate,
+          user: { ...testUser1 },
         });
         getReturnToStub.returns("/foo");
 

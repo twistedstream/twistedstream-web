@@ -4,7 +4,7 @@ import { unique } from "../utils/identifier";
 import { now } from "../utils/time";
 import { validateUser } from "./user-validation";
 
-const data = getProvider();
+const provider = getProvider();
 const {
   insertCredential,
   insertUser,
@@ -15,7 +15,7 @@ const {
   findUserCredential,
   findCredentialsByUser,
   deleteCredential,
-} = data;
+} = provider;
 
 // service
 
@@ -29,8 +29,8 @@ export async function fetchUserByName(
   return findUserByName(username);
 }
 
-export function createUser(username: string, displayName: string) {
-  const newUser: User = {
+export function newUser(username: string, displayName: string) {
+  const user: User = {
     id: unique(),
     created: now(),
     username,
@@ -38,9 +38,9 @@ export function createUser(username: string, displayName: string) {
     // default new users to not be admin
     isAdmin: false,
   };
-  validateUser(newUser);
+  validateUser(user);
 
-  return newUser;
+  return user;
 }
 
 export async function registerUser(
