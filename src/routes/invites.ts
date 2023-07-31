@@ -35,10 +35,8 @@ router.get("/:invite_id", async (req: AuthenticatedRequest, res: Response) => {
 
     // claim invite
     clearRegisterable(req);
-    await claimInvite(invite.id, user);
-    logger.info(
-      `User (id = ${user.id} has claimed invite (id = ${invite.id}).)`
-    );
+    const claimedInvite = await claimInvite(invite.id, user);
+    logger.info(claimedInvite, `User has claimed invite.`);
 
     // redirect to shares page
     return res.redirect("/shares");

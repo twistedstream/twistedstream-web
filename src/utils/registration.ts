@@ -20,15 +20,13 @@ export async function ensureInvite(req: Request): Promise<Invite> {
   }
   // make sure it hasn't already been claimed
   if (invite.claimed) {
-    logger.warn(
-      `Invite (id = ${invite.id}) was accessed after it was already claimed.`
-    );
+    logger.warn(invite, "Invite was accessed after it was already claimed");
 
     throw NotFoundError();
   }
   // make sure it hasn't expired
   if (DateTime.now() > invite.created.plus(maxInviteLifetime)) {
-    logger.warn(`Invite (id = ${invite.id}) has expired.`);
+    logger.warn(invite, "Invite has expired");
 
     throw NotFoundError();
   }
