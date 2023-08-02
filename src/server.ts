@@ -43,7 +43,12 @@ export default server;
 createRootUserAndInvite()
   .then((firstInvite) => {
     if (firstInvite) {
-      logger.info(`Root invite: ${baseUrl}/invites/${firstInvite.id}`);
+      logger.info(
+        {
+          url: `${baseUrl}/invites/${firstInvite.id}`,
+        },
+        "Root invite"
+      );
     }
   })
   .catch((err) => {

@@ -183,7 +183,8 @@ test("server", async (t) => {
       onFulfilled({ id: "INVITE_ID" });
 
       t.ok(logger.info.called);
-      t.match(logger.info.firstCall.firstArg, "Root invite:");
+      t.match(logger.info.firstCall.args[0].url, "INVITE_ID");
+      t.equal(logger.info.firstCall.args[1], "Root invite");
     });
 
     t.test("does not log if no invite is returned", async (t) => {
