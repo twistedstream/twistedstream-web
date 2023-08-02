@@ -197,7 +197,7 @@ test("routes/profile", async (t) => {
           });
 
           const response = await performPostRequest(app).send({
-            update: "profile",
+            action: "update_profile",
             display_name: "Bad Bob",
           });
           const { viewName, options } = renderArgs;
@@ -231,7 +231,7 @@ test("routes/profile", async (t) => {
           });
 
           const response = await performPostRequest(app).send({
-            update: "profile",
+            action: "update_profile",
             display_name: "Bad Bob",
           });
           const { viewName, options } = renderArgs;
@@ -259,7 +259,7 @@ test("routes/profile", async (t) => {
           const { app } = createProfileTestExpressApp(t, { withAuth: true });
 
           const response = await performPostRequest(app).send({
-            update: "profile",
+            action: "update_profile",
             display_name: "Good Bob",
           });
 
@@ -285,7 +285,8 @@ test("routes/profile", async (t) => {
           });
 
           const response = await performPostRequest(app).send({
-            delete_cred: testCredential1.credentialID,
+            action: "delete_cred",
+            cred_id: testCredential1.credentialID,
           });
           const { viewName, options } = renderArgs;
 
@@ -308,7 +309,8 @@ test("routes/profile", async (t) => {
           const { app } = createProfileTestExpressApp(t, { withAuth: true });
 
           const response = await performPostRequest(app).send({
-            delete_cred: "987zxy",
+            action: "delete_cred",
+            cred_id: "987zxy",
           });
 
           t.equal(removeUserCredentialStub.firstCall.args[0], "123abc");
@@ -326,14 +328,16 @@ test("routes/profile", async (t) => {
           withAuth: true,
         });
 
-        const response = await performPostRequest(app).send({ foo: "bar" });
+        const response = await performPostRequest(app).send({
+          action: "burn_toast",
+        });
         const { viewName, options } = renderArgs;
 
         t.equal(response.status, 400);
         t.match(response.headers["content-type"], "text/html");
         t.equal(viewName, "error");
         t.equal(options.title, "Error");
-        t.equal(options.message, "Bad Request: Unsupported profile operation");
+        t.equal(options.message, "Bad Request: Unsupported profile action");
       }
     );
   });

@@ -50,17 +50,17 @@ router.post(
   urlencoded({ extended: false }),
   async (
     req: AuthenticatedRequestWithTypedBody<{
+      action: "update_profile" | "delete_cred";
       display_name?: string;
-      update?: "profile";
-      delete_cred?: string;
+      cred_id?: string;
     }>,
     res: Response
   ) => {
     const user = assertValue(req.user);
     const credential = assertValue(req.credential);
 
-    const { update, display_name } = req.body;
-    if (update === "profile" && display_name) {
+    const { action, display_name } = req.body;
+    if (action === "update_profile" && display_name) {
       // update user profile
       user.displayName = display_name;
       try {
@@ -76,20 +76,20 @@ router.post(
       return res.redirect("back");
     }
 
-    const { delete_cred } = req.body;
-    if (delete_cred) {
-      if (credential.credentialID === delete_cred) {
+    const { cred_id } = req.body;
+    if (action === "delete_cred" && cred_id) {
+      if (credential.credentialID === cred_id) {
         throw BadRequestError(
           "Cannot delete credential that was used to sign into the current session"
         );
       }
 
-      await removeUserCredential(user.id, delete_cred);
+      await removeUserCredential(user.id, cred_id);
 
       return res.redirect("back");
     }
 
-    throw BadRequestError("Unsupported profile operation");
+    throw BadRequestError("Unsupported profile action");
   }
 );
 

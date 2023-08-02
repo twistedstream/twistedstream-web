@@ -24,7 +24,6 @@
           <div class="col text-center">        
             <div class="form-row justify-content-center">
               <div class="col-sm-auto">
-                <label class="sr-only" for="user_name">Username</label>
                 <div class="input-group mb-2">
                   <div class="input-group-prepend">
                     <div class="input-group-text">@</div>
@@ -33,11 +32,10 @@
                 </div>
               </div>
               <div class="col-sm-auto">
-                <label class="sr-only" for="display_name">Name</label>
                 <input type="text" class="form-control mb-2" id="display_name" name="display_name" value="{{profile.displayName}}">
               </div>
               <div class="col-sm-auto">
-                <button type="submit" class="btn btn-primary mb-2" name="update" value="profile">Update</button>
+                <button type="submit" class="btn btn-primary mb-2" name="action" value="update_profile">Update</button>
               </div>
             </div>
           </div>
@@ -79,7 +77,8 @@
                 <td>{{type}}</td>
                 <td>{{created}}</td>
                 <td>
-                  <button type="submit" class="btn btn-danger btn-sm passkeys_supported" name="delete_cred" value="{{id}}" hidden>forget</button>
+                  <input type="hidden" name="cred_id" value="{{id}}">
+                  <button type="submit" class="btn btn-danger btn-sm passkeys_supported" name="action" value="delete_cred" hidden>forget</button>
                 </td>
               </tr>
               {{/each}}
