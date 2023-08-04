@@ -15,6 +15,7 @@ import {
 } from "../types/entity";
 import { AuthenticatedRequest } from "../types/express";
 import { now } from "../utils/time";
+import { ForbiddenError } from "./error";
 
 // auth helpers
 
@@ -114,6 +115,11 @@ export function redirectToRegister(req: Request, res: Response) {
   res.redirect(`/register?${querystring.stringify({ return_to })}`);
 }
 
+export function redirectToLogin(req: Request, res: Response) {
+  const return_to = req.originalUrl;
+  res.redirect(`/login?${querystring.stringify({ return_to })}`);
+}
+
 // middleware
 
 export function auth() {
@@ -144,6 +150,20 @@ export function requiresAuth() {
       // redirect to login page
       const return_to = req.originalUrl;
       return res.redirect(`/login?${querystring.stringify({ return_to })}`);
+    }
+
+    return next();
+  };
+}
+
+export function requiresAdmin() {
+  return async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
+    if (!req.user?.isAdmin) {
+      throw ForbiddenError("Requires admin role");
     }
 
     return next();

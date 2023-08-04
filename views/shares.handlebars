@@ -12,7 +12,7 @@
 
       <div class="row mt-3">
         <div class="col text-center">
-          <h1>Shares</h1>
+          <h1>{{title}}</h1>
         </div>
       </div>
 
@@ -32,7 +32,7 @@
             <tr>
               <td><a href="{{url}}" target="_blank">{{title}}</a></td>
               <td>{{created}}</td>
-              <td>{{from}}</td>
+              <td>@{{from}}</td>
               <td>{{claimed}}</td>
             </tr>
             {{/each}}
@@ -47,26 +47,33 @@
       <div class="row mt-3">
         <div class="col text-center">
           <h3>Files I've shared</h3>
-          {{#if sharesFromMe}}
+          {{#if sharesByMe}}
           <table class="table d-flex justify-content-center">
             <tr>
               <th>title</th>
               <th>created</th>
+              <th>expires</th>
               <th>shared to</th>
               <th>claimed</th>
+              <th>claimed by</th>
             </tr>
-            {{#each sharesFromMe}}
+            {{#each sharesByMe}}
             <tr>
               <td><a href="{{url}}" target="_blank">{{title}}</a></td>
               <td>{{created}}</td>
-              <td>{{to}}</td>
+              <td>{{#if expires}}{{expires}}{{else}}(never){{/if}}</td>
+              <td>{{#if to}}@{{to}}{{else}}(anyone){{/if}}</td>
               <td>{{claimed}}</td>
+              <td>{{#if claimed_by}}@{{claimed_by}}{{/if}}</td>
             </tr>
             {{/each}}
           </table>
           {{else}}
-          (none)
+          <p>
+            (none)
+          </p>
           {{/if}}
+          <a class="btn btn-primary mb-2" href="/shares/new">New Share</a>
         </div>
       </div>
       {{/if}}

@@ -1,5 +1,6 @@
 import {
   Authenticator,
+  DocumentInfo,
   Invite,
   RegisteredAuthenticator,
   Share,
@@ -49,6 +50,14 @@ export interface IDataProvider {
   findShareById(shareId: string): Promise<Share | undefined>;
 
   findSharesByClaimedUserId(userID: string): Promise<Share[]>;
+
+  findSharesByCreatedUserId(userID: string): Promise<Share[]>;
+
+  findDocumentInfo(url: string): Promise<DocumentInfo | undefined>;
+
+  insertShare(share: Share): Promise<Share>;
+
+  updateShare(share: Share): Promise<void>;
 
   /**
   findSharesByFromUserId(userID: string): Promise<Share | undefined>;

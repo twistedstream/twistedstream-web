@@ -1,32 +1,47 @@
-import { Request } from "express";
 import { DateTime } from "luxon";
 
 import { fetchInviteById } from "../services/invite";
 import { Invite } from "../types/entity";
+import { AuthenticatedRequest } from "../types/express";
 import { maxInviteLifetime } from "./config";
-import { BadRequestError, NotFoundError } from "./error";
+import { BadRequestError, ForbiddenError, NotFoundError } from "./error";
 import { logger } from "./logger";
 
-export async function ensureInvite(req: Request): Promise<Invite> {
+export async function ensureInvite(req: AuthenticatedRequest): Promise<Invite> {
   // validate request
   const { invite_id } = req.params;
   if (!invite_id) {
     throw BadRequestError("Missing: invite ID");
   }
+
   // find invite
   const invite = await fetchInviteById(invite_id);
   if (!invite) {
     throw NotFoundError();
   }
+
+  const { user } = req;
+
   // make sure it hasn't already been claimed
   if (invite.claimed) {
     logger.warn(invite, "Invite was accessed after it was already claimed");
 
+    if (invite.createdBy.id === user?.id) {
+      throw ForbiddenError(
+        `This invite was already claimed by @${invite.claimedBy?.username}`
+      );
+    }
+
     throw NotFoundError();
   }
+
   // make sure it hasn't expired
   if (DateTime.now() > invite.created.plus(maxInviteLifetime)) {
     logger.warn(invite, "Invite has expired");
+
+    if (invite.createdBy.id === user?.id) {
+      throw ForbiddenError(`This invite has expired`);
+    }
 
     throw NotFoundError();
   }

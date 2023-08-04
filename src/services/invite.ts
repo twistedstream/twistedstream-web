@@ -24,12 +24,12 @@ export async function createRootUserAndInvite(): Promise<Invite | undefined> {
     });
 
     // create first invite
-    const firstInvite = newInvite(rootAdmin, true);
+    const firstInvite = await newInvite(rootAdmin, true);
     return insertInvite(firstInvite);
   }
 }
 
-export function newInvite(by: User, isAdmin: boolean): Invite {
+export async function newInvite(by: User, isAdmin: boolean): Promise<Invite> {
   const invite: Invite = {
     id: unique(),
     sourceType: "invite",

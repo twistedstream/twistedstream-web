@@ -13,8 +13,8 @@ import {
   redirectToRegister,
 } from "../utils/auth";
 import { BadRequestError, ForbiddenError } from "../utils/error";
+import { ensureInvite } from "../utils/invite";
 import { logger } from "../utils/logger";
-import { ensureInvite } from "../utils/registration";
 
 const router = Router();
 
@@ -36,7 +36,7 @@ router.get("/:invite_id", async (req: AuthenticatedRequest, res: Response) => {
     // claim invite
     clearRegisterable(req);
     const claimedInvite = await claimInvite(invite.id, user);
-    logger.info(claimedInvite, `User has claimed invite.`);
+    logger.info(claimedInvite, `New user has claimed invite.`);
 
     // redirect to shares page
     return res.redirect("/shares");
@@ -53,7 +53,7 @@ router.post(
   "/:invite_id",
   urlencoded({ extended: false }),
   async (
-    req: AuthenticatedRequestWithTypedBody<{ response?: "accept" | "reject" }>,
+    req: AuthenticatedRequestWithTypedBody<{ action: "accept" | "reject" }>,
     res: Response
   ) => {
     const invite = await ensureInvite(req);
@@ -63,9 +63,9 @@ router.post(
       );
     }
 
-    const { response } = req.body;
+    const { action } = req.body;
 
-    if (response === "accept") {
+    if (action === "accept") {
       // authorize registration with invite and redirect to register page (to come back)
       authorizeRegistration(req, invite);
       return redirectToRegister(req, res);

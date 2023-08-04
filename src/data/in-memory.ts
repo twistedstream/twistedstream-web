@@ -1,6 +1,7 @@
 import { IDataProvider } from "../types/data";
 import {
   Authenticator,
+  DocumentInfo,
   Invite,
   RegisteredAuthenticator,
   Share,
@@ -43,6 +44,10 @@ export class InMemoryDataProvider implements IDataProvider {
     this.updateInvite = this.updateInvite.bind(this);
     this.findShareById = this.findShareById.bind(this);
     this.findSharesByClaimedUserId = this.findSharesByClaimedUserId.bind(this);
+    this.findSharesByCreatedUserId = this.findSharesByCreatedUserId.bind(this);
+    this.findDocumentInfo = this.findDocumentInfo.bind(this);
+    this.insertShare = this.insertShare.bind(this);
+    this.updateShare = this.updateShare.bind(this);
   }
 
   // users
@@ -170,5 +175,54 @@ export class InMemoryDataProvider implements IDataProvider {
   async findSharesByClaimedUserId(userID: string): Promise<Share[]> {
     const shares = this._shares.filter((s) => s.claimedBy?.id === userID);
     return [...shares];
+  }
+
+  async findSharesByCreatedUserId(userID: string): Promise<Share[]> {
+    const shares = this._shares.filter((s) => s.createdBy.id === userID);
+    return [...shares];
+  }
+
+  async findDocumentInfo(url: string): Promise<DocumentInfo | undefined> {
+    switch (url) {
+      case "https://example.com/doc1":
+        return {
+          id: "doc1",
+          type: "document",
+          title: "Example Doc",
+        };
+      case "https://example.com/sheet1":
+        return {
+          id: "sheet1",
+          type: "spreadsheet",
+          title: "Example Spreadsheet",
+        };
+      case "https://example.com/slides1":
+        return {
+          id: "slides1",
+          type: "presentation",
+          title: "Example Presentation",
+        };
+      case "https://example.com/pdf1":
+        return {
+          id: "pdf1",
+          type: "pdf",
+          title: "Example PFD",
+        };
+    }
+  }
+
+  async insertShare(share: Share): Promise<Share> {
+    this._shares.push({ ...share });
+    logger.debug(this._shares, "Shares after insert");
+
+    return { ...share };
+  }
+
+  async updateShare(share: Share): Promise<void> {
+    const foundShare = this._shares.find((s) => s.id === share.id);
+    if (foundShare) {
+      foundShare.claimed = share.claimed;
+      foundShare.claimedBy = share.claimedBy;
+    }
   }
 }
