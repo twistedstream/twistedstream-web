@@ -49,17 +49,12 @@ router.get("/github", (_req: Request, res: Response) => {
 router.get("/register", (req: Request, res: Response) => {
   capturePreAuthState(req);
 
-  const registerable = getRegisterable(req);
-  if (!registerable) {
+  if (!getRegisterable(req)) {
     throw UnauthorizedError("Registration not allowed without an invitation");
   }
 
-  const { source } = registerable;
   res.render("register", {
     title: "Sign up",
-    source,
-    isInviteSource: source.sourceType === "invite",
-    isShareSource: source.sourceType === "share",
     return_to: req.query.return_to,
   });
 });

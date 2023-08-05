@@ -55,6 +55,7 @@ const logger = {
   info: sinon.fake(),
 };
 const nowFake = sinon.fake.returns(testNowDate);
+const getRegisterableStub = sinon.stub();
 const newUserStub = sinon.stub();
 const fetchUserByIdStub = sinon.stub();
 const fetchCredentialsByUserIdStub = sinon.stub();
@@ -63,10 +64,9 @@ const generateRegistrationOptionsStub = sinon.stub();
 const beginSignupFake = sinon.fake();
 const verifyRegistrationResponseStub = sinon.stub();
 const registerUserStub = sinon.stub();
-const signInFake = sinon.fake();
+const signInStub = sinon.stub();
 const addUserCredentialFake = sinon.fake();
 const fetchCredentialByIdStub = sinon.stub();
-const getReturnToStub = sinon.stub();
 const getRegistrationStub = sinon.stub();
 
 // helpers
@@ -104,8 +104,8 @@ function importModule(
     };
     dependencies["../../utils/auth"] = {
       beginSignup: beginSignupFake,
-      signIn: signInFake,
-      getReturnTo: getReturnToStub,
+      signIn: signInStub,
+      getRegisterable: getRegisterableStub,
       getRegistration: getRegistrationStub,
     };
   }
@@ -252,7 +252,42 @@ test("routes/fido2/attestation", async (t) => {
     });
 
     t.test("if no active user session", async (t) => {
+      t.test("checks for a registerable session", async (t) => {
+        const { app } = createAttestationTestExpressApp(t);
+        await performOptionsPostRequest(app).send({
+          username: "bob",
+          displayName: "Bob User",
+        });
+
+        t.ok(getRegisterableStub.called);
+        verifyRequest(t, getRegisterableStub.firstCall.firstArg, {
+          url: "/options",
+          method: "POST",
+        });
+      });
+
+      t.test(
+        "if no registerable session, renders JSON with expected user error",
+        async (t) => {
+          getRegisterableStub.returns(undefined);
+
+          const { app } = createAttestationTestExpressApp(t);
+          const response = await performOptionsPostRequest(app).send({
+            username: "bob",
+            displayName: "Bob User",
+          });
+
+          verifyUserErrorFido2ServerResponse(
+            t,
+            response,
+            StatusCodes.UNAUTHORIZED,
+            "Cannot register a new user without a registerable session"
+          );
+        }
+      );
+
       t.test("instantiates a new user", async (t) => {
+        getRegisterableStub.returns({});
         newUserStub.returns({});
 
         const { app } = createAttestationTestExpressApp(t);
@@ -269,6 +304,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test(
         "if a validation error occurs while instantiating a user, renders JSON with expected user error",
         async (t) => {
+          getRegisterableStub.returns({});
           newUserStub.throws(
             new ValidationError("User", "username", "Sorry, can't do it")
           );
@@ -288,6 +324,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test(
         "if an unknown error occurs while instantiating a user, renders JSON with expected server error",
         async (t) => {
+          getRegisterableStub.returns({});
           newUserStub.throws(new Error("BOOM!"));
 
           const { app } = createAttestationTestExpressApp(t, {
@@ -304,6 +341,7 @@ test("routes/fido2/attestation", async (t) => {
       );
 
       t.test("fetches exiting user by specified username", async (t) => {
+        getRegisterableStub.returns({});
         newUserStub.returns({});
         fetchUserByNameStub.resolves({});
 
@@ -319,6 +357,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test(
         "if user exists with same username, renders JSON with expected user error",
         async (t) => {
+          getRegisterableStub.returns({});
           newUserStub.returns({});
           fetchUserByNameStub.resolves({});
 
@@ -338,7 +377,6 @@ test("routes/fido2/attestation", async (t) => {
     });
 
     t.test("generates registration options", async (t) => {
-      newUserStub.returns({});
       fetchUserByIdStub.resolves({
         id: "123abc",
         username: "bob",
@@ -373,6 +411,7 @@ test("routes/fido2/attestation", async (t) => {
     });
 
     t.test("begins sign up", async (t) => {
+      getRegisterableStub.returns({});
       const registeringUser = {};
       newUserStub.returns(registeringUser);
       fetchUserByNameStub.resolves();
@@ -395,6 +434,7 @@ test("routes/fido2/attestation", async (t) => {
     t.test(
       "if successful, renders JSON with expected options data",
       async (t) => {
+        getRegisterableStub.returns({});
         const registeringUser = {};
         newUserStub.returns(registeringUser);
         fetchUserByNameStub.resolves();
@@ -575,7 +615,7 @@ test("routes/fido2/attestation", async (t) => {
     });
 
     t.test("if no active user session", async (t) => {
-      t.test("registers new user with credential", async (t) => {
+      t.test("checks for a registerable session", async (t) => {
         getRegistrationStub.returns(testRegistration);
         verifyRegistrationResponseStub.returns({
           registrationInfo: { ...testValidatedCredential },
@@ -594,19 +634,85 @@ test("routes/fido2/attestation", async (t) => {
           },
         });
 
-        t.ok(registerUserStub.called);
-        t.same(registerUserStub.firstCall.args[0], { ...testUser1 });
-        t.same(registerUserStub.firstCall.args[1], {
-          ...testCredential1,
-          created: testNowDate,
+        t.ok(getRegisterableStub.called);
+        verifyRequest(t, getRegisterableStub.firstCall.firstArg, {
+          url: "/result",
+          method: "POST",
         });
       });
+
+      t.test(
+        "if no registerable session, renders JSON with expected user error",
+        async (t) => {
+          getRegistrationStub.returns(testRegistration);
+          verifyRegistrationResponseStub.returns({
+            registrationInfo: { ...testValidatedCredential },
+          });
+          getRegisterableStub.returns(undefined);
+
+          const { app } = createAttestationTestExpressApp(t);
+          const response = await performResultPostRequest(app).send({
+            id: testCredential1.credentialID,
+            response: {
+              transports: ["internal"],
+            },
+          });
+
+          verifyUserErrorFido2ServerResponse(
+            t,
+            response,
+            StatusCodes.BAD_REQUEST,
+            "No active registerable session"
+          );
+        }
+      );
+
+      t.test(
+        "registers new user with credential and registerable source properties",
+        async (t) => {
+          getRegistrationStub.returns(testRegistration);
+          verifyRegistrationResponseStub.returns({
+            registrationInfo: { ...testValidatedCredential },
+          });
+          const testSource = {
+            // testing that these properties get set in the created user
+            isAdmin: true,
+          };
+          getRegisterableStub.returns({
+            source: testSource,
+          });
+          fetchCredentialByIdStub.resolves({
+            ...testCredential1,
+            created: testNowDate,
+            user: { ...testUser1 },
+          });
+
+          const { app } = createAttestationTestExpressApp(t);
+          await performResultPostRequest(app).send({
+            id: testCredential1.credentialID,
+            response: {
+              transports: ["internal"],
+            },
+          });
+
+          t.ok(registerUserStub.called);
+          t.same(registerUserStub.firstCall.args[0], {
+            ...testUser1,
+            ...testSource,
+          });
+          t.same(registerUserStub.firstCall.args[1], {
+            ...testCredential1,
+            created: testNowDate,
+          });
+        }
+      );
 
       t.test("fetches registered credential", async (t) => {
         getRegistrationStub.returns(testRegistration);
         verifyRegistrationResponseStub.returns({
           registrationInfo: { ...testValidatedCredential },
         });
+        getRegisterableStub.returns({ source: {} });
         fetchCredentialByIdStub.resolves({
           ...testCredential1,
           created: testNowDate,
@@ -633,6 +739,7 @@ test("routes/fido2/attestation", async (t) => {
         verifyRegistrationResponseStub.returns({
           registrationInfo: { ...testValidatedCredential },
         });
+        getRegisterableStub.returns({ source: {} });
         const user = {};
         registerUserStub.resolves(user);
         fetchCredentialByIdStub.resolves({
@@ -649,40 +756,16 @@ test("routes/fido2/attestation", async (t) => {
           },
         });
 
-        t.ok(signInFake.called);
-        verifyRequest(t, signInFake.firstCall.args[0], {
+        t.ok(signInStub.called);
+        verifyRequest(t, signInStub.firstCall.args[0], {
           url: "/result",
           method: "POST",
         });
-        t.same(signInFake.firstCall.args[1], {
+        t.same(signInStub.firstCall.args[1], {
           ...testCredential1,
           created: testNowDate,
           user: { ...testUser1 },
         });
-      });
-    });
-
-    t.test("gets return to URL", async (t) => {
-      getRegistrationStub.returns(testRegistration);
-      verifyRegistrationResponseStub.returns({
-        registrationInfo: { ...testValidatedCredential },
-      });
-      fetchCredentialByIdStub.resolves({
-        ...testCredential1,
-        created: testNowDate,
-        user: { ...testUser1 },
-      });
-
-      const { app } = createAttestationTestExpressApp(t);
-      await performResultPostRequest(app).send({
-        id: testCredential1.credentialID,
-        response: {},
-      });
-
-      t.ok(getReturnToStub.called);
-      verifyRequest(t, getReturnToStub.firstCall.firstArg, {
-        url: "/result",
-        method: "POST",
       });
     });
 
@@ -693,12 +776,13 @@ test("routes/fido2/attestation", async (t) => {
         verifyRegistrationResponseStub.returns({
           registrationInfo: { ...testValidatedCredential },
         });
+        getRegisterableStub.returns({ source: {} });
         fetchCredentialByIdStub.resolves({
           ...testCredential1,
           created: testNowDate,
           user: { ...testUser1 },
         });
-        getReturnToStub.returns("/foo");
+        signInStub.returns("/foo");
 
         const { app } = createAttestationTestExpressApp(t);
         const response = await performResultPostRequest(app).send({

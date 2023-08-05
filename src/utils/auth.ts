@@ -77,7 +77,7 @@ export function signIn(
   };
 
   // get return_to
-  const returnTo = req.session?.return_to || "/";
+  const returnTo = req.session.return_to || "/";
 
   // clear temp session values
   delete req.session.registration;
@@ -123,11 +123,7 @@ export function redirectToLogin(req: Request, res: Response) {
 // middleware
 
 export function auth() {
-  return async (
-    req: AuthenticatedRequest,
-    _res: Response,
-    next: NextFunction
-  ) => {
+  return (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
     const authentication: AuthenticatedSession = req.session?.authentication;
 
     // FUTURE: only set user if session hasn't expired
@@ -141,11 +137,7 @@ export function auth() {
 }
 
 export function requiresAuth() {
-  return async (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-  ) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       // redirect to login page
       const return_to = req.originalUrl;
@@ -157,13 +149,9 @@ export function requiresAuth() {
 }
 
 export function requiresAdmin() {
-  return async (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-  ) => {
+  return (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
     if (!req.user?.isAdmin) {
-      throw ForbiddenError("Requires admin role");
+      return next(ForbiddenError("Requires admin role"));
     }
 
     return next();

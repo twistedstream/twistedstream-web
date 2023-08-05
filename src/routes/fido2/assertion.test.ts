@@ -46,8 +46,7 @@ const getAuthenticationStub = sinon.stub();
 const fetchCredentialByIdStub = sinon.stub();
 const fetchUserByIdStub = sinon.stub();
 const verifyAuthenticationResponseStub = sinon.stub();
-const getReturnToStub = sinon.stub();
-const signInFake = sinon.fake();
+const signInStub = sinon.stub();
 
 // helpers
 
@@ -80,8 +79,7 @@ function importModule(
     dependencies["../../utils/auth"] = {
       beginSignIn: beginSignInFake,
       getAuthentication: getAuthenticationStub,
-      getReturnTo: getReturnToStub,
-      signIn: signInFake,
+      signIn: signInStub,
     };
   }
 
@@ -657,26 +655,6 @@ test("routes/fido2/assertion", async (t) => {
       }
     );
 
-    t.test("gets return to URL", async (t) => {
-      getAuthenticationStub.returns({});
-      fetchCredentialByIdStub.resolves({
-        ...testCredential1,
-        user: { ...testUser1 },
-      });
-      fetchUserByIdStub.resolves({});
-
-      const { app } = createAssertionTestExpressApp(t);
-      await performResultPostRequest(app).send({
-        id: testCredential1.credentialID,
-      });
-
-      t.ok(getReturnToStub.called);
-      verifyRequest(t, getReturnToStub.firstCall.firstArg, {
-        url: "/result",
-        method: "POST",
-      });
-    });
-
     t.test("performs sign in", async (t) => {
       getAuthenticationStub.returns({});
       const activeCredential = { ...testCredential1, user: { ...testUser1 } };
@@ -688,12 +666,12 @@ test("routes/fido2/assertion", async (t) => {
         id: testCredential1.credentialID,
       });
 
-      t.ok(signInFake.called);
-      verifyRequest(t, signInFake.firstCall.args[0], {
+      t.ok(signInStub.called);
+      verifyRequest(t, signInStub.firstCall.args[0], {
         url: "/result",
         method: "POST",
       });
-      t.equal(signInFake.firstCall.args[1], activeCredential);
+      t.equal(signInStub.firstCall.args[1], activeCredential);
     });
 
     t.test(
@@ -705,7 +683,7 @@ test("routes/fido2/assertion", async (t) => {
           user: { ...testUser1 },
         });
         fetchUserByIdStub.resolves({});
-        getReturnToStub.returns("/foo");
+        signInStub.returns("/foo");
 
         const { app } = createAssertionTestExpressApp(t);
         const response = await performResultPostRequest(app).send({

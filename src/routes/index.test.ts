@@ -19,6 +19,7 @@ const expressRouter = {
 const routerFake = sinon.fake.returns(expressRouter);
 const capturePreAuthStateFake = sinon.fake();
 const signOutFake = sinon.fake();
+const getRegisterableStub = sinon.stub();
 const fido2Route = sinon.fake();
 const profileRoute = sinon.fake();
 const invitesRoute = sinon.fake();
@@ -50,6 +51,7 @@ function importModule(
     dependencies["../utils/auth"] = {
       capturePreAuthState: capturePreAuthStateFake,
       signOut: signOutFake,
+      getRegisterable: getRegisterableStub,
     };
   }
 
@@ -198,7 +200,40 @@ test("routes/index", async (t) => {
       });
     });
 
+    t.test("checks for a registerable session", async (t) => {
+      const { app } = createIndexTestExpressApp(t);
+
+      await request(app).get("/register");
+
+      t.ok(getRegisterableStub.called);
+      verifyRequest(t, getRegisterableStub.firstCall.firstArg, {
+        url: "/register",
+        method: "GET",
+      });
+    });
+
+    t.test(
+      "if no registerable session, renders HTML with expected server error",
+      async (t) => {
+        getRegisterableStub.returns(undefined);
+        const { app, renderArgs } = createIndexTestExpressApp(t);
+
+        const response = await request(app).get("/register");
+        const { viewName, options } = renderArgs;
+
+        t.equal(response.status, 401);
+        t.match(response.headers["content-type"], "text/html");
+        t.equal(viewName, "error");
+        t.equal(options.title, "Error");
+        t.equal(
+          options.message,
+          "Unauthorized: Registration not allowed without an invitation"
+        );
+      }
+    );
+
     t.test("renders HTML with expected view state", async (t) => {
+      getRegisterableStub.returns({ source: {} });
       const { app, renderArgs } = createIndexTestExpressApp(t);
 
       const response = await request(app).get("/register?return_to=/foo");

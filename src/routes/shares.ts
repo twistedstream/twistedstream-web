@@ -204,7 +204,7 @@ router.get("/:share_id", async (req: AuthenticatedRequest, res: Response) => {
 
   // display accept form
   return res.render("accept_share", {
-    title: "Accept a shared file?",
+    title: "Accept this shared file?",
     share,
     documentTypeStyle: getDocumentTypeStyle(share.documentType),
   });
