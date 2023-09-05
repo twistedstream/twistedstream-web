@@ -1,3 +1,5 @@
+import { Dictionary, cloneDeep, groupBy } from "lodash";
+
 import { IDataProvider } from "../types/data";
 import {
   Authenticator,
@@ -16,17 +18,23 @@ export class InMemoryDataProvider implements IDataProvider {
   private _credentials: RegisteredAuthenticator[];
   private _invites: Invite[];
   private _shares: Share[];
+  private _filesByUrl: Dictionary<DocumentInfo[]>;
 
   constructor({
     users,
     credentials,
     invites,
     shares,
+    files,
   }: InMemoryDataProviderOptions) {
     this._users = users || [];
     this._credentials = credentials || [];
     this._invites = invites || [];
     this._shares = shares || [];
+    this._filesByUrl = groupBy(
+      files || [],
+      (f) => `https://example.com/${f.id}`
+    );
 
     // bind method "this"'s to instance "this"
     this.getUserCount = this.getUserCount.bind(this);
@@ -59,7 +67,7 @@ export class InMemoryDataProvider implements IDataProvider {
   async findUserById(userID: string): Promise<User | undefined> {
     const user = this._users.find((u) => u.id === userID);
     if (user) {
-      return { ...user };
+      return cloneDeep(user);
     }
   }
 
@@ -67,21 +75,22 @@ export class InMemoryDataProvider implements IDataProvider {
     const user = this._users.find((u) => u.username === username);
 
     if (user) {
-      return { ...user };
+      return cloneDeep(user);
     }
   }
 
   async insertUser(user: User): Promise<User> {
-    this._users.push({ ...user });
+    const clone = cloneDeep(user);
+    this._users.push(clone);
     logger.debug(this._users, "Users after insert");
 
-    return { ...user };
+    return cloneDeep(clone);
   }
 
   async updateUser(user: User): Promise<void> {
     const foundUser = this._users.find((u) => u.id === user.id);
     if (foundUser) {
-      foundUser.username = user.username;
+      // only these fields can be updated
       foundUser.displayName = user.displayName;
     }
   }
@@ -95,7 +104,7 @@ export class InMemoryDataProvider implements IDataProvider {
       (p) => p.credentialID === credentialID
     );
     if (credential) {
-      return { ...credential };
+      return cloneDeep(credential);
     }
   }
 
@@ -107,7 +116,7 @@ export class InMemoryDataProvider implements IDataProvider {
       (p) => p.user.id === userID && p.credentialID === credentialID
     );
     if (credential) {
-      return { ...credential };
+      return cloneDeep(credential);
     }
   }
 
@@ -115,16 +124,19 @@ export class InMemoryDataProvider implements IDataProvider {
     userID: string
   ): Promise<RegisteredAuthenticator[]> {
     const credentials = this._credentials.filter((p) => p.user.id === userID);
-    return [...credentials];
+    return cloneDeep(credentials);
   }
 
   async insertCredential(
     userID: string,
     credential: Authenticator
   ): Promise<void> {
-    const user = assertValue(await this.findUserById(userID));
+    const user = assertValue(
+      await this.findUserById(userID),
+      "User does not exist"
+    );
     const registeredCredential: RegisteredAuthenticator = {
-      ...credential,
+      ...cloneDeep(credential),
       user,
     };
     this._credentials.push(registeredCredential);
@@ -135,8 +147,10 @@ export class InMemoryDataProvider implements IDataProvider {
     const indexToDelete = this._credentials.findIndex(
       (c) => c.credentialID === credentialID
     );
-    this._credentials.splice(indexToDelete, 1);
-    logger.debug(this._credentials, "Credentials after delete");
+    if (indexToDelete >= 0) {
+      this._credentials.splice(indexToDelete, 1);
+      logger.debug(this._credentials, "Credentials after delete");
+    }
   }
 
   // invites
@@ -144,15 +158,16 @@ export class InMemoryDataProvider implements IDataProvider {
   async findInviteById(inviteId: string): Promise<Invite | undefined> {
     const invite = this._invites.find((i) => i.id === inviteId);
     if (invite) {
-      return { ...invite };
+      return cloneDeep(invite);
     }
   }
 
   async insertInvite(invite: Invite): Promise<Invite> {
-    this._invites.push({ ...invite });
+    const clone = cloneDeep(invite);
+    this._invites.push(clone);
     logger.debug(this._invites, "Invites after insert");
 
-    return { ...invite };
+    return cloneDeep(clone);
   }
 
   async updateInvite(invite: Invite): Promise<void> {
@@ -168,54 +183,26 @@ export class InMemoryDataProvider implements IDataProvider {
   async findShareById(shareId: string): Promise<Share | undefined> {
     const share = this._shares.find((s) => s.id === shareId);
     if (share) {
-      return { ...share };
+      return cloneDeep(share);
     }
   }
 
   async findSharesByClaimedUserId(userID: string): Promise<Share[]> {
     const shares = this._shares.filter((s) => s.claimedBy?.id === userID);
-    return [...shares];
+    return cloneDeep(shares);
   }
 
   async findSharesByCreatedUserId(userID: string): Promise<Share[]> {
     const shares = this._shares.filter((s) => s.createdBy.id === userID);
-    return [...shares];
-  }
-
-  async findDocumentInfo(url: string): Promise<DocumentInfo | undefined> {
-    switch (url) {
-      case "https://example.com/doc1":
-        return {
-          id: "doc1",
-          type: "document",
-          title: "Example Doc",
-        };
-      case "https://example.com/sheet1":
-        return {
-          id: "sheet1",
-          type: "spreadsheet",
-          title: "Example Spreadsheet",
-        };
-      case "https://example.com/slides1":
-        return {
-          id: "slides1",
-          type: "presentation",
-          title: "Example Presentation",
-        };
-      case "https://example.com/pdf1":
-        return {
-          id: "pdf1",
-          type: "pdf",
-          title: "Example PFD",
-        };
-    }
+    return cloneDeep(shares);
   }
 
   async insertShare(share: Share): Promise<Share> {
-    this._shares.push({ ...share });
+    const clone = cloneDeep(share);
+    this._shares.push(clone);
     logger.debug(this._shares, "Shares after insert");
 
-    return { ...share };
+    return cloneDeep(clone);
   }
 
   async updateShare(share: Share): Promise<void> {
@@ -223,6 +210,15 @@ export class InMemoryDataProvider implements IDataProvider {
     if (foundShare) {
       foundShare.claimed = share.claimed;
       foundShare.claimedBy = share.claimedBy;
+    }
+  }
+
+  // files
+
+  async findDocumentInfo(url: string): Promise<DocumentInfo | undefined> {
+    const files = this._filesByUrl[url];
+    if (files) {
+      return files[0];
     }
   }
 }

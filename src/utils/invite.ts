@@ -1,11 +1,15 @@
-import { DateTime } from "luxon";
-
 import { fetchInviteById } from "../services/invite";
 import { Invite } from "../types/entity";
 import { AuthenticatedRequest } from "../types/express";
 import { maxInviteLifetime } from "./config";
-import { BadRequestError, ForbiddenError, NotFoundError } from "./error";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+  assertValue,
+} from "./error";
 import { logger } from "./logger";
+import { now } from "./time";
 
 export async function ensureInvite(req: AuthenticatedRequest): Promise<Invite> {
   // validate request
@@ -27,8 +31,10 @@ export async function ensureInvite(req: AuthenticatedRequest): Promise<Invite> {
     logger.warn(invite, "Invite was accessed after it was already claimed");
 
     if (invite.createdBy.id === user?.id) {
+      const claimedBy = assertValue(invite.claimedBy);
+
       throw ForbiddenError(
-        `This invite was already claimed by @${invite.claimedBy?.username}`
+        `This invite was already claimed by @${claimedBy.username}`
       );
     }
 
@@ -36,7 +42,7 @@ export async function ensureInvite(req: AuthenticatedRequest): Promise<Invite> {
   }
 
   // make sure it hasn't expired
-  if (DateTime.now() > invite.created.plus(maxInviteLifetime)) {
+  if (now() > invite.created.plus(maxInviteLifetime)) {
     logger.warn(invite, "Invite has expired");
 
     if (invite.createdBy.id === user?.id) {

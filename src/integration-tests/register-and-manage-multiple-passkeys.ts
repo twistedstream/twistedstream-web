@@ -28,10 +28,14 @@ test("Register and manage multiple authenticators", async (t) => {
     sinon.resetHistory();
   });
 
+  const user1 = testUser1();
+  const cred1 = testCredential1();
+  const cred2 = testCredential2();
+
   // start with an already registered user
   const state = createIntegrationTestState(t, {
-    users: [{ ...testUser1 }],
-    credentials: [{ ...testCredential1, user: testUser1 }],
+    users: [user1],
+    credentials: [{ ...cred1, user: user1 }],
     invites: [],
     shares: [],
   });
@@ -43,7 +47,7 @@ test("Register and manage multiple authenticators", async (t) => {
   });
 
   t.test("Sign in with existing passkey", async (t) => {
-    await doSignIn(t, state, testUser1.username, testCredential1);
+    await doSignIn(t, state, user1.username, cred1);
   });
 
   t.test("Go to profile page", async (t) => {
@@ -52,15 +56,12 @@ test("Register and manage multiple authenticators", async (t) => {
   });
 
   t.test("Register another passkey", async (t) => {
-    await doRegistration(t, state, testUser1, testCredential2, false);
+    await doRegistration(t, state, user1, cred1, false);
 
     // we should now have a second cred registered to the existing user
     t.equal(state.users.length, 1);
     t.equal(state.credentials.length, 2);
-    assertUserAndAssociatedCredentials(t, state, testUser1, [
-      testCredential1,
-      testCredential2,
-    ]);
+    assertUserAndAssociatedCredentials(t, state, user1, [cred1, cred2]);
   });
 
   t.test("Sign out", async (t) => {
@@ -68,12 +69,12 @@ test("Register and manage multiple authenticators", async (t) => {
   });
 
   t.test("Sign in with new passkey", async (t) => {
-    await doSignIn(t, state, testUser1.username, testCredential2);
+    await doSignIn(t, state, user1.username, cred2);
   });
 
   t.test("Delete original passkey", async (t) => {
     const response = await postForm(state, "/profile", {
-      delete_cred: testCredential1.credentialID,
+      delete_cred: cred1.credentialID,
     });
 
     assertRedirectResponse(t, response, "/");
@@ -81,6 +82,6 @@ test("Register and manage multiple authenticators", async (t) => {
     // we should now have only the second cred registered to the existing user
     t.equal(state.users.length, 1);
     t.equal(state.credentials.length, 1);
-    assertUserAndAssociatedCredentials(t, state, testUser1, [testCredential2]);
+    assertUserAndAssociatedCredentials(t, state, user1, [cred2]);
   });
 });

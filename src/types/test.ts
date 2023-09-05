@@ -1,5 +1,11 @@
 import { SinonStub } from "sinon";
-import { Invite, RegisteredAuthenticator, Share, User } from "./entity";
+import {
+  DocumentInfo,
+  Invite,
+  RegisteredAuthenticator,
+  Share,
+  User,
+} from "./entity";
 
 export type IntegrationTestState = {
   app: any;
@@ -12,8 +18,9 @@ export type IntegrationTestState = {
 };
 
 export type InMemoryDataProviderOptions = {
-  users: User[];
-  credentials: RegisteredAuthenticator[];
-  invites: Invite[];
-  shares: Share[];
+  users?: User[];
+  credentials?: RegisteredAuthenticator[];
+  invites?: Invite[];
+  shares?: Share[];
+  files?: DocumentInfo[];
 };

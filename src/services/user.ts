@@ -61,7 +61,7 @@ export async function modifyUser(user: User): Promise<void> {
 
   const foundUser = await findUserById(user.id);
   if (!foundUser) {
-    throw new Error(`User with ID ${user.id} does not exist.`);
+    throw new Error(`User with ID '${user.id}' does not exist.`);
   }
 
   // update user in DB
@@ -97,11 +97,11 @@ export async function addUserCredential(
 ) {
   if (await findUserCredential(existingUserId, newCredential.credentialID)) {
     throw new Error(
-      `Credential with ID ${newCredential.credentialID} already exists.`
+      `Credential with ID '${newCredential.credentialID}' already exists`
     );
   }
   if (!(await findUserById(existingUserId))) {
-    throw new Error(`User with ID ${existingUserId} not found.`);
+    throw new Error(`User with ID '${existingUserId}' not found`);
   }
 
   await insertCredential(existingUserId, newCredential);
@@ -113,12 +113,12 @@ export async function removeUserCredential(
 ) {
   if (!(await findUserCredential(existingUserId, existingCredentialId))) {
     throw new Error(
-      `Credential (id = ${existingCredentialId}) not associated with user (id = ${existingUserId}).`
+      `Credential with ID '${existingCredentialId}' not associated with user with ID '${existingUserId}'`
     );
   }
   if ((await findCredentialsByUser(existingUserId)).length === 1) {
     throw new Error(
-      `Cannot remove the last credential (id = ${existingCredentialId}) associated with user (id = ${existingUserId}).`
+      `Cannot remove the last credential with ID '${existingCredentialId}' associated with user with ID '${existingUserId}'`
     );
   }
 

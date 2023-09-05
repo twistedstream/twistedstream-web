@@ -62,11 +62,17 @@ test("utils/error", async (t) => {
 
   t.test("assertValue", async (t) => {
     t.test("throws if value is undefined", async (t) => {
-      t.throws(() => assertValue(undefined), "Unexpected undefined value");
+      t.throws(() => assertValue(undefined), {
+        message: "Unexpected undefined value",
+      });
     });
 
     t.test("throws if value is null", async (t) => {
-      t.throws(() => assertValue(null), "Unexpected null value");
+      t.throws(() => assertValue(null), { message: "Unexpected null value" });
+    });
+
+    t.test("throws optional custom error message", async (t) => {
+      t.throws(() => assertValue(null, "BOOM!"), { message: "BOOM!" });
     });
 
     t.test("returns real value", async (t) => {

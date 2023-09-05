@@ -29,14 +29,14 @@ router.get("/:invite_id", async (req: AuthenticatedRequest, res: Response) => {
     const registerable = getRegisterable(req);
     if (!registerable) {
       throw ForbiddenError(
-        "You can't accept an invite to register when you're already signed in."
+        "You can't accept an invite to register when you're already signed in"
       );
     }
 
     // claim invite
     clearRegisterable(req);
     const claimedInvite = await claimInvite(invite.id, user);
-    logger.info(claimedInvite, `New user has claimed invite.`);
+    logger.info(claimedInvite, "New user has claimed invite");
 
     // redirect to shares page
     return res.redirect("/shares");
@@ -59,7 +59,7 @@ router.post(
     const invite = await ensureInvite(req);
     if (req.user) {
       throw ForbiddenError(
-        "This endpoint does not support an existing user session."
+        "This endpoint does not support an existing user session"
       );
     }
 

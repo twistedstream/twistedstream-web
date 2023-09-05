@@ -24,6 +24,9 @@ test("Navigate, register a new user, sign out, sign in", async (t) => {
     sinon.resetHistory();
   });
 
+  const user1 = testUser1();
+  const cred1 = testCredential1();
+
   // start with no registered users
   const state = createIntegrationTestState(t, {
     users: [],
@@ -58,12 +61,12 @@ test("Navigate, register a new user, sign out, sign in", async (t) => {
   });
 
   t.test("Register a new account", async (t) => {
-    await doRegistration(t, state, testUser1, testCredential1, true);
+    await doRegistration(t, state, user1, cred1, true);
 
     // we should have a new user with a new cred
     t.equal(state.users.length, 1);
     t.equal(state.credentials.length, 1);
-    assertUserAndAssociatedCredentials(t, state, testUser1, [testCredential1]);
+    assertUserAndAssociatedCredentials(t, state, user1, [cred1]);
   });
 
   t.test("Sign out", async (t) => {
@@ -71,7 +74,7 @@ test("Navigate, register a new user, sign out, sign in", async (t) => {
   });
 
   t.test("Sign in", async (t) => {
-    await doSignIn(t, state, testUser1.username, testCredential1);
+    await doSignIn(t, state, user1.username, cred1);
   });
 
   t.test("Go to profile page, and access content", async (t) => {

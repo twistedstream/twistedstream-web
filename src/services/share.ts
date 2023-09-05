@@ -80,10 +80,10 @@ export async function createShare(share: Share): Promise<Share> {
 export async function claimShare(shareId: string, by: User): Promise<Share> {
   const existingShare = await findShareById(shareId);
   if (!existingShare) {
-    throw new Error(`Share with ID ${shareId} does not exist`);
+    throw new Error(`Share with ID '${shareId}' does not exist`);
   }
   if (existingShare.claimed) {
-    throw new Error(`Share with ID ${shareId} has already been claimed`);
+    throw new Error(`Share with ID '${shareId}' has already been claimed`);
   }
 
   existingShare.claimed = now();

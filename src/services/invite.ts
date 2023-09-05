@@ -3,6 +3,7 @@ import { Invite, User } from "../types/entity";
 import { assertValue } from "../utils/error";
 import { unique } from "../utils/identifier";
 import { now } from "../utils/time";
+import { newInvite as _newInvite } from "./invite";
 
 const provider = getProvider();
 const { getUserCount, insertUser, insertInvite, findInviteById, updateInvite } =
@@ -24,7 +25,9 @@ export async function createRootUserAndInvite(): Promise<Invite | undefined> {
     });
 
     // create first invite
-    const firstInvite = await newInvite(rootAdmin, true);
+    const firstInvite =
+      await // call imported version of newInvite so it can be mocked
+      _newInvite(rootAdmin, true);
     return insertInvite(firstInvite);
   }
 }
@@ -50,10 +53,10 @@ export async function fetchInviteById(
 export async function claimInvite(inviteId: string, by: User): Promise<Invite> {
   const existingInvite = await findInviteById(inviteId);
   if (!existingInvite) {
-    throw new Error(`Invite with ID ${inviteId} does not exist`);
+    throw new Error(`Invite with ID '${inviteId}' does not exist`);
   }
   if (existingInvite.claimed) {
-    throw new Error(`Invite with ID ${inviteId} has already been claimed`);
+    throw new Error(`Invite with ID '${inviteId}' has already been claimed`);
   }
 
   existingInvite.claimed = now();

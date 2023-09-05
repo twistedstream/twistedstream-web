@@ -49,19 +49,20 @@ test("utils/auth", async (t) => {
 
   t.test("beginSignup", async (t) => {
     t.test("saves registration state in session", async (t) => {
+      const user1 = testUser1();
       const req: any = {};
 
       const { beginSignup } = importModule(t);
-      beginSignup(req, "CHALLENGE!", { ...testUser1 });
+      beginSignup(req, "CHALLENGE!", user1);
 
       t.ok(req.session);
       const { registration } = req.session;
       t.ok(registration);
       t.same(registration.registeringUser, {
-        id: testUser1.id,
-        created: testUser1.created,
-        username: testUser1.username,
-        displayName: testUser1.displayName,
+        id: user1.id,
+        created: user1.created,
+        username: user1.username,
+        displayName: user1.displayName,
         isAdmin: false,
       });
       t.equal(registration.challenge, "CHALLENGE!");
@@ -71,15 +72,16 @@ test("utils/auth", async (t) => {
   t.test("beginSignIn", async (t) => {
     t.test("saves authentication state in session", async (t) => {
       t.test("when existing user", async (t) => {
+        const user1 = testUser1();
         const req: any = {};
 
         const { beginSignIn } = importModule(t);
-        beginSignIn(req, "CHALLENGE!", { ...testUser1 }, "preferred");
+        beginSignIn(req, "CHALLENGE!", user1, "preferred");
 
         t.ok(req.session);
         const { authentication } = req.session;
         t.ok(authentication);
-        t.same(authentication.authenticatingUser, testUser1);
+        t.same(authentication.authenticatingUser, user1);
         t.equal(authentication.challenge, "CHALLENGE!");
         t.equal(authentication.userVerification, "preferred");
       });
@@ -120,7 +122,7 @@ test("utils/auth", async (t) => {
       const credential = {};
 
       const { signIn } = importModule(t);
-      signIn(req, { ...testUser1 }, credential);
+      signIn(req, testUser1(), credential);
 
       t.ok(req.session);
       t.notOk(req.session.registration);

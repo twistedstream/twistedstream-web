@@ -34,12 +34,15 @@ export const UnauthorizedError = (message?: string) =>
 export const ForbiddenError = (message: string) =>
   new ErrorWithStatusCode(StatusCodes.FORBIDDEN, message);
 
-export function assertValue<T>(value: T | undefined | null): T {
+export function assertValue<T>(
+  value: T | undefined | null,
+  message?: string
+): T {
   if (value === undefined) {
-    throw new Error("Unexpected undefined value");
+    throw new Error(message || "Unexpected undefined value");
   }
   if (value === null) {
-    throw new Error("Unexpected null value");
+    throw new Error(message || "Unexpected null value");
   }
 
   return value;

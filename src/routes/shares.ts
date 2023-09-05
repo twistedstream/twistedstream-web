@@ -9,7 +9,7 @@ import {
   fetchSharesByCreatedUserId,
   newShare,
 } from "../services/share";
-import { DocumentType, Share } from "../types/entity";
+import { Share } from "../types/entity";
 import {
   AuthenticatedRequest,
   AuthenticatedRequestWithTypedBody,
@@ -25,45 +25,14 @@ import {
 } from "../utils/auth";
 import { BadRequestError, ForbiddenError, assertValue } from "../utils/error";
 import { logger } from "../utils/logger";
-import { ensureShare, renderShare } from "../utils/share";
+import {
+  buildExpirations,
+  ensureShare,
+  getDocumentTypeStyle,
+  renderShare,
+} from "../utils/share";
 
 const router = Router();
-
-const EXPIRATIONS: string[] = [
-  "PT5M",
-  "PT30M",
-  "PT1H",
-  "PT12H",
-  "P1D",
-  "P3D",
-  "P1W",
-  "P2W",
-  "P1M",
-  "P3M",
-  "P6M",
-  "P1Y",
-];
-
-function buildExpirations(current?: Duration) {
-  return EXPIRATIONS.map((k) => ({
-    value: k,
-    description: Duration.fromISO(k).toHuman(),
-    selected: k === current?.toISO(),
-  }));
-}
-
-function getDocumentTypeStyle(documentType: DocumentType) {
-  switch (documentType) {
-    case "document":
-      return "primary";
-    case "spreadsheet":
-      return "success";
-    case "presentation":
-      return "warning";
-    case "pdf":
-      return "danger";
-  }
-}
 
 router.get(
   "/",
@@ -77,7 +46,7 @@ router.get(
         url: `/shares/${s.id}`,
         created: s.created.toISO(),
         from: s.createdBy.username,
-        claimed: s.claimed?.toISO(),
+        claimed: assertValue(s.claimed).toISO(),
       })
     );
     const sharesByMe = (await fetchSharesByCreatedUserId(user.id)).map((s) => ({
@@ -105,7 +74,7 @@ router.get(
   async (_req: AuthenticatedRequest, res: Response) => {
     res.render("new_share", {
       title: "New share",
-      expirations: buildExpirations,
+      expirations: buildExpirations(),
     });
   }
 );
@@ -127,11 +96,11 @@ router.post(
     const user = assertValue(req.user);
     const { action, backingUrl, toUsername, expires } = req.body;
 
-    const expireDuration: Duration | undefined = expires
-      ? Duration.fromISO(expires)
-      : undefined;
-
     if (action === "validate" || action === "create") {
+      const expireDuration: Duration | undefined = expires
+        ? Duration.fromISO(expires)
+        : undefined;
+
       let share: Share;
       try {
         share = await newShare(user, backingUrl, toUsername, expireDuration);
@@ -183,6 +152,7 @@ router.get("/:share_id", async (req: AuthenticatedRequest, res: Response) => {
   if (user) {
     if (isClaimed) {
       // render share
+
       return renderShare(res, share);
     }
 
@@ -190,7 +160,7 @@ router.get("/:share_id", async (req: AuthenticatedRequest, res: Response) => {
       // claim share by newly registered user
       clearRegisterable(req);
       const claimedShare = await claimShare(share.id, user);
-      logger.info(claimedShare, `New user has claimed share.`);
+      logger.info(claimedShare, "New user has claimed share");
 
       // render share
       return renderShare(res, claimedShare);
@@ -219,7 +189,6 @@ router.post(
   ) => {
     const { share, isClaimed } = await ensureShare(req);
     const { action } = req.body;
-    const { user } = req;
 
     if (isClaimed) {
       throw ForbiddenError(
@@ -228,11 +197,13 @@ router.post(
     }
 
     if (action === "accept") {
+      const { user } = req;
+
       if (user) {
         // claim share by existing user
         clearRegisterable(req);
         const claimedShare = await claimShare(share.id, user);
-        logger.info(claimedShare, `Existing user has claimed share.`);
+        logger.info(claimedShare, `Existing user has claimed share`);
 
         // redirect to GET endpoint to render share
         return res.redirect(req.originalUrl);

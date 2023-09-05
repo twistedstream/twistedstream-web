@@ -35,40 +35,39 @@ function importModule(
     mockModules = false,
   }: MockOptions = {}
 ) {
-  const dependencies: any = {};
-  if (mockExpress) {
-    dependencies.express = {
-      Router: routerFake,
-    };
-  }
-  if (mockChildRoutes) {
-    dependencies["./fido2"] = fido2Route;
-    dependencies["./profile"] = profileRoute;
-    dependencies["./invites"] = invitesRoute;
-    dependencies["./shares"] = sharesRoute;
-  }
-  if (mockModules) {
-    dependencies["../utils/auth"] = {
-      capturePreAuthState: capturePreAuthStateFake,
-      signOut: signOutFake,
-      getRegisterable: getRegisterableStub,
-    };
-  }
-
-  const { default: router } = test.mock("./index", dependencies);
+  const { default: router } = test.mock("./index", {
+    ...(mockExpress && {
+      express: {
+        Router: routerFake,
+      },
+    }),
+    ...(mockChildRoutes && {
+      "./fido2": fido2Route,
+      "./profile": profileRoute,
+      "./invites": invitesRoute,
+      "./shares": sharesRoute,
+    }),
+    ...(mockModules && {
+      "../utils/auth": {
+        capturePreAuthState: capturePreAuthStateFake,
+        signOut: signOutFake,
+        getRegisterable: getRegisterableStub,
+      },
+    }),
+  });
 
   return router;
 }
 
 function createIndexTestExpressApp(test: Tap.Test) {
-  const index = importModule(test, {
+  const router = importModule(test, {
     mockModules: true,
     mockChildRoutes: true,
   });
 
   return createTestExpressApp({
     middlewareSetup: (app) => {
-      app.use(index);
+      app.use(router);
     },
     errorHandlerSetup: {
       test,

@@ -22,10 +22,13 @@ test("Manage profile", async (t) => {
     sinon.resetHistory();
   });
 
+  const user1 = testUser1();
+  const cred1 = testCredential1();
+
   // start with an already registered user
   const state = createIntegrationTestState(t, {
-    users: [{ ...testUser1 }],
-    credentials: [{ ...testCredential1, user: testUser1 }],
+    users: [user1],
+    credentials: [{ ...cred1, user: user1 }],
     invites: [],
     shares: [],
   });
@@ -37,7 +40,7 @@ test("Manage profile", async (t) => {
   });
 
   t.test("Sign in with existing passkey", async (t) => {
-    await doSignIn(t, state, testUser1.username, testCredential1);
+    await doSignIn(t, state, user1.username, cred1);
   });
 
   t.test("Go to profile page", async (t) => {
@@ -54,7 +57,7 @@ test("Manage profile", async (t) => {
     assertRedirectResponse(t, response, "/");
 
     // Bob's user profile should be updated
-    const newUser = { ...testUser1, displayName: "Bob User 2" };
+    const newUser = { ...testUser1(), displayName: "Bob User 2" };
     assertUserAndAssociatedCredentials(t, state, newUser, []);
   });
 });

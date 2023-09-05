@@ -1,13 +1,55 @@
-import { DateTime } from "luxon";
-
 import { Response } from "express";
+import { Duration } from "luxon";
+
 import { fetchShareById } from "../services/share";
-import { Share } from "../types/entity";
+import { DocumentType, Share } from "../types/entity";
 import { AuthenticatedRequest } from "../types/express";
-import { BadRequestError, ForbiddenError, NotFoundError } from "./error";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+  assertValue,
+} from "./error";
 import { logger } from "./logger";
+import { now } from "./time";
 
 type EnsureShareResult = { share: Share; isClaimed: boolean };
+
+const EXPIRATIONS: string[] = [
+  "PT5M",
+  "PT30M",
+  "PT1H",
+  "PT12H",
+  "P1D",
+  "P3D",
+  "P1W",
+  "P2W",
+  "P1M",
+  "P3M",
+  "P6M",
+  "P1Y",
+];
+
+export function buildExpirations(current?: Duration) {
+  return EXPIRATIONS.map((k) => ({
+    value: k,
+    description: Duration.fromISO(k).toHuman(),
+    selected: k === current?.toISO(),
+  }));
+}
+
+export function getDocumentTypeStyle(documentType: DocumentType) {
+  switch (documentType) {
+    case "document":
+      return "primary";
+    case "spreadsheet":
+      return "success";
+    case "presentation":
+      return "warning";
+    case "pdf":
+      return "danger";
+  }
+}
 
 export async function ensureShare(
   req: AuthenticatedRequest
@@ -25,15 +67,14 @@ export async function ensureShare(
 
   const { user } = req;
   const shareHasExpired =
-    !!share.expireDuration &&
-    DateTime.now() > share.created.plus(share.expireDuration);
+    !!share.expireDuration && now() > share.created.plus(share.expireDuration);
 
   // check if current user has already claimed the share
   if (user && share.claimedBy?.id === user.id) {
     if (shareHasExpired) {
       logger.warn(share, "Share claimed by current user has expired");
 
-      throw ForbiddenError("This share is expired");
+      throw ForbiddenError("This share has expired");
     }
 
     return { share, isClaimed: true };
@@ -44,8 +85,10 @@ export async function ensureShare(
     logger.warn(share, `Share was already claimed by a different user`);
 
     if (share.createdBy.id === user?.id) {
+      const claimedBy = assertValue(share.claimedBy);
+
       throw ForbiddenError(
-        `This share was already claimed by @${share.claimedBy?.username}`
+        `This share was already claimed by @${claimedBy.username}`
       );
     }
 
@@ -70,7 +113,7 @@ export async function ensureShare(
     logger.warn(share, "Unclaimed share has expired");
 
     if (share.createdBy.id === user?.id) {
-      throw ForbiddenError(`This share has expired`);
+      throw ForbiddenError(`This unclaimed share has expired`);
     }
 
     throw NotFoundError();

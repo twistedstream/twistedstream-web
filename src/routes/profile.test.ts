@@ -3,12 +3,18 @@ import sinon from "sinon";
 import request, { Test as SuperTest } from "supertest";
 import { test } from "tap";
 
-import { DateTime } from "luxon";
+import { StatusCodes } from "http-status-codes";
 import { ValidationError } from "../types/error";
-import { testCredential1, testUser1 } from "../utils/testing/data";
+import {
+  testCredential1,
+  testCredential2,
+  testUser1,
+} from "../utils/testing/data";
 import {
   createTestExpressApp,
   verifyAuthenticationRequiredResponse,
+  verifyHtmlErrorResponse,
+  verifyRedirectResponse,
 } from "../utils/testing/unit";
 
 type MockOptions = {
@@ -38,21 +44,20 @@ function importModule(
   test: Tap.Test,
   { mockExpress = false, mockModules = false }: MockOptions = {}
 ) {
-  const dependencies: any = {};
-  if (mockExpress) {
-    dependencies.express = {
-      Router: routerFake,
-    };
-  }
-  if (mockModules) {
-    dependencies["../services/user"] = {
-      fetchCredentialsByUserId: fetchCredentialsByUserIdStub,
-      modifyUser: modifyUserStub,
-      removeUserCredential: removeUserCredentialStub,
-    };
-  }
-
-  const { default: router } = test.mock("./profile", dependencies);
+  const { default: router } = test.mock("./profile", {
+    ...(mockExpress && {
+      express: {
+        Router: routerFake,
+      },
+    }),
+    ...(mockModules && {
+      "../services/user": {
+        fetchCredentialsByUserId: fetchCredentialsByUserIdStub,
+        modifyUser: modifyUserStub,
+        removeUserCredential: removeUserCredentialStub,
+      },
+    }),
+  });
 
   return router;
 }
@@ -61,18 +66,18 @@ function createProfileTestExpressApp(
   test: Tap.Test,
   { withAuth, suppressErrorOutput }: ProfileTestExpressAppOptions = {}
 ) {
-  const profile = importModule(test, { mockModules: true });
+  const router = importModule(test, { mockModules: true });
 
   return createTestExpressApp({
     authSetup: withAuth
       ? {
           originalUrl: "/",
-          activeUser: { ...testUser1 },
-          activeCredential: { ...testCredential1 },
+          activeUser: testUser1(),
+          activeCredential: testCredential1(),
         }
       : undefined,
     middlewareSetup: (app) => {
-      app.use(profile);
+      app.use(router);
     },
     errorHandlerSetup: {
       test,
@@ -130,18 +135,10 @@ test("routes/profile", async (t) => {
     });
 
     t.test("renders HTML with expected view state", async (t) => {
-      fetchCredentialsByUserIdStub.withArgs("123abc").resolves([
-        { ...testCredential1 },
-        {
-          credentialID: "987zyx",
-          credentialDeviceType: "multiDevice",
-          created: DateTime.fromObject({
-            year: 2023,
-            month: 3,
-            day: 1,
-          }).toUTC(),
-        },
-      ]);
+      const user1 = testUser1();
+      const cred1 = testCredential1();
+      const cred2 = testCredential2();
+      fetchCredentialsByUserIdStub.withArgs(user1.id).resolves([cred1, cred2]);
 
       const { app, renderArgs } = createProfileTestExpressApp(t, {
         withAuth: true,
@@ -150,26 +147,26 @@ test("routes/profile", async (t) => {
       const response = await performGetRequest(app);
       const { viewName, options } = renderArgs;
 
-      t.equal(response.status, 200);
+      t.equal(response.status, StatusCodes.OK);
       t.match(response.headers["content-type"], "text/html");
       t.equal(viewName, "profile");
       t.equal(options.title, "Profile");
       t.same(options.profile, {
-        id: testUser1.id,
-        created: testUser1.created,
-        username: testUser1.username,
-        displayName: testUser1.displayName,
-        isAdmin: testUser1.isAdmin,
+        id: user1.id,
+        created: user1.created,
+        username: user1.username,
+        displayName: user1.displayName,
+        isAdmin: user1.isAdmin,
         activePasskey: {
-          id: testCredential1.credentialID,
-          type: "multiDevice",
-          created: "2023-02-01T06:00:00.000Z",
+          id: cred1.credentialID,
+          type: cred1.credentialDeviceType,
+          created: cred1.created.toISO(),
         },
         otherPasskeys: [
           {
-            id: "987zyx",
-            type: "multiDevice",
-            created: "2023-03-01T06:00:00.000Z",
+            id: cred2.credentialID,
+            type: cred2.credentialDeviceType,
+            created: cred2.created.toISO(),
           },
         ],
       });
@@ -195,27 +192,27 @@ test("routes/profile", async (t) => {
           const { app, renderArgs } = createProfileTestExpressApp(t, {
             withAuth: true,
           });
+          const user1 = testUser1();
 
           const response = await performPostRequest(app).send({
             action: "update_profile",
             display_name: "Bad Bob",
           });
-          const { viewName, options } = renderArgs;
 
           t.same(modifyUserStub.firstCall.firstArg, {
-            id: testUser1.id,
-            created: testUser1.created,
-            username: testUser1.username,
+            id: user1.id,
+            created: user1.created,
+            username: user1.username,
             displayName: "Bad Bob",
-            isAdmin: testUser1.isAdmin,
+            isAdmin: user1.isAdmin,
           });
-          t.equal(response.status, 400);
-          t.match(response.headers["content-type"], "text/html");
-          t.equal(viewName, "error");
-          t.equal(options.title, "Error");
-          t.equal(
-            options.message,
-            "Bad Request: User: displayName: Sorry, can't do it"
+          verifyHtmlErrorResponse(
+            t,
+            response,
+            renderArgs,
+            StatusCodes.BAD_REQUEST,
+            "Error",
+            "User: displayName: Sorry, can't do it"
           );
         }
       );
@@ -229,25 +226,28 @@ test("routes/profile", async (t) => {
             withAuth: true,
             suppressErrorOutput: true,
           });
+          const user1 = testUser1();
 
           const response = await performPostRequest(app).send({
             action: "update_profile",
             display_name: "Bad Bob",
           });
-          const { viewName, options } = renderArgs;
 
           t.same(modifyUserStub.firstCall.firstArg, {
-            id: testUser1.id,
-            created: testUser1.created,
-            username: testUser1.username,
+            id: user1.id,
+            created: user1.created,
+            username: user1.username,
             displayName: "Bad Bob",
-            isAdmin: testUser1.isAdmin,
+            isAdmin: user1.isAdmin,
           });
-          t.equal(response.status, 500);
-          t.match(response.headers["content-type"], "text/html");
-          t.equal(viewName, "error");
-          t.equal(options.title, "Error");
-          t.equal(options.message, "Something unexpected happened");
+          verifyHtmlErrorResponse(
+            t,
+            response,
+            renderArgs,
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            "Error",
+            "Something unexpected happened"
+          );
         }
       );
 
@@ -257,6 +257,7 @@ test("routes/profile", async (t) => {
           modifyUserStub.resolves();
 
           const { app } = createProfileTestExpressApp(t, { withAuth: true });
+          const user1 = testUser1();
 
           const response = await performPostRequest(app).send({
             action: "update_profile",
@@ -264,14 +265,13 @@ test("routes/profile", async (t) => {
           });
 
           t.same(modifyUserStub.firstCall.firstArg, {
-            id: testUser1.id,
-            created: testUser1.created,
-            username: testUser1.username,
+            id: user1.id,
+            created: user1.created,
+            username: user1.username,
             displayName: "Good Bob",
             isAdmin: false,
           });
-          t.equal(response.status, 302);
-          t.equal(response.headers.location, "/");
+          verifyRedirectResponse(t, response, "/");
         }
       );
     });
@@ -280,23 +280,23 @@ test("routes/profile", async (t) => {
       t.test(
         "if attempting to delete current credential, renders HTML with expected user error",
         async (t) => {
+          const cred1 = testCredential1();
           const { app, renderArgs } = createProfileTestExpressApp(t, {
             withAuth: true,
           });
 
           const response = await performPostRequest(app).send({
             action: "delete_cred",
-            cred_id: testCredential1.credentialID,
+            cred_id: cred1.credentialID,
           });
-          const { viewName, options } = renderArgs;
 
-          t.equal(response.status, 400);
-          t.match(response.headers["content-type"], "text/html");
-          t.equal(viewName, "error");
-          t.equal(options.title, "Error");
-          t.equal(
-            options.message,
-            "Bad Request: Cannot delete credential that was used to sign into the current session"
+          verifyHtmlErrorResponse(
+            t,
+            response,
+            renderArgs,
+            StatusCodes.BAD_REQUEST,
+            "Error",
+            "Cannot delete credential that was used to sign into the current session"
           );
         }
       );
@@ -304,19 +304,24 @@ test("routes/profile", async (t) => {
       t.test(
         "if successful, updates profile and responds with expected redirect",
         async (t) => {
+          const user1 = testUser1();
+          const cred2 = testCredential2();
           removeUserCredentialStub.resolves();
 
           const { app } = createProfileTestExpressApp(t, { withAuth: true });
 
           const response = await performPostRequest(app).send({
             action: "delete_cred",
-            cred_id: "987zxy",
+            cred_id: cred2.credentialID,
           });
 
-          t.equal(removeUserCredentialStub.firstCall.args[0], "123abc");
-          t.equal(removeUserCredentialStub.firstCall.args[1], "987zxy");
-          t.equal(response.status, 302);
-          t.equal(response.headers.location, "/");
+          t.ok(removeUserCredentialStub.called);
+          t.equal(removeUserCredentialStub.firstCall.args[0], user1.id);
+          t.equal(
+            removeUserCredentialStub.firstCall.args[1],
+            cred2.credentialID
+          );
+          verifyRedirectResponse(t, response, "/");
         }
       );
     });
@@ -331,13 +336,15 @@ test("routes/profile", async (t) => {
         const response = await performPostRequest(app).send({
           action: "burn_toast",
         });
-        const { viewName, options } = renderArgs;
 
-        t.equal(response.status, 400);
-        t.match(response.headers["content-type"], "text/html");
-        t.equal(viewName, "error");
-        t.equal(options.title, "Error");
-        t.equal(options.message, "Bad Request: Unsupported profile action");
+        verifyHtmlErrorResponse(
+          t,
+          response,
+          renderArgs,
+          StatusCodes.BAD_REQUEST,
+          "Error",
+          "Unsupported profile action"
+        );
       }
     );
   });
