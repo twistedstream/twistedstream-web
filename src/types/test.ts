@@ -11,6 +11,7 @@ export type IntegrationTestState = {
   app: any;
   cookie?: any;
   users: User[];
+  createRootUserAndInvite: () => Promise<Invite | undefined>;
   credentials: RegisteredAuthenticator[];
 
   verifyRegistrationResponseStub: SinonStub<any[], any>;

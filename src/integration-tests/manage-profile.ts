@@ -33,7 +33,7 @@ test("Manage profile", async (t) => {
     shares: [],
   });
 
-  t.test("Initial data state", async () => {
+  t.test("Initial data state", async (t) => {
     // we should have an existing user and cred
     t.equal(state.users.length, 1);
     t.equal(state.credentials.length, 1);
@@ -50,7 +50,7 @@ test("Manage profile", async (t) => {
 
   t.test("Update user's profile (display name)", async (t) => {
     const response = await postForm(state, "/profile", {
-      update: "profile",
+      action: "update_profile",
       display_name: "Bob User 2",
     });
 

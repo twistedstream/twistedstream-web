@@ -40,7 +40,7 @@ test("Register and manage multiple authenticators", async (t) => {
     shares: [],
   });
 
-  t.test("Initial data state", async () => {
+  t.test("Initial data state", async (t) => {
     // we should have an existing user and cred
     t.equal(state.users.length, 1);
     t.equal(state.credentials.length, 1);
@@ -56,7 +56,7 @@ test("Register and manage multiple authenticators", async (t) => {
   });
 
   t.test("Register another passkey", async (t) => {
-    await doRegistration(t, state, user1, cred1, false);
+    await doRegistration(t, state, user1, cred2, false);
 
     // we should now have a second cred registered to the existing user
     t.equal(state.users.length, 1);
@@ -74,7 +74,8 @@ test("Register and manage multiple authenticators", async (t) => {
 
   t.test("Delete original passkey", async (t) => {
     const response = await postForm(state, "/profile", {
-      delete_cred: cred1.credentialID,
+      action: "delete_cred",
+      cred_id: cred1.credentialID,
     });
 
     assertRedirectResponse(t, response, "/");

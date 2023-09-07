@@ -20,9 +20,11 @@ export function createIntegrationTestState(
   const verifyRegistrationResponseStub = sinon.stub();
   const verifyAuthenticationResponseStub = sinon.stub();
 
+  const dataProvider = new InMemoryDataProvider(options);
+
   const { default: app } = test.mock("../../app", {
     "../../data": {
-      getProvider: () => new InMemoryDataProvider(options),
+      getProvider: () => dataProvider,
     },
     "@simplewebauthn/server": {
       ...simpleWebAuthnServerDefaults,
@@ -31,10 +33,17 @@ export function createIntegrationTestState(
     },
   });
 
+  const { createRootUserAndInvite } = test.mock("../../services/invite", {
+    "../../data": {
+      getProvider: () => dataProvider,
+    },
+  });
+
   return {
     app,
-    users: options.users,
-    credentials: options.credentials,
+    users: options.users || [],
+    credentials: options.credentials || [],
+    createRootUserAndInvite,
     verifyRegistrationResponseStub,
     verifyAuthenticationResponseStub,
   };
@@ -109,8 +118,12 @@ export function assertHtmlResponse(
   test: Tap.Test,
   response: SupertestResponse
 ) {
-  test.equal(response.status, StatusCodes.OK);
-  test.match(response.headers["content-type"], "text/html");
+  test.equal(response.status, StatusCodes.OK, "expected OK http status");
+  test.match(
+    response.headers["content-type"],
+    "text/html",
+    "expected html content"
+  );
 }
 
 export function assertJsonResponse(
@@ -118,8 +131,12 @@ export function assertJsonResponse(
   response: SupertestResponse,
   schemaTest: (json: any) => void
 ) {
-  test.equal(response.status, StatusCodes.OK);
-  test.match(response.headers["content-type"], "application/json");
+  test.equal(response.status, StatusCodes.OK, "expected OK http status");
+  test.match(
+    response.headers["content-type"],
+    "application/json",
+    "expected JSON content"
+  );
   const json = JSON.parse(response.text);
   schemaTest(json);
 }
@@ -129,16 +146,24 @@ export function assertRedirectResponse(
   response: SupertestResponse,
   expectedLocation: string
 ) {
-  test.equal(response.status, StatusCodes.MOVED_TEMPORARILY);
-  test.match(response.headers["location"], expectedLocation);
+  test.equal(
+    response.status,
+    StatusCodes.MOVED_TEMPORARILY,
+    "expected 302 http status"
+  );
+  test.match(
+    response.headers["location"],
+    expectedLocation,
+    "expected http location"
+  );
 }
 
 export function assertNoUsersOrCredentials(
   test: Tap.Test,
   state: IntegrationTestState
 ) {
-  test.equal(state.users.length, 0);
-  test.equal(state.credentials.length, 0);
+  test.equal(state.users.length, 0, "expected no users");
+  test.equal(state.credentials.length, 0, "expected no credentials");
 }
 
 export function assertUserAndAssociatedCredentials(
@@ -150,7 +175,7 @@ export function assertUserAndAssociatedCredentials(
   const foundUser = state.users.find(
     (u) => u.username === user.username && u.displayName === user.displayName
   );
-  test.ok(foundUser);
+  test.ok(foundUser, "expected user");
 
   for (const credential of associatedCredentials) {
     const foundCredential = state.credentials.find(
@@ -158,7 +183,7 @@ export function assertUserAndAssociatedCredentials(
         c.credentialID === credential.credentialID &&
         c.user.id === foundUser?.id
     );
-    test.ok(foundCredential);
+    test.ok(foundCredential, "expected credential");
   }
 }
 
@@ -184,26 +209,30 @@ export async function doRegistration(
   });
 
   assertJsonResponse(test, optionsResponse, (json) => {
-    test.equal(json.status, "ok");
-    test.match(json, {
-      challenge: /\S+/,
-      rp: {
-        id: "example.com",
-        name: "Twisted Stream Technologies",
+    test.equal(json.status, "ok", "expected FIDO status = ok");
+    test.match(
+      json,
+      {
+        challenge: /\S+/,
+        rp: {
+          id: "example.com",
+          name: "Twisted Stream Technologies",
+        },
+        user: {
+          id: /\S+/,
+          name: user.username,
+          displayName: user.displayName,
+        },
+        excludeCredentials: [],
+        attestation: "direct",
+        authenticatorSelection: {
+          residentKey: "preferred",
+          requireResidentKey: false,
+          userVerification: "preferred",
+        },
       },
-      user: {
-        id: /\S+/,
-        name: user.username,
-        displayName: user.displayName,
-      },
-      excludeCredentials: [],
-      attestation: "direct",
-      authenticatorSelection: {
-        residentKey: "preferred",
-        requireResidentKey: false,
-        userVerification: "preferred",
-      },
-    });
+      "expected FIDO json response"
+    );
   });
 
   const testValidatedCredential = {
@@ -227,10 +256,14 @@ export async function doRegistration(
   });
 
   assertJsonResponse(test, resultResponse, (json) => {
-    test.equal(json.status, "ok");
-    test.match(json, {
-      return_to: "/",
-    });
+    test.equal(json.status, "ok", "expected FIDO status = ok");
+    test.match(
+      json,
+      {
+        return_to: "/",
+      },
+      "expected return_to in json"
+    );
   });
 
   test.ok(state.verifyRegistrationResponseStub.called);
@@ -257,7 +290,7 @@ export async function doSignIn(
     }));
 
   assertJsonResponse(test, optionsResponse, (json) => {
-    test.equal(json.status, "ok");
+    test.equal(json.status, "ok", "expected FIDO status = ok");
     test.match(json, {
       challenge: /\S+/,
       allowCredentials,
@@ -272,13 +305,20 @@ export async function doSignIn(
   });
 
   assertJsonResponse(test, resultResponse, (json) => {
-    test.equal(json.status, "ok");
-    test.match(json, {
-      return_to: "/",
-    });
+    test.equal(json.status, "ok", "expected FIDO status = ok");
+    test.match(
+      json,
+      {
+        return_to: "/",
+      },
+      "expected return_to in json"
+    );
   });
 
-  test.ok(state.verifyAuthenticationResponseStub.called);
+  test.ok(
+    state.verifyAuthenticationResponseStub.called,
+    "expected called: verifyAuthenticationResponse"
+  );
 }
 
 export async function doSignOut(test: Tap.Test, state: IntegrationTestState) {

@@ -3,6 +3,8 @@ import { test } from "tap";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
+import { Invite } from "../types/entity";
+import { assertValue } from "../utils/error";
 import { testCredential1, testUser1 } from "../utils/testing/data";
 import {
   assertHtmlResponse,
@@ -14,11 +16,12 @@ import {
   doSignIn,
   doSignOut,
   navigatePage,
+  postForm,
 } from "../utils/testing/integration";
 
 // NOTE: Tap should be run with --bail to stop on first failed assertion
 
-test("Navigate, register a new user, sign out, sign in", async (t) => {
+test("Navigate, generate invite from root user, register a new user, sign out, sign in", async (t) => {
   t.beforeEach(async () => {
     sinon.resetBehavior();
     sinon.resetHistory();
@@ -26,6 +29,7 @@ test("Navigate, register a new user, sign out, sign in", async (t) => {
 
   const user1 = testUser1();
   const cred1 = testCredential1();
+  let rootInvite: Invite;
 
   // start with no registered users
   const state = createIntegrationTestState(t, {
@@ -35,9 +39,19 @@ test("Navigate, register a new user, sign out, sign in", async (t) => {
     shares: [],
   });
 
-  t.test("Initial data state", async () => {
+  t.test("Initial data state", async (t) => {
     // we should have no users or creds
     assertNoUsersOrCredentials(t, state);
+  });
+
+  t.test("Create root user and invite", async (t) => {
+    rootInvite = assertValue(await state.createRootUserAndInvite());
+
+    // we should have the root admin user (with no credential)
+    t.equal(state.users.length, 1);
+    t.equal(state.users[0].username, "root");
+    t.ok(state.users[0].isAdmin);
+    t.equal(state.credentials.length, 0);
   });
 
   t.test("Go to home page", async (t) => {
@@ -55,6 +69,19 @@ test("Navigate, register a new user, sign out, sign in", async (t) => {
     assertRedirectResponse(t, response, "/login");
   });
 
+  t.test("Go to invite page from root user", async (t) => {
+    const response = await navigatePage(state, `/invites/${rootInvite.id}`);
+    assertHtmlResponse(t, response);
+  });
+
+  t.test("Accept root invite", async (t) => {
+    const response = await postForm(state, `/invites/${rootInvite.id}`, {
+      action: "accept",
+    });
+
+    assertRedirectResponse(t, response, "/register");
+  });
+
   t.test("Go to registration page", async (t) => {
     const response = await navigatePage(state, "/register");
     assertHtmlResponse(t, response);
@@ -64,7 +91,7 @@ test("Navigate, register a new user, sign out, sign in", async (t) => {
     await doRegistration(t, state, user1, cred1, true);
 
     // we should have a new user with a new cred
-    t.equal(state.users.length, 1);
+    t.equal(state.users.length, 2);
     t.equal(state.credentials.length, 1);
     assertUserAndAssociatedCredentials(t, state, user1, [cred1]);
   });
