@@ -280,7 +280,7 @@ test("routes/fido2/attestation", async (t) => {
           verifyUserErrorFido2ServerResponse(
             t,
             response,
-            StatusCodes.UNAUTHORIZED,
+            StatusCodes.FORBIDDEN,
             "Cannot register a new user without a registerable session"
           );
         }

@@ -2,6 +2,7 @@ import sinon from "sinon";
 import request from "supertest";
 import { test } from "tap";
 
+import { StatusCodes } from "http-status-codes";
 import { createTestExpressApp, verifyRequest } from "../utils/testing/unit";
 
 type MockOptions = {
@@ -140,7 +141,7 @@ test("routes/index", async (t) => {
       const response = await request(app).get("/");
       const { viewName, options } = renderArgs;
 
-      t.equal(response.status, 200);
+      t.equal(response.status, StatusCodes.OK);
       t.match(response.headers["content-type"], "text/html");
       t.equal(viewName, "home");
       t.equal(options.title, "Twisted Stream Technologies");
@@ -159,7 +160,7 @@ test("routes/index", async (t) => {
 
       const response = await request(app).get("/linkedin");
 
-      t.equal(response.status, 302);
+      t.equal(response.status, StatusCodes.MOVED_TEMPORARILY);
       t.equal(response.headers.location, "https://linkedin.com/in/test");
     });
   });
@@ -170,7 +171,7 @@ test("routes/index", async (t) => {
 
       const response = await request(app).get("/twitter");
 
-      t.equal(response.status, 302);
+      t.equal(response.status, StatusCodes.MOVED_TEMPORARILY);
       t.equal(response.headers.location, "https://twitter.com/test");
     });
   });
@@ -181,7 +182,7 @@ test("routes/index", async (t) => {
 
       const response = await request(app).get("/github");
 
-      t.equal(response.status, 302);
+      t.equal(response.status, StatusCodes.MOVED_TEMPORARILY);
       t.equal(response.headers.location, "https://github.com/test");
     });
   });
@@ -220,13 +221,13 @@ test("routes/index", async (t) => {
         const response = await request(app).get("/register");
         const { viewName, options } = renderArgs;
 
-        t.equal(response.status, 401);
+        t.equal(response.status, StatusCodes.FORBIDDEN);
         t.match(response.headers["content-type"], "text/html");
         t.equal(viewName, "error");
         t.equal(options.title, "Error");
-        t.equal(
+        t.match(
           options.message,
-          "Unauthorized: Registration not allowed without an invitation"
+          "Registration not allowed without an invitation"
         );
       }
     );
@@ -238,7 +239,7 @@ test("routes/index", async (t) => {
       const response = await request(app).get("/register?return_to=/foo");
       const { viewName, options } = renderArgs;
 
-      t.equal(response.status, 200);
+      t.equal(response.status, StatusCodes.OK);
       t.match(response.headers["content-type"], "text/html");
       t.equal(viewName, "register");
       t.equal(options.title, "Sign up");
@@ -265,7 +266,7 @@ test("routes/index", async (t) => {
       const response = await request(app).get("/login?return_to=/foo");
       const { viewName, options } = renderArgs;
 
-      t.equal(response.status, 200);
+      t.equal(response.status, StatusCodes.OK);
       t.match(response.headers["content-type"], "text/html");
       t.equal(viewName, "login");
       t.equal(options.title, "Sign in");
@@ -291,7 +292,7 @@ test("routes/index", async (t) => {
 
       const response = await request(app).get("/logout");
 
-      t.equal(response.status, 302);
+      t.equal(response.status, StatusCodes.MOVED_TEMPORARILY);
       t.equal(response.headers.location, "/");
     });
   });

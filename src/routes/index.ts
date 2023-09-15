@@ -6,7 +6,7 @@ import {
   linkedInProfileUrl,
   twitterProfileUrl,
 } from "../utils/config";
-import { UnauthorizedError } from "../utils/error";
+import { ForbiddenError } from "../utils/error";
 import fido2 from "./fido2";
 import invites from "./invites";
 import profile from "./profile";
@@ -50,7 +50,7 @@ router.get("/register", (req: Request, res: Response) => {
   capturePreAuthState(req);
 
   if (!getRegisterable(req)) {
-    throw UnauthorizedError("Registration not allowed without an invitation");
+    throw ForbiddenError("Registration not allowed without an invitation");
   }
 
   res.render("register", {

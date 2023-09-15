@@ -31,7 +31,7 @@ import {
 import { baseUrl, companyName, rpID } from "../../utils/config";
 import {
   BadRequestError,
-  UnauthorizedError,
+  ForbiddenError,
   assertValue,
 } from "../../utils/error";
 import { logger } from "../../utils/logger";
@@ -68,7 +68,7 @@ router.post(
     } else {
       // retrieve invitation state from session
       if (!getRegisterable(req)) {
-        throw UnauthorizedError(
+        throw ForbiddenError(
           "Cannot register a new user without a registerable session"
         );
       }

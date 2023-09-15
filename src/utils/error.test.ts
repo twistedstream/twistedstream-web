@@ -15,15 +15,22 @@ test("utils/error", async (t) => {
   t.test("ErrorWithStatusCode", async (t) => {
     t.test("constructor creates expected error", async (t) => {
       t.test("when message is provided", async (t) => {
-        const error = new ErrorWithStatusCode(500, "foo");
+        const error = new ErrorWithStatusCode(
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "foo"
+        );
+
         t.equal(error.message, "Internal Server Error: foo");
-        t.equal(error.statusCode, 500);
+        t.equal(error.statusCode, StatusCodes.INTERNAL_SERVER_ERROR);
       });
 
       t.test("when message is not provided", async (t) => {
-        const error = new ErrorWithStatusCode(500);
+        const error = new ErrorWithStatusCode(
+          StatusCodes.INTERNAL_SERVER_ERROR
+        );
+
         t.equal(error.message, "Internal Server Error");
-        t.equal(error.statusCode, 500);
+        t.equal(error.statusCode, StatusCodes.INTERNAL_SERVER_ERROR);
       });
     });
   });
@@ -32,7 +39,7 @@ test("utils/error", async (t) => {
     t.test("returns expected error object", async (t) => {
       const error = NotFoundError();
       t.equal(error.message, "Not Found");
-      t.equal(error.statusCode, 404);
+      t.equal(error.statusCode, StatusCodes.NOT_FOUND);
     });
   });
 
@@ -40,7 +47,7 @@ test("utils/error", async (t) => {
     t.test("returns expected error object", async (t) => {
       const error = BadRequestError("Dang it!");
       t.equal(error.message, "Bad Request: Dang it!");
-      t.equal(error.statusCode, 400);
+      t.equal(error.statusCode, StatusCodes.BAD_REQUEST);
     });
   });
 
@@ -48,7 +55,7 @@ test("utils/error", async (t) => {
     t.test("returns expected error object", async (t) => {
       const error = UnauthorizedError();
       t.equal(error.message, "Unauthorized");
-      t.equal(error.statusCode, 401);
+      t.equal(error.statusCode, StatusCodes.UNAUTHORIZED);
     });
   });
 
@@ -56,7 +63,7 @@ test("utils/error", async (t) => {
     t.test("returns expected error object", async (t) => {
       const error = ForbiddenError("Not a chance!");
       t.equal(error.message, "Forbidden: Not a chance!");
-      t.equal(error.statusCode, 403);
+      t.equal(error.statusCode, StatusCodes.FORBIDDEN);
     });
   });
 
