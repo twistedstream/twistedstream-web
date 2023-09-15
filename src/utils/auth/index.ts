@@ -7,15 +7,20 @@ import {
   AuthenticatingSession,
   RegisterableSession,
   RegisteringSession,
-} from "../types/auth";
+} from "../../types/auth";
 import {
   RegisterableSource,
   RegisteredAuthenticator,
   User,
-} from "../types/entity";
-import { AuthenticatedRequest } from "../types/express";
-import { now } from "../utils/time";
-import { ForbiddenError } from "./error";
+} from "../../types/entity";
+import { AuthenticatedRequest } from "../../types/express";
+import { now } from "../../utils/time";
+import { ForbiddenError } from "../error";
+import {
+  fixRegisterableSource,
+  fixRegisteredAuthenticator,
+  fixUser,
+} from "./deserialize";
 
 // auth helpers
 
@@ -93,15 +98,36 @@ export function signOut(req: Request) {
 export function getAuthentication(
   req: Request
 ): AuthenticatingSession | undefined {
-  return req.session?.authentication;
+  const authentication: AuthenticatingSession = req.session?.authentication;
+  if (authentication) {
+    if (authentication.authenticatingUser) {
+      fixUser(authentication.authenticatingUser);
+    }
+
+    return authentication;
+  }
 }
 
 export function getRegistration(req: Request): RegisteringSession | undefined {
-  return req.session?.registration;
+  const registration: RegisteringSession = req.session?.registration;
+
+  if (registration) {
+    if (registration.registeringUser) {
+      fixUser(registration.registeringUser);
+    }
+
+    return registration;
+  }
 }
 
 export function getRegisterable(req: Request): RegisterableSession | undefined {
-  return req.session?.registerable;
+  const registerable: RegisterableSession = req.session?.registerable;
+
+  if (registerable) {
+    fixRegisterableSource(registerable.source);
+
+    return registerable;
+  }
 }
 
 export function clearRegisterable(req: Request) {
@@ -124,10 +150,13 @@ export function redirectToLogin(req: Request, res: Response) {
 
 export function auth() {
   return (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
-    const authentication: AuthenticatedSession = req.session?.authentication;
-
+    // authenticated user:
+    // - has session with authentication state with a set time field
     // FUTURE: only set user if session hasn't expired
-    if (authentication?.time) {
+    if (req.session?.authentication?.time) {
+      const authentication: AuthenticatedSession = req.session.authentication;
+      fixRegisteredAuthenticator(authentication.credential);
+
       req.user = authentication.credential.user;
       req.credential = authentication.credential;
     }

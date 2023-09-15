@@ -5,7 +5,7 @@ import sinon from "sinon";
 import request, { Response as SupertestResponse } from "supertest";
 
 import { InMemoryDataProvider } from "../../data/in-memory";
-import { Authenticator, User } from "../../types/entity";
+import { Authenticator } from "../../types/entity";
 import {
   InMemoryDataProviderOptions,
   IntegrationTestState,
@@ -41,22 +41,35 @@ export function createIntegrationTestState(
 
   return {
     app,
+    redirectUrl: "",
     users: options.users || [],
     credentials: options.credentials || [],
+    invites: options.invites || [],
+    shares: options.shares || [],
     createRootUserAndInvite,
     verifyRegistrationResponseStub,
     verifyAuthenticationResponseStub,
   };
 }
 
-function updateCookie(
+function updateStateAfterRequest(
   state: IntegrationTestState,
   response: SupertestResponse
 ) {
+  // cookie
   const setCookie = response.headers["set-cookie"];
   if (setCookie) {
     state.cookie = setCookie;
   }
+
+  // redirect URL
+  const { location } = response.headers;
+  const contentType = <string>(response.headers["content-type"] || "");
+  let return_to: string = "";
+  if (contentType.toLowerCase().startsWith("application/json")) {
+    return_to = JSON.parse(response.text).return_to;
+  }
+  state.redirectUrl = location || return_to || "";
 }
 
 // requests
@@ -71,7 +84,7 @@ export async function navigatePage(
     .get(path)
     .set("cookie", state.cookie || "")
     .accept("text/html");
-  updateCookie(state, response);
+  updateStateAfterRequest(state, response);
 
   return response;
 }
@@ -89,7 +102,7 @@ export async function postJson(
     .set("content-type", "application/json")
     .accept("application/json")
     .send(body);
-  updateCookie(state, response);
+  updateStateAfterRequest(state, response);
 
   return response;
 }
@@ -107,7 +120,7 @@ export async function postForm(
     .set("content-type", "application/x-www-form-urlencoded")
     .accept("text/html")
     .send(body);
-  updateCookie(state, response);
+  updateStateAfterRequest(state, response);
 
   return response;
 }
@@ -151,8 +164,9 @@ export function assertRedirectResponse(
     StatusCodes.MOVED_TEMPORARILY,
     "expected 302 http status"
   );
+  test.ok(response.headers.location, "http location exists");
   test.match(
-    response.headers["location"],
+    response.headers.location,
     expectedLocation,
     "expected http location"
   );
@@ -169,11 +183,12 @@ export function assertNoUsersOrCredentials(
 export function assertUserAndAssociatedCredentials(
   test: Tap.Test,
   state: IntegrationTestState,
-  user: User,
+  username: string,
+  displayName: string,
   associatedCredentials: Authenticator[]
 ) {
   const foundUser = state.users.find(
-    (u) => u.username === user.username && u.displayName === user.displayName
+    (u) => u.username === username && u.displayName === displayName
   );
   test.ok(foundUser, "expected user");
 
@@ -192,13 +207,14 @@ export function assertUserAndAssociatedCredentials(
 export async function doRegistration(
   test: Tap.Test,
   state: IntegrationTestState,
-  user: User,
+  username: string,
+  displayName: string,
   newCredential: Authenticator,
   isNewUser: boolean
-) {
+): Promise<void> {
   const optionsResponse = await postJson(state, "/fido2/attestation/options", {
-    username: isNewUser ? user.username : "",
-    displayName: isNewUser ? user.displayName : "",
+    username: isNewUser ? username : "",
+    displayName: isNewUser ? displayName : "",
     authenticatorSelection: {
       requireResidentKey: false,
       residentKey: "preferred",
@@ -220,8 +236,8 @@ export async function doRegistration(
         },
         user: {
           id: /\S+/,
-          name: user.username,
-          displayName: user.displayName,
+          name: username,
+          displayName: displayName,
         },
         excludeCredentials: [],
         attestation: "direct",
@@ -274,7 +290,7 @@ export async function doSignIn(
   state: IntegrationTestState,
   username: string,
   expectedCredential: Authenticator
-) {
+): Promise<void> {
   const optionsResponse = await postJson(state, "/fido2/assertion/options", {
     username,
     userVerification: "preferred",

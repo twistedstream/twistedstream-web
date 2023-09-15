@@ -437,7 +437,7 @@ test("routes/shares", async (t) => {
             });
             const { viewName, options } = renderArgs;
 
-            t.equal(response.status, StatusCodes.OK);
+            t.equal(response.status, StatusCodes.BAD_REQUEST);
             t.match(response.headers["content-type"], "text/html");
             t.equal(viewName, "new_share");
             t.equal(options.title, "New share");

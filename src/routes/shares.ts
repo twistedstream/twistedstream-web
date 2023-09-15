@@ -2,6 +2,7 @@ import { urlencoded } from "body-parser";
 import { Response, Router } from "express";
 import { Duration } from "luxon";
 
+import { StatusCodes } from "http-status-codes";
 import {
   claimShare,
   createShare,
@@ -106,7 +107,7 @@ router.post(
         share = await newShare(user, backingUrl, toUsername, expireDuration);
       } catch (err: any) {
         if (err.type === "validation") {
-          return res.render("new_share", {
+          return res.status(StatusCodes.BAD_REQUEST).render("new_share", {
             title: "New share",
             expirations: buildExpirations(expireDuration),
             [`${err.field}_error`]: err.fieldMessage,

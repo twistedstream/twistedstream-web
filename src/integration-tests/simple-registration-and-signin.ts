@@ -5,7 +5,7 @@ import "express-async-errors";
 
 import { Invite } from "../types/entity";
 import { assertValue } from "../utils/error";
-import { testCredential1, testUser1 } from "../utils/testing/data";
+import { testCredential1 } from "../utils/testing/data";
 import {
   assertHtmlResponse,
   assertNoUsersOrCredentials,
@@ -27,8 +27,10 @@ test("Navigate, generate invite from root user, register a new user, sign out, s
     sinon.resetHistory();
   });
 
-  const user1 = testUser1();
+  const username = "bob";
+  const displayName = "Bob User";
   const cred1 = testCredential1();
+
   let rootInvite: Invite;
 
   // start with no registered users
@@ -42,6 +44,8 @@ test("Navigate, generate invite from root user, register a new user, sign out, s
   t.test("Initial data state", async (t) => {
     // we should have no users or creds
     assertNoUsersOrCredentials(t, state);
+
+    t.equal(state.invites.length, 0);
   });
 
   t.test("Create root user and invite", async (t) => {
@@ -52,6 +56,7 @@ test("Navigate, generate invite from root user, register a new user, sign out, s
     t.equal(state.users[0].username, "root");
     t.ok(state.users[0].isAdmin);
     t.equal(state.credentials.length, 0);
+    t.equal(state.invites.length, 1);
   });
 
   t.test("Go to home page", async (t) => {
@@ -66,7 +71,7 @@ test("Navigate, generate invite from root user, register a new user, sign out, s
 
   t.test("Go to profile page, but be challenged to authenticate", async (t) => {
     const response = await navigatePage(state, "/profile");
-    assertRedirectResponse(t, response, "/login");
+    assertRedirectResponse(t, response, "/login?return_to=%2Fprofile");
   });
 
   t.test("Go to invite page from root user", async (t) => {
@@ -79,21 +84,23 @@ test("Navigate, generate invite from root user, register a new user, sign out, s
       action: "accept",
     });
 
-    assertRedirectResponse(t, response, "/register");
+    assertRedirectResponse(t, response, `/register?return_to=%2F`);
   });
 
   t.test("Go to registration page", async (t) => {
-    const response = await navigatePage(state, "/register");
+    const response = await navigatePage(state, state.redirectUrl);
     assertHtmlResponse(t, response);
   });
 
   t.test("Register a new account", async (t) => {
-    await doRegistration(t, state, user1, cred1, true);
+    await doRegistration(t, state, username, displayName, cred1, true);
 
     // we should have a new user with a new cred
     t.equal(state.users.length, 2);
     t.equal(state.credentials.length, 1);
-    assertUserAndAssociatedCredentials(t, state, user1, [cred1]);
+    assertUserAndAssociatedCredentials(t, state, username, displayName, [
+      cred1,
+    ]);
   });
 
   t.test("Sign out", async (t) => {
@@ -101,7 +108,7 @@ test("Navigate, generate invite from root user, register a new user, sign out, s
   });
 
   t.test("Sign in", async (t) => {
-    await doSignIn(t, state, user1.username, cred1);
+    await doSignIn(t, state, username, cred1);
   });
 
   t.test("Go to profile page, and access content", async (t) => {

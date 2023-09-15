@@ -58,6 +58,12 @@ test("Manage profile", async (t) => {
 
     // Bob's user profile should be updated
     const newUser = { ...testUser1(), displayName: "Bob User 2" };
-    assertUserAndAssociatedCredentials(t, state, newUser, []);
+    assertUserAndAssociatedCredentials(
+      t,
+      state,
+      newUser.username,
+      newUser.displayName,
+      []
+    );
   });
 });

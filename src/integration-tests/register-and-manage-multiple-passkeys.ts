@@ -56,12 +56,25 @@ test("Register and manage multiple authenticators", async (t) => {
   });
 
   t.test("Register another passkey", async (t) => {
-    await doRegistration(t, state, user1, cred2, false);
+    await doRegistration(
+      t,
+      state,
+      user1.username,
+      user1.displayName,
+      cred2,
+      false
+    );
 
     // we should now have a second cred registered to the existing user
     t.equal(state.users.length, 1);
     t.equal(state.credentials.length, 2);
-    assertUserAndAssociatedCredentials(t, state, user1, [cred1, cred2]);
+    assertUserAndAssociatedCredentials(
+      t,
+      state,
+      user1.username,
+      user1.displayName,
+      [cred1, cred2]
+    );
   });
 
   t.test("Sign out", async (t) => {
@@ -83,6 +96,12 @@ test("Register and manage multiple authenticators", async (t) => {
     // we should now have only the second cred registered to the existing user
     t.equal(state.users.length, 1);
     t.equal(state.credentials.length, 1);
-    assertUserAndAssociatedCredentials(t, state, user1, [cred2]);
+    assertUserAndAssociatedCredentials(
+      t,
+      state,
+      user1.username,
+      user1.displayName,
+      [cred2]
+    );
   });
 });

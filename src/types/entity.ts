@@ -27,20 +27,25 @@ export interface RegisteredAuthenticator extends Authenticator {
   user: User;
 }
 
+export type DocumentType = "document" | "spreadsheet" | "presentation" | "pdf";
+
+export interface DocumentInfo {
+  id: string;
+  title: string;
+  type: DocumentType;
+}
+
 export interface RegisterableSource {
   id: string;
   sourceType: "invite" | "share";
   isAdmin: boolean;
   created: DateTime;
   createdBy: User;
-}
-
-export interface Invite extends RegisterableSource {
   claimedBy?: User;
   claimed?: DateTime;
 }
 
-export type DocumentType = "document" | "spreadsheet" | "presentation" | "pdf";
+export interface Invite extends RegisterableSource {}
 
 export interface Share extends RegisterableSource {
   backingUrl: string;
@@ -50,10 +55,4 @@ export interface Share extends RegisterableSource {
   claimedBy?: User;
   claimed?: DateTime;
   expireDuration?: Duration;
-}
-
-export interface DocumentInfo {
-  id: string;
-  title: string;
-  type: DocumentType;
 }

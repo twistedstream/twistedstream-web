@@ -3,23 +3,36 @@ import { DateTime } from "luxon";
 import sinon from "sinon";
 import { test } from "tap";
 
-import { testNowDate, testUser1 } from "./testing/data";
+import { testNowDate, testUser1 } from "../testing/data";
 
 // test objects
 
 const nowFake = sinon.fake.returns(testNowDate);
+const fixRegisterableSourceFake = sinon.fake();
+const fixRegisteredAuthenticatorFake = sinon.fake();
+const fixUserFake = sinon.fake();
 
 // helpers
 
 function importModule(test: Tap.Test) {
-  return test.mock("./auth", {
-    "../utils/time": { now: nowFake },
+  return test.mock("./index", {
+    "../../utils/time": { now: nowFake },
+    "./deserialize": {
+      fixRegisterableSource: fixRegisterableSourceFake,
+      fixRegisteredAuthenticator: fixRegisteredAuthenticatorFake,
+      fixUser: fixUserFake,
+    },
   });
 }
 
 // tests
 
 test("utils/auth", async (t) => {
+  t.beforeEach(async () => {
+    sinon.resetBehavior();
+    sinon.resetHistory();
+  });
+
   t.test("capturePreAuthState", async (t) => {
     t.test("captured return_to query in session", async (t) => {
       const req: any = { query: { return_to: "/foo" } };
@@ -142,7 +155,7 @@ test("utils/auth", async (t) => {
   });
 
   t.test("getAuthentication", async (t) => {
-    t.test("returns expected value", async (t) => {
+    t.test("if it exists, returns the authentication state", async (t) => {
       const authentication = {};
       const req = { session: { authentication } };
 
@@ -152,18 +165,33 @@ test("utils/auth", async (t) => {
       t.equal(result, authentication);
     });
 
-    t.test("returns expected default", async (t) => {
+    t.test(
+      "if it exists, fixes the deserialization of the authentication state's user object",
+      async (t) => {
+        const authenticatingUser = {};
+        const authentication = { authenticatingUser };
+        const req = { session: { authentication } };
+
+        const { getAuthentication } = importModule(t);
+        getAuthentication(req);
+
+        t.ok(fixUserFake.called);
+        t.equal(fixUserFake.firstCall.firstArg, authenticatingUser);
+      }
+    );
+
+    t.test("if it doesn't exist, returns nothing", async (t) => {
       const req = {};
 
       const { getAuthentication } = importModule(t);
       const result = getAuthentication(req);
 
-      t.notOk(result);
+      t.equal(result, undefined);
     });
   });
 
   t.test("getRegistration", async (t) => {
-    t.test("returns expected value", async (t) => {
+    t.test("if it exists, returns the registration state", async (t) => {
       const registration = {};
       const req = { session: { registration } };
 
@@ -173,18 +201,33 @@ test("utils/auth", async (t) => {
       t.equal(result, registration);
     });
 
-    t.test("returns expected default", async (t) => {
+    t.test(
+      "if it exists, fixes the deserialization of the registration state's user object",
+      async (t) => {
+        const registeringUser = {};
+        const registration = { registeringUser };
+        const req = { session: { registration } };
+
+        const { getRegistration } = importModule(t);
+        getRegistration(req);
+
+        t.ok(fixUserFake.called);
+        t.equal(fixUserFake.firstCall.firstArg, registeringUser);
+      }
+    );
+
+    t.test("if it doesn't exist, returns nothing", async (t) => {
       const req = {};
 
       const { getRegistration } = importModule(t);
       const result = getRegistration(req);
 
-      t.notOk(result);
+      t.equal(result, undefined);
     });
   });
 
   t.test("getRegisterable", async (t) => {
-    t.test("returns expected value", async (t) => {
+    t.test("if it exists, returns the registerable state", async (t) => {
       const registerable = {};
       const req = { session: { registerable } };
 
@@ -194,13 +237,28 @@ test("utils/auth", async (t) => {
       t.equal(result, registerable);
     });
 
-    t.test("returns expected default", async (t) => {
+    t.test(
+      "if it exists, fixes the deserialization of the registerable state's source object",
+      async (t) => {
+        const source = {};
+        const registerable = { source };
+        const req = { session: { registerable } };
+
+        const { getRegisterable } = importModule(t);
+        getRegisterable(req);
+
+        t.ok(fixRegisterableSourceFake.called);
+        t.equal(fixRegisterableSourceFake.firstCall.firstArg, source);
+      }
+    );
+
+    t.test("if it doesn't exist, returns nothing", async (t) => {
       const req = {};
 
       const { getRegisterable } = importModule(t);
       const result = getRegisterable(req);
 
-      t.notOk(result);
+      t.equal(result, undefined);
     });
   });
 
@@ -265,22 +323,44 @@ test("utils/auth", async (t) => {
     const credential = { user };
     const res = {};
 
-    t.test("if user authenticated, sets expected req fields", async (t) => {
-      const req: any = {
-        session: {
-          authentication: { time: DateTime.now().toMillis(), credential },
-        },
-      };
+    t.test("when user authenticated", async (t) => {
+      let req: any;
       const nextFake = sinon.fake();
 
-      const { auth } = importModule(t);
-      const middleware = auth();
+      t.beforeEach(async () => {
+        req = {
+          session: {
+            authentication: { time: DateTime.now().toMillis(), credential },
+          },
+        };
+      });
 
-      middleware(req, res, nextFake);
+      t.test("sets expected req fields", async (t) => {
+        const { auth } = importModule(t);
+        const middleware = auth();
 
-      t.equal(req.user, user);
-      t.equal(req.credential, credential);
-      t.ok(nextFake.called);
+        middleware(req, res, nextFake);
+
+        t.equal(req.user, user);
+        t.equal(req.credential, credential);
+        t.ok(nextFake.called);
+      });
+
+      t.test(
+        "fixes the deserialization of the authentication state's credential object",
+        async (t) => {
+          const { auth } = importModule(t);
+          const middleware = auth();
+
+          middleware(req, res, nextFake);
+
+          t.ok(fixRegisteredAuthenticatorFake.called);
+          t.equal(
+            fixRegisteredAuthenticatorFake.firstCall.firstArg,
+            credential
+          );
+        }
+      );
     });
 
     t.test(

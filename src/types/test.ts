@@ -10,9 +10,13 @@ import {
 export type IntegrationTestState = {
   app: any;
   cookie?: any;
+  redirectUrl: string;
   users: User[];
-  createRootUserAndInvite: () => Promise<Invite | undefined>;
   credentials: RegisteredAuthenticator[];
+  invites: Invite[];
+  shares: Share[];
+
+  createRootUserAndInvite: () => Promise<Invite | undefined>;
 
   verifyRegistrationResponseStub: SinonStub<any[], any>;
   verifyAuthenticationResponseStub: SinonStub<any[], any>;
