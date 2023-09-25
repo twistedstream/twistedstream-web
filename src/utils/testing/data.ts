@@ -142,7 +142,7 @@ export function testShare1(createdBy: User, claimedBy?: User): Share {
     }),
     backingUrl: `https://example.com/${file.id}`,
     fileTitle: file.title,
-    documentType: file.type,
+    fileType: file.type,
   };
 }
 
@@ -169,7 +169,7 @@ export function testShare2(createdBy: User, claimedBy?: User): Share {
     }),
     backingUrl: `https://example.com/${file.id}`,
     fileTitle: file.title,
-    documentType: file.type,
+    fileType: file.type,
   };
 }
 
@@ -196,7 +196,7 @@ export function testShare3(createdBy: User, claimedBy?: User): Share {
     }),
     backingUrl: `https://example.com/${file.id}`,
     fileTitle: file.title,
-    documentType: file.type,
+    fileType: file.type,
   };
 }
 
@@ -223,7 +223,7 @@ export function testShare4(createdBy: User, claimedBy?: User): Share {
     }),
     backingUrl: `https://example.com/${file.id}`,
     fileTitle: file.title,
-    documentType: file.type,
+    fileType: file.type,
   };
 }
 

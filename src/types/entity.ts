@@ -50,7 +50,7 @@ export interface Invite extends RegisterableSource {}
 export interface Share extends RegisterableSource {
   backingUrl: string;
   fileTitle: string;
-  documentType: FileType;
+  fileType: FileType;
   toUsername?: string;
   claimedBy?: User;
   claimed?: DateTime;

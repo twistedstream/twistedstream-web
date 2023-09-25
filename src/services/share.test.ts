@@ -145,7 +145,7 @@ test("services/share", async (t) => {
       dataProvider.findDocumentInfo.resolves(undefined);
 
       t.rejects(() => newShare({}, "https://example.com/doc1"), {
-        fieldMessage: "Document not found",
+        fieldMessage: "File not found",
         type: "validation",
         entity: "Share",
         field: "backingUrl",
@@ -208,7 +208,7 @@ test("services/share", async (t) => {
             toUsername: "user-name",
             expireDuration,
             fileTitle: "Test Document",
-            documentType: "document",
+            fileType: "document",
           });
         });
       });
@@ -232,7 +232,7 @@ test("services/share", async (t) => {
             toUsername: undefined,
             expireDuration: undefined,
             fileTitle: "Test Document",
-            documentType: "document",
+            fileType: "document",
           });
         });
       });

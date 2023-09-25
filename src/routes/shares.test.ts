@@ -488,7 +488,7 @@ test("routes/shares", async (t) => {
             backingUrl: "https://example.com/path",
             toUsername: "foo",
             fileTitle: "Doc Title",
-            documentType: "document",
+            fileType: "document",
           });
           const expirations = [{}];
           buildExpirationsStub.withArgs(expireDuration).returns(expirations);
@@ -518,7 +518,7 @@ test("routes/shares", async (t) => {
           t.equal(options.toUsername, "foo");
           t.equal(options.expires, "P2D");
           t.equal(options.fileTitle, "Doc Title");
-          t.equal(options.documentType, "document");
+          t.equal(options.fileType, "document");
           t.equal(options.fileTypeStyle, fileTypeStyle);
           t.ok(options.can_create);
         });
@@ -704,7 +704,7 @@ test("routes/shares", async (t) => {
           ensureShareStub.resolves(testShare);
           getRegisterableStub.returns(undefined);
           getFileTypeStyleStub
-            .withArgs(testShare.documentType)
+            .withArgs(testShare.fileType)
             .returns("doc_style");
 
           const response = await performGetShareRequest(app, testShare.id);
@@ -754,9 +754,7 @@ test("routes/shares", async (t) => {
 
       t.test("renders HTML with the expected view state", async (t) => {
         ensureShareStub.resolves(testShare);
-        getFileTypeStyleStub
-          .withArgs(testShare.documentType)
-          .returns("doc_style");
+        getFileTypeStyleStub.withArgs(testShare.fileType).returns("doc_style");
 
         const response = await performGetShareRequest(app, testShare.id);
         const { viewName, options } = renderArgs;

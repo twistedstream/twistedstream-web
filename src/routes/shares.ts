@@ -134,8 +134,8 @@ router.post(
           toUsername: share.toUsername,
           expires: share.expireDuration?.toISO(),
           fileTitle: share.fileTitle,
-          documentType: share.documentType,
-          fileTypeStyle: getFileTypeStyle(share.documentType),
+          fileType: share.fileType,
+          fileTypeStyle: getFileTypeStyle(share.fileType),
           can_create: true,
         });
       }
@@ -185,7 +185,7 @@ router.get("/:share_id", async (req: AuthenticatedRequest, res: Response) => {
   return res.render("accept_share", {
     title: "Accept this shared file?",
     share,
-    fileTypeStyle: getFileTypeStyle(share.documentType),
+    fileTypeStyle: getFileTypeStyle(share.fileType),
   });
 });
 

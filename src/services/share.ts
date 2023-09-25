@@ -44,10 +44,10 @@ export async function newShare(
   toUsername?: string,
   expireDuration?: Duration
 ): Promise<Share> {
-  // get document info and make sure it exists
+  // get file info and make sure it exists
   const documentInfo = await findDocumentInfo(backingUrl);
   if (!documentInfo) {
-    throw new ValidationError("Share", "backingUrl", "Document not found");
+    throw new ValidationError("Share", "backingUrl", "File not found");
   }
 
   // make sure to-user exists
@@ -67,7 +67,7 @@ export async function newShare(
     toUsername,
     expireDuration,
     fileTitle: documentInfo.title,
-    documentType: documentInfo.type,
+    fileType: documentInfo.type,
   };
 
   return share;

@@ -31,8 +31,8 @@ export function buildExpirations(current?: Duration) {
   }));
 }
 
-export function getFileTypeStyle(documentType: FileType) {
-  switch (documentType) {
+export function getFileTypeStyle(fileType: FileType) {
+  switch (fileType) {
     case "document":
       return "primary";
     case "spreadsheet":
@@ -111,6 +111,6 @@ export async function ensureShare(req: AuthenticatedRequest): Promise<Share> {
 }
 
 export function renderShare(res: Response, share: Share) {
-  // FUTURE: render by document type
+  // FUTURE: render by file type
   res.json(share);
 }
