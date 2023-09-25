@@ -382,11 +382,10 @@ test("utils/auth", async (t) => {
 
   t.test("requiresAuth", async (t) => {
     t.test(
-      "if user is not authenticated, redirects to login page",
+      "if user is not authenticated, returns expected error",
       async (t) => {
-        const redirectFake = sinon.fake();
-        const req = { originalUrl: "/foo" };
-        const res = { redirect: redirectFake };
+        const req = {};
+        const res = {};
         const nextFake = sinon.fake();
 
         const { requiresAuth } = importModule(t);
@@ -394,16 +393,18 @@ test("utils/auth", async (t) => {
 
         middleware(req, res, nextFake);
 
-        t.ok(redirectFake.called);
-        t.equal(redirectFake.firstCall.firstArg, "/login?return_to=%2Ffoo");
-        t.notOk(nextFake.called);
+        t.ok(nextFake.called);
+        t.same(nextFake.firstCall.firstArg, {
+          name: "Error",
+          message: "Unauthorized",
+          statusCode: StatusCodes.UNAUTHORIZED,
+        });
       }
     );
 
     t.test("if user is authenticated, does not redirect", async (t) => {
-      const redirectFake = sinon.fake();
       const req = { user: {}, originalUrl: "/foo" };
-      const res = { redirect: redirectFake };
+      const res = {};
       const nextFake = sinon.fake();
 
       const { requiresAuth } = importModule(t);
@@ -411,7 +412,6 @@ test("utils/auth", async (t) => {
 
       middleware(req, res, nextFake);
 
-      t.notOk(redirectFake.called);
       t.ok(nextFake.called);
     });
   });

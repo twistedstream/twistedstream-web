@@ -15,7 +15,7 @@ import {
 } from "../../types/entity";
 import { AuthenticatedRequest } from "../../types/express";
 import { now } from "../../utils/time";
-import { ForbiddenError } from "../error";
+import { ForbiddenError, UnauthorizedError } from "../error";
 import {
   fixRegisterableSource,
   fixRegisteredAuthenticator,
@@ -166,11 +166,9 @@ export function auth() {
 }
 
 export function requiresAuth() {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  return (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
     if (!req.user) {
-      // redirect to login page
-      const return_to = req.originalUrl;
-      return res.redirect(`/login?${querystring.stringify({ return_to })}`);
+      return next(UnauthorizedError());
     }
 
     return next();

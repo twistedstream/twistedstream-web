@@ -72,6 +72,8 @@ export function createTestExpressApp({
 
   if (errorHandlerSetup) {
     const logger = {
+      info: sinon.fake(),
+      debug: sinon.fake(),
       error: errorHandlerSetup.suppressErrorOutput
         ? sinon.fake()
         : console.error,

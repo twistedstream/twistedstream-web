@@ -2,6 +2,7 @@ import { IRouter, NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
 import { AuthenticatedRequest } from "./types/express";
+import { redirectToLogin } from "./utils/auth";
 import { buildErrorHandlerData, NotFoundError } from "./utils/error";
 import { logger } from "./utils/logger";
 
@@ -15,12 +16,17 @@ const errorHandler = (router: IRouter) => {
   router.use(
     (
       err: any,
-      _req: AuthenticatedRequest,
+      req: AuthenticatedRequest,
       res: Response,
       _next: NextFunction
     ) => {
       const { message, statusCode, correlation_id } =
         buildErrorHandlerData(err);
+
+      if (statusCode === StatusCodes.UNAUTHORIZED) {
+        logger.debug("error-handler: Redirecting UNAUTHORIZED to login page");
+        return redirectToLogin(req, res);
+      }
 
       res.status(statusCode);
 

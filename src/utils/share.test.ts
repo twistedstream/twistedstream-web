@@ -2,6 +2,7 @@ import { DateTime, Duration } from "luxon";
 import sinon from "sinon";
 import { test } from "tap";
 
+import { StatusCodes } from "http-status-codes";
 import { assertValue } from "../utils/error";
 
 // test objects
@@ -123,7 +124,7 @@ test("utils/share", async (t) => {
 
       t.rejects(() => ensureShare(req), {
         message: "Missing: share ID",
-        statusCode: 400,
+        statusCode: StatusCodes.BAD_REQUEST,
       });
     });
 
@@ -145,181 +146,28 @@ test("utils/share", async (t) => {
 
       t.rejects(() => ensureShare(req), {
         message: "Not Found",
-        statusCode: 404,
+        statusCode: StatusCodes.NOT_FOUND,
       });
     });
 
-    t.test("with existing share", async (t) => {
+    t.test("if existing share", async (t) => {
       let share: any;
-      let req: any;
 
       t.beforeEach(() => {
         share = {
           id: "share-id",
           created: DateTime.fromObject({ year: 2023, month: 1, day: 1 }),
+          createdBy: { id: "admin_user" },
           expireDuration: Duration.fromObject({ days: 2 }),
-        };
-        req = {
-          params: { share_id: "share-id" },
-          user: { id: "user-id" },
         };
         fetchShareByIdStub.resolves(share);
       });
 
-      t.test("if current user has already claimed the share", async (t) => {
+      t.test("if share has expired", async (t) => {
+        let req: any;
+
         t.beforeEach(async () => {
-          share.claimedBy = { id: "user-id" };
-        });
-
-        t.test("if share has expired", async (t) => {
-          t.beforeEach(async () => {
-            nowStub.returns(
-              share.created.plus(
-                // now = after share expiration
-                Duration.fromObject({ days: 3 })
-              )
-            );
-          });
-
-          t.test("logs the expected warning", async (t) => {
-            try {
-              await ensureShare(req);
-            } catch {}
-
-            t.ok(logger.warn.called);
-            t.equal(logger.warn.firstCall.args[0], share);
-            t.equal(
-              logger.warn.firstCall.args[1],
-              "Share claimed by current user has expired"
-            );
-          });
-
-          t.test("throws expected informative error", async (t) => {
-            t.rejects(() => ensureShare(req), {
-              message: "This share has expired",
-              statusCode: 403,
-            });
-          });
-        });
-
-        t.test(
-          "otherwise, returns expected share, indicating it has been claimed by the current user",
-          async (t) => {
-            nowStub.returns(
-              share.created.plus(
-                // now = before share expiration
-                Duration.fromObject({ days: 1 })
-              )
-            );
-
-            const result = await ensureShare(req);
-
-            t.ok(result);
-            t.equal(result.share, share);
-            t.ok(result.isClaimed);
-          }
-        );
-      });
-
-      t.test("if share already claimed by a different user", async (t) => {
-        t.beforeEach(async () => {
-          share.claimed = DateTime.now();
-          share.claimedBy = { id: "other-user-id", username: "foo" };
-        });
-
-        t.test("logs the expected warning", async (t) => {
-          try {
-            await ensureShare(req);
-          } catch {}
-
-          t.ok(logger.warn.called);
-          t.equal(logger.warn.firstCall.args[0], share);
-          t.equal(
-            logger.warn.firstCall.args[1],
-            "Share was already claimed by a different user"
-          );
-        });
-
-        t.test(
-          "if share was created by current user, throws expected informative error",
-          async (t) => {
-            share.createdBy = { id: "user-id" };
-
-            t.rejects(() => ensureShare(req), {
-              message: "This share was already claimed by @foo",
-              statusCode: 403,
-            });
-          }
-        );
-
-        t.test(
-          "if share was created by other user, throws expected more generic error",
-          async (t) => {
-            share.createdBy = { id: "other-user-id" };
-
-            t.rejects(() => ensureShare(req), {
-              message: "Not Found",
-              statusCode: 404,
-            });
-          }
-        );
-
-        t.test(
-          "if no current user, throws expected more generic error",
-          async (t) => {
-            share.createdBy = { id: "other-user-id" };
-            delete req.user;
-
-            t.rejects(() => ensureShare(req), {
-              message: "Not Found",
-              statusCode: 404,
-            });
-          }
-        );
-      });
-
-      t.test("if share was intended for a different user", async (t) => {
-        t.beforeEach(async () => {
-          share.toUsername = "bar";
-        });
-
-        t.test("logs the expected warning", async (t) => {
-          try {
-            await ensureShare(req);
-          } catch {}
-
-          t.ok(logger.warn.called);
-          t.equal(logger.warn.firstCall.args[0], share);
-          t.equal(
-            logger.warn.firstCall.args[1],
-            "Share was intended for a different user"
-          );
-        });
-
-        t.test(
-          "if share was created by current user, throws expected informative error",
-          async (t) => {
-            share.createdBy = { id: "user-id" };
-
-            t.rejects(() => ensureShare(req), {
-              message: "This share was intended for user @bar",
-              statusCode: 403,
-            });
-          }
-        );
-
-        t.test("otherwise, throws expected more generic error", async (t) => {
-          share.createdBy = { id: "other-user-id" };
-
-          t.rejects(() => ensureShare(req), {
-            message: "Not Found",
-            statusCode: 404,
-          });
-        });
-      });
-
-      t.test("if unclaimed share has already expired", async (t) => {
-        t.beforeEach(async () => {
+          req = { params: { share_id: "share-id" } };
           nowStub.returns(
             share.created.plus(
               // now = after share expiration
@@ -335,64 +183,153 @@ test("utils/share", async (t) => {
 
           t.ok(logger.warn.called);
           t.equal(logger.warn.firstCall.args[0], share);
-          t.equal(logger.warn.firstCall.args[1], "Unclaimed share has expired");
+          t.equal(logger.warn.firstCall.args[1], "Share has expired");
         });
 
         t.test(
-          "if share was created by current user, throws expected informative error",
+          "if share was claimed by current user, throws expected informative error",
           async (t) => {
-            share.createdBy = { id: "user-id" };
+            share.claimedBy = { id: "user-id" };
+            req.user = { id: "user-id" };
 
             t.rejects(() => ensureShare(req), {
-              message: "This unclaimed share has expired",
-              statusCode: 403,
+              message: "This share has expired",
+              statusCode: StatusCodes.FORBIDDEN,
             });
           }
         );
 
         t.test(
-          "if share was created by another user, throws expected more generic error",
+          "if share was claimed but there is no current user, throws expected more generic error",
           async (t) => {
-            share.createdBy = { id: "other-user-id" };
+            share.claimedBy = { id: "user-id" };
 
             t.rejects(() => ensureShare(req), {
               message: "Not Found",
-              statusCode: 404,
+              statusCode: StatusCodes.NOT_FOUND,
             });
           }
         );
 
-        t.test(
-          "if no current user, throws expected more generic error",
-          async (t) => {
-            share.createdBy = { id: "other-user-id" };
-            delete req.user;
-
-            t.rejects(() => ensureShare(req), {
-              message: "Not Found",
-              statusCode: 404,
-            });
-          }
-        );
+        t.test("otherwise, throws expected more generic error", async (t) => {
+          t.rejects(() => ensureShare(req), {
+            message: "Not Found",
+            statusCode: StatusCodes.NOT_FOUND,
+          });
+        });
       });
 
-      t.test(
-        "otherwise, returns expected share, indicating it can still be claimed",
-        async (t) => {
-          nowStub.returns(
-            share.created.plus(
-              // now = before share expiration
-              Duration.fromObject({ days: 1 })
-            )
+      t.test("if user", async (t) => {
+        let req: any;
+
+        t.beforeEach(() => {
+          req = {
+            params: { share_id: "share-id" },
+            user: { id: "user-id", username: "user" },
+          };
+        });
+
+        t.test("if share has been claimed by a different user", async (t) => {
+          t.beforeEach(() => {
+            share.claimedBy = { id: "other-user-id", username: "other_user" };
+          });
+
+          t.test("logs the expected warning", async (t) => {
+            try {
+              await ensureShare(req);
+            } catch {}
+
+            t.ok(logger.warn.called);
+            t.equal(logger.warn.firstCall.args[0], share);
+            t.equal(
+              logger.warn.firstCall.args[1],
+              "Share was already claimed by a different user"
+            );
+          });
+
+          t.test(
+            "if share was created by current user, throws expected informative error",
+            async (t) => {
+              share.createdBy.id = "user-id";
+
+              t.rejects(() => ensureShare(req), {
+                message: "This share was already claimed by @other_user",
+                statusCode: StatusCodes.FORBIDDEN,
+              });
+            }
           );
 
-          const result = await ensureShare(req);
+          t.test("otherwise, throws expected more generic error", async (t) => {
+            t.rejects(() => ensureShare(req), {
+              message: "Not Found",
+              statusCode: StatusCodes.NOT_FOUND,
+            });
+          });
+        });
 
-          t.ok(result);
-          t.equal(result.share, share);
-          t.notOk(result.isClaimed);
-        }
-      );
+        t.test(
+          "if share has been claimed by the same user, returns expected share",
+          async (t) => {
+            share.claimedBy = { id: "user-id" };
+
+            const result = await ensureShare(req);
+
+            t.equal(result, share);
+          }
+        );
+
+        t.test("if share has not been claimed", async (t) => {
+          t.test("if share was intended for a different user", async (t) => {
+            t.beforeEach(() => {
+              share.toUsername = "other_user";
+            });
+
+            t.test("logs the expected warning", async (t) => {
+              try {
+                await ensureShare(req);
+              } catch {}
+
+              t.ok(logger.warn.called);
+              t.equal(logger.warn.firstCall.args[0], share);
+              t.equal(
+                logger.warn.firstCall.args[1],
+                "Share was intended for a different user"
+              );
+            });
+
+            t.test(
+              "if share was created by current user, throws expected informative error",
+              async (t) => {
+                share.createdBy.id = "user-id";
+
+                t.rejects(() => ensureShare(req), {
+                  message: "This share was intended for user @other_user",
+                  statusCode: StatusCodes.FORBIDDEN,
+                });
+              }
+            );
+
+            t.test(
+              "otherwise, throws expected more generic error",
+              async (t) => {
+                t.rejects(() => ensureShare(req), {
+                  message: "Not Found",
+                  statusCode: StatusCodes.NOT_FOUND,
+                });
+              }
+            );
+          });
+
+          t.test(
+            "if share was intended for any user, returns expected share",
+            async (t) => {
+              const result = await ensureShare(req);
+
+              t.equal(result, share);
+            }
+          );
+        });
+      });
     });
   });
 

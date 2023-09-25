@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
 import sinon from "sinon";
 import request from "supertest";
 import { test } from "tap";
 
 import * as utilsError from "./utils/error";
-import { BadRequestError } from "./utils/error";
+import { BadRequestError, UnauthorizedError } from "./utils/error";
 import { createTestExpressApp } from "./utils/testing/unit";
 
 // test objects
@@ -12,7 +13,11 @@ import { createTestExpressApp } from "./utils/testing/unit";
 const buildErrorHandlerDataStub = sinon.stub();
 const logger = {
   error: sinon.fake(),
+  debug: sinon.fake(),
 };
+const redirectToLoginFake = sinon.stub().callsFake((_req: any, _res: any) => {
+  _res.send("IGNORE");
+});
 
 // tests
 
@@ -27,6 +32,9 @@ test("(root): error handler", async (t) => {
     "./utils/error": {
       ...utilsError,
       buildErrorHandlerData: buildErrorHandlerDataStub,
+    },
+    "./utils/auth": {
+      redirectToLogin: redirectToLoginFake,
     },
   });
 
@@ -47,6 +55,31 @@ test("(root): error handler", async (t) => {
     t.equal(buildErrorHandlerDataStub.firstCall.firstArg, error);
   });
 
+  t.test("401 errors", async (t) => {
+    t.test("redirects to login page", async (t) => {
+      let req: any = {};
+      let res: any = {};
+
+      buildErrorHandlerDataStub.returns({
+        statusCode: StatusCodes.UNAUTHORIZED,
+      });
+
+      const { app } = createTestExpressApp();
+      app.get("/foo", (_req: Request, _res: Response) => {
+        req = _req;
+        res = _res;
+        throw UnauthorizedError();
+      });
+      errorHandler(app);
+
+      await request(app).get("/foo");
+
+      t.ok(redirectToLoginFake.called);
+      t.equal(redirectToLoginFake.firstCall.args[0], req);
+      t.equal(redirectToLoginFake.firstCall.args[1], res);
+    });
+  });
+
   t.test("404 errors", async (t) => {
     t.test(
       "catches unhandled requests and converts them to 404 errors",
@@ -64,7 +97,7 @@ test("(root): error handler", async (t) => {
     );
 
     t.test("renders HTML with the expected view state", async (t) => {
-      buildErrorHandlerDataStub.returns({ statusCode: 404 });
+      buildErrorHandlerDataStub.returns({ statusCode: StatusCodes.NOT_FOUND });
 
       const { app, renderArgs } = createTestExpressApp();
       errorHandler(app);
@@ -80,7 +113,7 @@ test("(root): error handler", async (t) => {
     });
 
     t.test("does not log the error", async (t) => {
-      buildErrorHandlerDataStub.returns({ statusCode: 404 });
+      buildErrorHandlerDataStub.returns({ statusCode: StatusCodes.NOT_FOUND });
 
       const { app } = createTestExpressApp();
       errorHandler(app);
@@ -95,7 +128,7 @@ test("(root): error handler", async (t) => {
     t.test("renders HTML with the expected view state", async (t) => {
       buildErrorHandlerDataStub.returns({
         message: "Really bad request",
-        statusCode: 400,
+        statusCode: StatusCodes.BAD_REQUEST,
         correlation_id: "",
       });
 
@@ -118,7 +151,7 @@ test("(root): error handler", async (t) => {
     });
 
     t.test("does not log the error", async (t) => {
-      buildErrorHandlerDataStub.returns({ statusCode: 404 });
+      buildErrorHandlerDataStub.returns({ statusCode: StatusCodes.NOT_FOUND });
 
       const { app } = createTestExpressApp();
       app.get("/foo", (_req: Request, _res: Response) => {
@@ -136,7 +169,7 @@ test("(root): error handler", async (t) => {
     t.test("renders HTML with the expected view state", async (t) => {
       buildErrorHandlerDataStub.returns({
         message: "What'd you do?",
-        statusCode: 500,
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         correlation_id: "ERROR_ID",
       });
 
@@ -161,7 +194,7 @@ test("(root): error handler", async (t) => {
     t.test("logs the error", async (t) => {
       const error = new Error("BOOM!");
       buildErrorHandlerDataStub.returns({
-        statusCode: 500,
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         correlation_id: "ERROR_ID",
       });
 

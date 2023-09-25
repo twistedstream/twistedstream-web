@@ -4,16 +4,9 @@ import { Duration } from "luxon";
 import { fetchShareById } from "../services/share";
 import { DocumentType, Share } from "../types/entity";
 import { AuthenticatedRequest } from "../types/express";
-import {
-  BadRequestError,
-  ForbiddenError,
-  NotFoundError,
-  assertValue,
-} from "./error";
+import { BadRequestError, ForbiddenError, NotFoundError } from "./error";
 import { logger } from "./logger";
 import { now } from "./time";
-
-type EnsureShareResult = { share: Share; isClaimed: boolean };
 
 const EXPIRATIONS: string[] = [
   "PT5M",
@@ -51,9 +44,7 @@ export function getDocumentTypeStyle(documentType: DocumentType) {
   }
 }
 
-export async function ensureShare(
-  req: AuthenticatedRequest
-): Promise<EnsureShareResult> {
+export async function ensureShare(req: AuthenticatedRequest): Promise<Share> {
   // validate request
   const { share_id } = req.params;
   if (!share_id) {
@@ -66,61 +57,57 @@ export async function ensureShare(
   }
 
   const { user } = req;
-  const shareHasExpired =
-    !!share.expireDuration && now() > share.created.plus(share.expireDuration);
 
-  // check if current user has already claimed the share
-  if (user && share.claimedBy?.id === user.id) {
-    if (shareHasExpired) {
-      logger.warn(share, "Share claimed by current user has expired");
+  // expired share
+  if (
+    !!share.expireDuration &&
+    now() > share.created.plus(share.expireDuration)
+  ) {
+    logger.warn(share, "Share has expired");
 
+    if (share.claimedBy && share.claimedBy.id === user?.id) {
       throw ForbiddenError("This share has expired");
+    } else {
+      throw NotFoundError();
     }
-
-    return { share, isClaimed: true };
   }
 
-  // share already claimed by a different user
-  if (share.claimed) {
-    logger.warn(share, `Share was already claimed by a different user`);
+  // authenticated user
+  if (user) {
+    // share has been claimed
+    if (share.claimedBy) {
+      // by a different user
+      if (share.claimedBy.id !== user.id) {
+        logger.warn(share, "Share was already claimed by a different user");
 
-    if (share.createdBy.id === user?.id) {
-      const claimedBy = assertValue(share.claimedBy);
+        if (share.createdBy.id === user.id) {
+          throw ForbiddenError(
+            `This share was already claimed by @${share.claimedBy.username}`
+          );
+        }
 
-      throw ForbiddenError(
-        `This share was already claimed by @${claimedBy.username}`
-      );
+        throw NotFoundError();
+      }
     }
+    // unclaimed share
+    else {
+      // intended for a different user
+      if (share.toUsername && share.toUsername !== user.username) {
+        logger.warn(share, "Share was intended for a different user");
 
-    throw NotFoundError();
+        if (share.createdBy.id === user.id) {
+          throw ForbiddenError(
+            `This share was intended for user @${share.toUsername}`
+          );
+        }
+
+        throw NotFoundError();
+      }
+    }
   }
 
-  // share intended for a different user
-  if (user && share.toUsername && share.toUsername !== user.username) {
-    logger.warn(share, "Share was intended for a different user");
-
-    if (share.createdBy.id === user.id) {
-      throw ForbiddenError(
-        `This share was intended for user @${share.toUsername}`
-      );
-    }
-
-    throw NotFoundError();
-  }
-
-  // check if unclaimed share has already expired
-  if (shareHasExpired) {
-    logger.warn(share, "Unclaimed share has expired");
-
-    if (share.createdBy.id === user?.id) {
-      throw ForbiddenError(`This unclaimed share has expired`);
-    }
-
-    throw NotFoundError();
-  }
-
-  // share can still be claimed
-  return { share, isClaimed: false };
+  // share can be accessed
+  return share;
 }
 
 export function renderShare(res: Response, share: Share) {

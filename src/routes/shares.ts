@@ -19,12 +19,16 @@ import {
   authorizeRegistration,
   clearRegisterable,
   getRegisterable,
-  redirectToLogin,
   redirectToRegister,
   requiresAdmin,
   requiresAuth,
 } from "../utils/auth";
-import { BadRequestError, ForbiddenError, assertValue } from "../utils/error";
+import {
+  BadRequestError,
+  ForbiddenError,
+  UnauthorizedError,
+  assertValue,
+} from "../utils/error";
 import { logger } from "../utils/logger";
 import {
   buildExpirations,
@@ -147,11 +151,11 @@ router.post(
 );
 
 router.get("/:share_id", async (req: AuthenticatedRequest, res: Response) => {
-  const { share, isClaimed } = await ensureShare(req);
+  const share = await ensureShare(req);
   const { user } = req;
 
   if (user) {
-    if (isClaimed) {
+    if (share.claimed) {
       // render share
 
       return renderShare(res, share);
@@ -167,9 +171,13 @@ router.get("/:share_id", async (req: AuthenticatedRequest, res: Response) => {
       return renderShare(res, claimedShare);
     }
   } else {
-    // redirect to login (to come back) if share was intended for a specific user
-    if (share.toUsername) {
-      return redirectToLogin(req, res);
+    if (
+      // redirect to login so user has chance to auth and access share
+      share.claimed ||
+      // redirect to login (to come back) if share was intended for a specific user
+      share.toUsername
+    ) {
+      throw UnauthorizedError();
     }
   }
 
@@ -188,10 +196,10 @@ router.post(
     req: AuthenticatedRequestWithTypedBody<{ action: "accept" | "reject" }>,
     res: Response
   ) => {
-    const { share, isClaimed } = await ensureShare(req);
+    const share = await ensureShare(req);
     const { action } = req.body;
 
-    if (isClaimed) {
+    if (share.claimed) {
       throw ForbiddenError(
         "This endpoint does not support an already claimed share"
       );

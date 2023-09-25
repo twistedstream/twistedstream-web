@@ -61,7 +61,6 @@ const newShareStub = sinon.stub();
 const authorizeRegistrationStub = sinon.stub();
 const clearRegisterableFake = sinon.fake();
 const getRegisterableStub = sinon.stub();
-const redirectToLoginStub = sinon.stub();
 const redirectToRegisterStub = sinon.stub();
 const ensureShareStub = sinon.stub();
 const renderShareStub = sinon.stub();
@@ -92,7 +91,6 @@ function importModule(
         authorizeRegistration: authorizeRegistrationStub,
         clearRegisterable: clearRegisterableFake,
         getRegisterable: getRegisterableStub,
-        redirectToLogin: redirectToLoginStub,
         redirectToRegister: redirectToRegisterStub,
         requiresAdmin: _requiresAdmin,
         requiresAuth: _requiresAuth,
@@ -625,21 +623,23 @@ test("routes/shares", async (t) => {
       });
 
       t.test("if claimed, renders the existing share", async (t) => {
-        ensureShareStub.resolves({ share: testShare, isClaimed: true });
+        const share = testShare1(testUser2(), testUser1());
+
+        ensureShareStub.resolves(share);
         renderShareStub.callsFake((res: Response, _share: Share) => {
           res.send("ignored");
         });
 
-        await performGetShareRequest(app, testShare.id);
+        await performGetShareRequest(app, share.id);
 
         t.ok(renderShareStub.called);
 
         verifyResponse(t, renderShareStub.firstCall.args[0]);
-        t.equal(renderShareStub.firstCall.args[1], testShare);
+        t.equal(renderShareStub.firstCall.args[1], share);
       });
 
       t.test("gets registerable state", async (t) => {
-        ensureShareStub.resolves({ share: testShare, isClaimed: false });
+        ensureShareStub.resolves(testShare);
 
         await performGetShareRequest(app, testShare.id);
 
@@ -652,7 +652,7 @@ test("routes/shares", async (t) => {
 
       t.test("when registerable state exists", async (t) => {
         t.beforeEach(async () => {
-          ensureShareStub.resolves({ share: testShare, isClaimed: false });
+          ensureShareStub.resolves(testShare);
           getRegisterableStub.returns({});
           renderShareStub.callsFake((res: Response, _share: Share) => {
             res.send("ignored");
@@ -703,7 +703,7 @@ test("routes/shares", async (t) => {
       t.test(
         "if registerable state is missing, renders HTML with the expected view state",
         async (t) => {
-          ensureShareStub.resolves({ share: testShare, isClaimed: false });
+          ensureShareStub.resolves(testShare);
           getRegisterableStub.returns(undefined);
           getDocumentTypeStyleStub
             .withArgs(testShare.documentType)
@@ -732,29 +732,30 @@ test("routes/shares", async (t) => {
         renderArgs = result.renderArgs;
       });
 
+      t.test("if share was claimed, redirects to the login page", async (t) => {
+        const share = testShare1(testUser2(), testUser1());
+        ensureShareStub.resolves(share);
+
+        const response = await performGetShareRequest(app, share.id);
+
+        verifyAuthenticationRequiredResponse(t, response, `/${testShare.id}`);
+      });
+
       t.test(
         "if share was intended for a specific user, redirects to the login page",
         async (t) => {
           const share = testShare1(testUser2());
           share.toUsername = "foo";
-          ensureShareStub.resolves({ share, isClaimed: false });
-          redirectToLoginStub.callsFake((_req: Request, res: Response) => {
-            res.send("ignored");
-          });
+          ensureShareStub.resolves(share);
 
-          await performGetShareRequest(app, share.id);
+          const response = await performGetShareRequest(app, share.id);
 
-          t.ok(redirectToLoginStub.called);
-          verifyRequest(t, redirectToLoginStub.firstCall.args[0], {
-            url: `/${testShare.id}`,
-            method: "GET",
-          });
-          verifyResponse(t, redirectToLoginStub.firstCall.args[1]);
+          verifyAuthenticationRequiredResponse(t, response, `/${testShare.id}`);
         }
       );
 
       t.test("renders HTML with the expected view state", async (t) => {
-        ensureShareStub.resolves({ share: testShare, isClaimed: false });
+        ensureShareStub.resolves(testShare);
         getDocumentTypeStyleStub
           .withArgs(testShare.documentType)
           .returns("doc_style");
@@ -774,7 +775,7 @@ test("routes/shares", async (t) => {
 
   t.test("POST /:share_id", async (t) => {
     t.test("ensures invite", async (t) => {
-      ensureShareStub.resolves({ share: testShare, isClaimed: false });
+      ensureShareStub.resolves(testShare);
       const { app } = createSharesTestExpressApp(t);
 
       await performPostExistingShareRequest(app, testShare.id);
@@ -789,13 +790,11 @@ test("routes/shares", async (t) => {
     t.test(
       "if share is claimed, renders HTML with expected user error",
       async (t) => {
-        ensureShareStub.resolves({ share: testShare, isClaimed: true });
+        const share = testShare1(testUser2(), testUser1());
+        ensureShareStub.resolves(share);
         const { app, renderArgs } = createSharesTestExpressApp(t);
 
-        const response = await performPostExistingShareRequest(
-          app,
-          testShare.id
-        );
+        const response = await performPostExistingShareRequest(app, share.id);
 
         verifyHtmlErrorResponse(
           t,
@@ -817,7 +816,7 @@ test("routes/shares", async (t) => {
         let renderArgs: ViewRenderArgs;
 
         t.beforeEach(async () => {
-          ensureShareStub.resolves({ share: testShare, isClaimed: false });
+          ensureShareStub.resolves(testShare);
           const result = createSharesTestExpressApp(t, {
             withAuth: true,
             activeUser: testUser,
@@ -886,7 +885,7 @@ test("routes/shares", async (t) => {
         let renderArgs: ViewRenderArgs;
 
         t.beforeEach(async () => {
-          ensureShareStub.resolves({ share: testShare, isClaimed: false });
+          ensureShareStub.resolves(testShare);
           redirectToRegisterStub.callsFake((_req: Request, res: Response) => {
             res.send("ignored");
           });
@@ -926,7 +925,7 @@ test("routes/shares", async (t) => {
     t.test(
       "if unsupported action, renders HTML with expected user error",
       async (t) => {
-        ensureShareStub.resolves({ share: testShare, isClaimed: false });
+        ensureShareStub.resolves(testShare);
         const { app, renderArgs } = createSharesTestExpressApp(t);
 
         const response = await performPostExistingShareRequest(
