@@ -59,7 +59,10 @@
             </tr>
             {{#each sharesByMe}}
             <tr>
-              <td><a href="{{url}}" target="_blank">{{title}}</a></td>
+              <td>
+                <strong>{{title}}</strong>
+                <small>[<a class="copy_link" href="#" data-url="{{url}}">copy</a>]</small>
+              </td>
               <td>{{created}}</td>
               <td>{{#if expires}}{{expires}}{{else}}(never){{/if}}</td>
               <td>{{#if to}}@{{to}}{{else}}(anyone){{/if}}</td>
@@ -81,5 +84,22 @@
   {{/inline}}
 
   {{#*inline "body_scripts"}}
+    <script>
+      async function copyToClipboard (event) {
+        const text = window.origin + this.dataset.url;
+        try {
+          await navigator.clipboard.writeText(text);
+          this.replaceWith("copied");
+        } catch (err) {
+          console.error('Copy to clipboard failed:', err);
+        }
+      }
+
+      window.addEventListener("load", async () => {
+        for (const copyLinks of document.querySelectorAll(".copy_link")) {
+          copyLinks.addEventListener("click", copyToClipboard);
+        }
+      });
+    </script>  
   {{/inline}}
 {{/main_layout}}
