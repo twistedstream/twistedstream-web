@@ -141,7 +141,7 @@ export function testShare1(createdBy: User, claimedBy?: User): Share {
       claimedBy,
     }),
     backingUrl: `https://example.com/${file.id}`,
-    documentTitle: file.title,
+    fileTitle: file.title,
     documentType: file.type,
   };
 }
@@ -168,7 +168,7 @@ export function testShare2(createdBy: User, claimedBy?: User): Share {
       claimedBy,
     }),
     backingUrl: `https://example.com/${file.id}`,
-    documentTitle: file.title,
+    fileTitle: file.title,
     documentType: file.type,
   };
 }
@@ -195,7 +195,7 @@ export function testShare3(createdBy: User, claimedBy?: User): Share {
       claimedBy,
     }),
     backingUrl: `https://example.com/${file.id}`,
-    documentTitle: file.title,
+    fileTitle: file.title,
     documentType: file.type,
   };
 }
@@ -222,7 +222,7 @@ export function testShare4(createdBy: User, claimedBy?: User): Share {
       claimedBy,
     }),
     backingUrl: `https://example.com/${file.id}`,
-    documentTitle: file.title,
+    fileTitle: file.title,
     documentType: file.type,
   };
 }

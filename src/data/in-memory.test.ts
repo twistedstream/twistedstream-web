@@ -599,7 +599,7 @@ test("data/in-memory", async (t) => {
         await provider.updateShare({
           ...share1,
           backingUrl: "https://foo.com",
-          documentTitle: "Changed Title",
+          fileTitle: "Changed Title",
           documentType: "pdf",
           claimed: now,
           claimedBy: user1,
@@ -627,7 +627,7 @@ test("data/in-memory", async (t) => {
         await provider.updateShare({
           id: "no-exist",
           backingUrl: "https://foo.com",
-          documentTitle: "Changed Title",
+          fileTitle: "Changed Title",
           documentType: "pdf",
           claimed: now,
           claimedBy: user1,

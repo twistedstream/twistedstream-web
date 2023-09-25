@@ -66,7 +66,7 @@ export async function newShare(
     backingUrl,
     toUsername,
     expireDuration,
-    documentTitle: documentInfo.title,
+    fileTitle: documentInfo.title,
     documentType: documentInfo.type,
   };
 

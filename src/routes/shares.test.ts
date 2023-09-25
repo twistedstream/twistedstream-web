@@ -56,7 +56,7 @@ const createShareStub = sinon.stub();
 const fetchSharesByClaimedUserIdStub = sinon.stub();
 const fetchSharesByCreatedUserIdStub = sinon.stub();
 const buildExpirationsStub = sinon.stub();
-const getDocumentTypeStyleStub = sinon.stub();
+const getFileTypeStyleStub = sinon.stub();
 const newShareStub = sinon.stub();
 const authorizeRegistrationStub = sinon.stub();
 const clearRegisterableFake = sinon.fake();
@@ -97,7 +97,7 @@ function importModule(
       },
       "../utils/share": {
         buildExpirations: buildExpirationsStub,
-        getDocumentTypeStyle: getDocumentTypeStyleStub,
+        getFileTypeStyle: getFileTypeStyleStub,
         ensureShare: ensureShareStub,
         renderShare: renderShareStub,
       },
@@ -232,14 +232,14 @@ test("routes/shares", async (t) => {
       t.equal(options.title, "Shares");
       t.same(options.sharesWithMe, [
         {
-          title: share1.documentTitle,
+          title: share1.fileTitle,
           url: "/shares/" + share1.id,
           created: share1.created.toISO(),
           from: share1.createdBy.username,
           claimed: share1.claimed?.toISO(),
         },
         {
-          title: share2.documentTitle,
+          title: share2.fileTitle,
           url: "/shares/" + share2.id,
           created: share2.created.toISO(),
           from: share2.createdBy.username,
@@ -248,7 +248,7 @@ test("routes/shares", async (t) => {
       ]);
       t.same(options.sharesByMe, [
         {
-          title: share3.documentTitle,
+          title: share3.fileTitle,
           url: "/shares/" + share3.id,
           created: share3.created.toISO(),
           to: share3.toUsername,
@@ -257,7 +257,7 @@ test("routes/shares", async (t) => {
           claimed_by: share3.claimedBy?.username,
         },
         {
-          title: share4.documentTitle,
+          title: share4.fileTitle,
           url: "/shares/" + share4.id,
           created: share4.created.toISO(),
           to: share4.toUsername,
@@ -487,15 +487,13 @@ test("routes/shares", async (t) => {
             expireDuration: expireDuration,
             backingUrl: "https://example.com/path",
             toUsername: "foo",
-            documentTitle: "Doc Title",
+            fileTitle: "Doc Title",
             documentType: "document",
           });
           const expirations = [{}];
           buildExpirationsStub.withArgs(expireDuration).returns(expirations);
-          const documentTypeStyle = "doc_style";
-          getDocumentTypeStyleStub
-            .withArgs("document")
-            .returns(documentTypeStyle);
+          const fileTypeStyle = "doc_style";
+          getFileTypeStyleStub.withArgs("document").returns(fileTypeStyle);
           const result = createSharesTestExpressApp(t, {
             withAuth: true,
             activeUser,
@@ -519,9 +517,9 @@ test("routes/shares", async (t) => {
           t.equal(options.backingUrl_valid, true);
           t.equal(options.toUsername, "foo");
           t.equal(options.expires, "P2D");
-          t.equal(options.documentTitle, "Doc Title");
+          t.equal(options.fileTitle, "Doc Title");
           t.equal(options.documentType, "document");
-          t.equal(options.documentTypeStyle, documentTypeStyle);
+          t.equal(options.fileTypeStyle, fileTypeStyle);
           t.ok(options.can_create);
         });
       });
@@ -705,7 +703,7 @@ test("routes/shares", async (t) => {
         async (t) => {
           ensureShareStub.resolves(testShare);
           getRegisterableStub.returns(undefined);
-          getDocumentTypeStyleStub
+          getFileTypeStyleStub
             .withArgs(testShare.documentType)
             .returns("doc_style");
 
@@ -717,7 +715,7 @@ test("routes/shares", async (t) => {
           t.equal(viewName, "accept_share");
           t.equal(options.title, "Accept this shared file?");
           t.equal(options.share, testShare);
-          t.same(options.documentTypeStyle, "doc_style");
+          t.same(options.fileTypeStyle, "doc_style");
         }
       );
     });
@@ -756,7 +754,7 @@ test("routes/shares", async (t) => {
 
       t.test("renders HTML with the expected view state", async (t) => {
         ensureShareStub.resolves(testShare);
-        getDocumentTypeStyleStub
+        getFileTypeStyleStub
           .withArgs(testShare.documentType)
           .returns("doc_style");
 
@@ -768,7 +766,7 @@ test("routes/shares", async (t) => {
         t.equal(viewName, "accept_share");
         t.equal(options.title, "Accept this shared file?");
         t.equal(options.share, testShare);
-        t.same(options.documentTypeStyle, "doc_style");
+        t.same(options.fileTypeStyle, "doc_style");
       });
     });
   });

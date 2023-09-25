@@ -207,7 +207,7 @@ test("services/share", async (t) => {
             backingUrl: "https://example.com/doc1",
             toUsername: "user-name",
             expireDuration,
-            documentTitle: "Test Document",
+            fileTitle: "Test Document",
             documentType: "document",
           });
         });
@@ -231,7 +231,7 @@ test("services/share", async (t) => {
             backingUrl: "https://example.com/doc1",
             toUsername: undefined,
             expireDuration: undefined,
-            documentTitle: "Test Document",
+            fileTitle: "Test Document",
             documentType: "document",
           });
         });

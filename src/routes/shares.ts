@@ -33,7 +33,7 @@ import { logger } from "../utils/logger";
 import {
   buildExpirations,
   ensureShare,
-  getDocumentTypeStyle,
+  getFileTypeStyle,
   renderShare,
 } from "../utils/share";
 
@@ -47,7 +47,7 @@ router.get(
 
     const sharesWithMe = (await fetchSharesByClaimedUserId(user.id)).map(
       (s) => ({
-        title: s.documentTitle,
+        title: s.fileTitle,
         url: `/shares/${s.id}`,
         created: s.created.toISO(),
         from: s.createdBy.username,
@@ -55,7 +55,7 @@ router.get(
       })
     );
     const sharesByMe = (await fetchSharesByCreatedUserId(user.id)).map((s) => ({
-      title: s.documentTitle,
+      title: s.fileTitle,
       url: `/shares/${s.id}`,
       created: s.created.toISO(),
       to: s.toUsername,
@@ -133,9 +133,9 @@ router.post(
           backingUrl_valid: true,
           toUsername: share.toUsername,
           expires: share.expireDuration?.toISO(),
-          documentTitle: share.documentTitle,
+          fileTitle: share.fileTitle,
           documentType: share.documentType,
-          documentTypeStyle: getDocumentTypeStyle(share.documentType),
+          fileTypeStyle: getFileTypeStyle(share.documentType),
           can_create: true,
         });
       }
@@ -185,7 +185,7 @@ router.get("/:share_id", async (req: AuthenticatedRequest, res: Response) => {
   return res.render("accept_share", {
     title: "Accept this shared file?",
     share,
-    documentTypeStyle: getDocumentTypeStyle(share.documentType),
+    fileTypeStyle: getFileTypeStyle(share.documentType),
   });
 });
 

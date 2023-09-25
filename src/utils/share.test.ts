@@ -80,33 +80,33 @@ test("utils/share", async (t) => {
     );
   });
 
-  t.test("getDocumentTypeStyle", async (t) => {
-    let getDocumentTypeStyle: any;
+  t.test("getFileTypeStyle", async (t) => {
+    let getFileTypeStyle: any;
 
     t.beforeEach(async () => {
-      getDocumentTypeStyle = importModule(t).getDocumentTypeStyle;
+      getFileTypeStyle = importModule(t).getFileTypeStyle;
     });
 
     t.test("if document, returns expected style", async (t) => {
-      const result = getDocumentTypeStyle("document");
+      const result = getFileTypeStyle("document");
 
       t.equal(result, "primary");
     });
 
     t.test("if spreadsheet, returns expected style", async (t) => {
-      const result = getDocumentTypeStyle("spreadsheet");
+      const result = getFileTypeStyle("spreadsheet");
 
       t.equal(result, "success");
     });
 
     t.test("if presentation, returns expected style", async (t) => {
-      const result = getDocumentTypeStyle("presentation");
+      const result = getFileTypeStyle("presentation");
 
       t.equal(result, "warning");
     });
 
     t.test("if pdf, returns expected style", async (t) => {
-      const result = getDocumentTypeStyle("pdf");
+      const result = getFileTypeStyle("pdf");
 
       t.equal(result, "danger");
     });

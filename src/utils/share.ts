@@ -31,7 +31,7 @@ export function buildExpirations(current?: Duration) {
   }));
 }
 
-export function getDocumentTypeStyle(documentType: DocumentType) {
+export function getFileTypeStyle(documentType: DocumentType) {
   switch (documentType) {
     case "document":
       return "primary";
