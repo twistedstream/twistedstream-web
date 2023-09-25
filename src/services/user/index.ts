@@ -1,8 +1,12 @@
-import { getProvider } from "../data";
-import { Authenticator, RegisteredAuthenticator, User } from "../types/entity";
-import { unique } from "../utils/identifier";
-import { now } from "../utils/time";
-import { validateUser } from "./user-validation";
+import { getProvider } from "../../data";
+import {
+  Authenticator,
+  RegisteredAuthenticator,
+  User,
+} from "../../types/entity";
+import { unique } from "../../utils/identifier";
+import { now } from "../../utils/time";
+import { validateUser } from "./validation";
 
 const provider = getProvider();
 const {

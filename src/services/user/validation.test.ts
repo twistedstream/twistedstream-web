@@ -1,7 +1,7 @@
 import { test } from "tap";
 
 import { DateTime } from "luxon";
-import { validateUser } from "./user-validation";
+import { validateUser } from "./validation";
 
 test("services/user-validation", async (t) => {
   t.test("validateUser", async (t) => {

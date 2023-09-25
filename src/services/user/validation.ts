@@ -1,5 +1,5 @@
-import { User } from "../types/entity";
-import { ValidationError } from "../types/error";
+import { User } from "../../types/entity";
+import { ValidationError } from "../../types/error";
 
 const USER_NAME_PATTERN = /^[a-zA-Z0-9_\-]{3,100}$/;
 const USER_DISPLAY_NAME_PATTERN = /^[a-zA-Z0-9\- ]{2,200}$/;

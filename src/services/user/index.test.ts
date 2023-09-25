@@ -1,7 +1,7 @@
 import sinon from "sinon";
 import { test } from "tap";
 
-import { testNowDate } from "../utils/testing/data";
+import { testNowDate } from "../../utils/testing/data";
 
 // test objects
 
@@ -24,11 +24,11 @@ const nowFake = sinon.fake.returns(testNowDate);
 // helpers
 
 function importModule(test: Tap.Test) {
-  return test.mock("./user", {
-    "../data": { getProvider: () => dataProvider },
-    "../utils/identifier": { unique: uniqueStub },
-    "../utils/time": { now: nowFake },
-    "./user-validation": {
+  return test.mock("./index", {
+    "../../data": { getProvider: () => dataProvider },
+    "../../utils/identifier": { unique: uniqueStub },
+    "../../utils/time": { now: nowFake },
+    "./validation": {
       validateUser: validateUserFake,
     },
   });
