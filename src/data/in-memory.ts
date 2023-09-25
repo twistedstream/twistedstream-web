@@ -53,7 +53,7 @@ export class InMemoryDataProvider implements IDataProvider {
     this.findShareById = this.findShareById.bind(this);
     this.findSharesByClaimedUserId = this.findSharesByClaimedUserId.bind(this);
     this.findSharesByCreatedUserId = this.findSharesByCreatedUserId.bind(this);
-    this.findDocumentInfo = this.findDocumentInfo.bind(this);
+    this.findFileInfo = this.findFileInfo.bind(this);
     this.insertShare = this.insertShare.bind(this);
     this.updateShare = this.updateShare.bind(this);
   }
@@ -215,7 +215,7 @@ export class InMemoryDataProvider implements IDataProvider {
 
   // files
 
-  async findDocumentInfo(url: string): Promise<FileInfo | undefined> {
+  async findFileInfo(url: string): Promise<FileInfo | undefined> {
     const files = this._filesByUrl[url];
     if (files) {
       return files[0];

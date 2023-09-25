@@ -53,7 +53,7 @@ export interface IDataProvider {
 
   findSharesByCreatedUserId(userID: string): Promise<Share[]>;
 
-  findDocumentInfo(url: string): Promise<FileInfo | undefined>;
+  findFileInfo(url: string): Promise<FileInfo | undefined>;
 
   insertShare(share: Share): Promise<Share>;
 

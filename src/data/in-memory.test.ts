@@ -641,15 +641,13 @@ test("data/in-memory", async (t) => {
       });
     });
 
-    t.test("findDocumentInfo", async (t) => {
+    t.test("findFileInfo", async (t) => {
       t.test("if file exists, returns copy", async (t) => {
         const file1 = testFile1();
         const files = [file1];
         const provider = createInstance({ files });
 
-        const result = await provider.findDocumentInfo(
-          "https://example.com/doc1"
-        );
+        const result = await provider.findFileInfo("https://example.com/doc1");
 
         t.ok(result);
         t.same(result, file1);
@@ -660,7 +658,7 @@ test("data/in-memory", async (t) => {
         const files = [file1];
         const provider = createInstance({ files });
 
-        const result = await provider.findDocumentInfo(
+        const result = await provider.findFileInfo(
           "https://example.com/no-exist"
         );
 

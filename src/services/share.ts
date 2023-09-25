@@ -9,7 +9,7 @@ import { now } from "../utils/time";
 
 const provider = getProvider();
 const {
-  findDocumentInfo,
+  findFileInfo,
   findSharesByClaimedUserId,
   findSharesByCreatedUserId,
   findShareById,
@@ -45,8 +45,8 @@ export async function newShare(
   expireDuration?: Duration
 ): Promise<Share> {
   // get file info and make sure it exists
-  const documentInfo = await findDocumentInfo(backingUrl);
-  if (!documentInfo) {
+  const fileInfo = await findFileInfo(backingUrl);
+  if (!fileInfo) {
     throw new ValidationError("Share", "backingUrl", "File not found");
   }
 
@@ -66,8 +66,8 @@ export async function newShare(
     backingUrl,
     toUsername,
     expireDuration,
-    fileTitle: documentInfo.title,
-    fileType: documentInfo.type,
+    fileTitle: fileInfo.title,
+    fileType: fileInfo.type,
   };
 
   return share;

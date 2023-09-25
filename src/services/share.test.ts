@@ -5,7 +5,7 @@ import { testNowDate } from "../utils/testing/data";
 
 // test objects
 const dataProvider = {
-  findDocumentInfo: sinon.stub(),
+  findFileInfo: sinon.stub(),
   findSharesByClaimedUserId: sinon.stub(),
   findSharesByCreatedUserId: sinon.stub(),
   findShareById: sinon.stub(),
@@ -134,15 +134,15 @@ test("services/share", async (t) => {
         await newShare({}, "https://example.com/doc1");
       } catch {}
 
-      t.ok(dataProvider.findDocumentInfo.called);
+      t.ok(dataProvider.findFileInfo.called);
       t.equal(
-        dataProvider.findDocumentInfo.firstCall.firstArg,
+        dataProvider.findFileInfo.firstCall.firstArg,
         "https://example.com/doc1"
       );
     });
 
     t.test("If file info does't exist, throws expected error", async (t) => {
-      dataProvider.findDocumentInfo.resolves(undefined);
+      dataProvider.findFileInfo.resolves(undefined);
 
       t.rejects(() => newShare({}, "https://example.com/doc1"), {
         fieldMessage: "File not found",
@@ -154,7 +154,7 @@ test("services/share", async (t) => {
 
     t.test("when file exists", async (t) => {
       t.beforeEach(async () => {
-        dataProvider.findDocumentInfo.resolves({
+        dataProvider.findFileInfo.resolves({
           title: "Test Document",
           type: "document",
         });
