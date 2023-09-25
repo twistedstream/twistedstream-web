@@ -105,21 +105,21 @@ test("services/user", async (t) => {
     });
 
     t.test("generates a unique ID", async (t) => {
-      newUser("bob", "Bob User");
+      await newUser("bob", "Bob User");
 
       t.ok(uniqueStub.called);
       t.equal(uniqueStub.firstCall.args.length, 0);
     });
 
     t.test("sets created to now", async (t) => {
-      newUser("bob", "Bob User");
+      await newUser("bob", "Bob User");
 
       t.ok(nowFake.called);
       t.equal(nowFake.firstCall.args.length, 0);
     });
 
     t.test("validates the user", async (t) => {
-      newUser("bob", "Bob User");
+      await newUser("bob", "Bob User");
 
       t.ok(validateUserFake.called);
       t.same(validateUserFake.firstCall.firstArg, {
@@ -132,7 +132,7 @@ test("services/user", async (t) => {
     });
 
     t.test("returns expected user data", async (t) => {
-      const result = newUser("bob", "Bob User");
+      const result = await newUser("bob", "Bob User");
 
       t.same(result, {
         id: "user-id",

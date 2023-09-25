@@ -75,7 +75,7 @@ router.post(
 
       // register user will be a new user
       try {
-        registeringUser = newUser(username, displayName);
+        registeringUser = await newUser(username, displayName);
       } catch (err: any) {
         if (err.type === "validation") {
           throw BadRequestError(err.message);

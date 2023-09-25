@@ -182,7 +182,7 @@ test("routes/fido2/attestation", async (t) => {
   t.test("POST /options", async (t) => {
     t.test("if active user session", async (t) => {
       t.test("fetches exiting user by ID", async (t) => {
-        newUserStub.returns({});
+        newUserStub.resolves({});
         fetchUserByIdStub.resolves({});
         fetchCredentialsByUserIdStub.resolves([testCredential1()]);
 
@@ -198,7 +198,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test(
         "if user that doesn't actually exist, renders JSON with expected user error",
         async (t) => {
-          newUserStub.returns({});
+          newUserStub.resolves({});
           fetchUserByIdStub.resolves();
 
           const { app } = createAttestationTestExpressApp(t, {
@@ -216,7 +216,7 @@ test("routes/fido2/attestation", async (t) => {
       );
 
       t.test("fetches user's existing credentials", async (t) => {
-        newUserStub.returns({});
+        newUserStub.resolves({});
         fetchUserByIdStub.resolves({});
         fetchCredentialsByUserIdStub.resolves([testCredential1()]);
 
@@ -232,7 +232,7 @@ test("routes/fido2/attestation", async (t) => {
       t.test(
         "if no credentials of existing user, render JSON with expected server error",
         async (t) => {
-          newUserStub.returns({});
+          newUserStub.resolves({});
           fetchUserByIdStub.resolves({});
           fetchCredentialsByUserIdStub.resolves([]);
 
@@ -288,7 +288,7 @@ test("routes/fido2/attestation", async (t) => {
 
       t.test("instantiates a new user", async (t) => {
         getRegisterableStub.returns({});
-        newUserStub.returns({});
+        newUserStub.resolves({});
 
         const { app } = createAttestationTestExpressApp(t);
         await performOptionsPostRequest(app).send({
@@ -305,7 +305,7 @@ test("routes/fido2/attestation", async (t) => {
         "if a validation error occurs while instantiating a user, renders JSON with expected user error",
         async (t) => {
           getRegisterableStub.returns({});
-          newUserStub.throws(
+          newUserStub.rejects(
             new ValidationError("User", "username", "Sorry, can't do it")
           );
 
@@ -325,7 +325,7 @@ test("routes/fido2/attestation", async (t) => {
         "if an unknown error occurs while instantiating a user, renders JSON with expected server error",
         async (t) => {
           getRegisterableStub.returns({});
-          newUserStub.throws(new Error("BOOM!"));
+          newUserStub.rejects(new Error("BOOM!"));
 
           const { app } = createAttestationTestExpressApp(t, {
             suppressErrorOutput: true,
@@ -342,7 +342,7 @@ test("routes/fido2/attestation", async (t) => {
 
       t.test("fetches exiting user by specified username", async (t) => {
         getRegisterableStub.returns({});
-        newUserStub.returns({});
+        newUserStub.resolves({});
         fetchUserByNameStub.resolves({});
 
         const { app } = createAttestationTestExpressApp(t);
@@ -358,7 +358,7 @@ test("routes/fido2/attestation", async (t) => {
         "if user exists with same username, renders JSON with expected user error",
         async (t) => {
           getRegisterableStub.returns({});
-          newUserStub.returns({});
+          newUserStub.resolves({});
           fetchUserByNameStub.resolves({});
 
           const { app } = createAttestationTestExpressApp(t);
@@ -412,7 +412,7 @@ test("routes/fido2/attestation", async (t) => {
     t.test("begins sign up", async (t) => {
       getRegisterableStub.returns({});
       const registeringUser = {};
-      newUserStub.returns(registeringUser);
+      newUserStub.resolves(registeringUser);
       fetchUserByNameStub.resolves();
       generateRegistrationOptionsStub.returns({
         challenge: "CHALLENGE!",
@@ -435,7 +435,7 @@ test("routes/fido2/attestation", async (t) => {
       async (t) => {
         getRegisterableStub.returns({});
         const registeringUser = {};
-        newUserStub.returns(registeringUser);
+        newUserStub.resolves(registeringUser);
         fetchUserByNameStub.resolves();
         generateRegistrationOptionsStub.returns({
           challenge: "CHALLENGE!",

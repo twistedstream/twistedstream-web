@@ -33,7 +33,10 @@ export async function fetchUserByName(
   return findUserByName(username);
 }
 
-export function newUser(username: string, displayName: string) {
+export async function newUser(
+  username: string,
+  displayName: string
+): Promise<User> {
   const user: User = {
     id: unique(),
     created: now(),
