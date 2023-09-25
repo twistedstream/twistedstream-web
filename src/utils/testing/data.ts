@@ -7,7 +7,7 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import {
   Authenticator,
-  DocumentInfo,
+  FileInfo,
   Invite,
   Share,
   User,
@@ -227,7 +227,7 @@ export function testShare4(createdBy: User, claimedBy?: User): Share {
   };
 }
 
-export function testFile1(): DocumentInfo {
+export function testFile1(): FileInfo {
   return {
     id: "doc1",
     type: "document",
@@ -235,7 +235,7 @@ export function testFile1(): DocumentInfo {
   };
 }
 
-export function testFile2(): DocumentInfo {
+export function testFile2(): FileInfo {
   return {
     id: "sheet1",
     type: "spreadsheet",
@@ -243,7 +243,7 @@ export function testFile2(): DocumentInfo {
   };
 }
 
-export function testFile3(): DocumentInfo {
+export function testFile3(): FileInfo {
   return {
     id: "pres1",
     type: "presentation",
@@ -251,7 +251,7 @@ export function testFile3(): DocumentInfo {
   };
 }
 
-export function testFile4(): DocumentInfo {
+export function testFile4(): FileInfo {
   return {
     id: "pdf1",
     type: "pdf",

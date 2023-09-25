@@ -29,7 +29,7 @@ export interface RegisteredAuthenticator extends Authenticator {
 
 export type DocumentType = "document" | "spreadsheet" | "presentation" | "pdf";
 
-export interface DocumentInfo {
+export interface FileInfo {
   id: string;
   title: string;
   type: DocumentType;

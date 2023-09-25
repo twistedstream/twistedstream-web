@@ -3,7 +3,7 @@ import { Dictionary, cloneDeep, groupBy } from "lodash";
 import { IDataProvider } from "../types/data";
 import {
   Authenticator,
-  DocumentInfo,
+  FileInfo,
   Invite,
   RegisteredAuthenticator,
   Share,
@@ -18,7 +18,7 @@ export class InMemoryDataProvider implements IDataProvider {
   private _credentials: RegisteredAuthenticator[];
   private _invites: Invite[];
   private _shares: Share[];
-  private _filesByUrl: Dictionary<DocumentInfo[]>;
+  private _filesByUrl: Dictionary<FileInfo[]>;
 
   constructor({
     users,
@@ -215,7 +215,7 @@ export class InMemoryDataProvider implements IDataProvider {
 
   // files
 
-  async findDocumentInfo(url: string): Promise<DocumentInfo | undefined> {
+  async findDocumentInfo(url: string): Promise<FileInfo | undefined> {
     const files = this._filesByUrl[url];
     if (files) {
       return files[0];

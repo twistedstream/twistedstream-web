@@ -1,6 +1,6 @@
 import { SinonStub } from "sinon";
 import {
-  DocumentInfo,
+  FileInfo,
   Invite,
   RegisteredAuthenticator,
   Share,
@@ -27,5 +27,5 @@ export type InMemoryDataProviderOptions = {
   credentials?: RegisteredAuthenticator[];
   invites?: Invite[];
   shares?: Share[];
-  files?: DocumentInfo[];
+  files?: FileInfo[];
 };
