@@ -2,7 +2,7 @@ import { Response } from "express";
 import { Duration } from "luxon";
 
 import { fetchShareById } from "../services/share";
-import { DocumentType, Share } from "../types/entity";
+import { FileType, Share } from "../types/entity";
 import { AuthenticatedRequest } from "../types/express";
 import { BadRequestError, ForbiddenError, NotFoundError } from "./error";
 import { logger } from "./logger";
@@ -31,7 +31,7 @@ export function buildExpirations(current?: Duration) {
   }));
 }
 
-export function getFileTypeStyle(documentType: DocumentType) {
+export function getFileTypeStyle(documentType: FileType) {
   switch (documentType) {
     case "document":
       return "primary";

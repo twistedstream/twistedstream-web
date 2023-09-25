@@ -27,12 +27,12 @@ export interface RegisteredAuthenticator extends Authenticator {
   user: User;
 }
 
-export type DocumentType = "document" | "spreadsheet" | "presentation" | "pdf";
+export type FileType = "document" | "spreadsheet" | "presentation" | "pdf";
 
 export interface FileInfo {
   id: string;
   title: string;
-  type: DocumentType;
+  type: FileType;
 }
 
 export interface RegisterableSource {
@@ -50,7 +50,7 @@ export interface Invite extends RegisterableSource {}
 export interface Share extends RegisterableSource {
   backingUrl: string;
   fileTitle: string;
-  documentType: DocumentType;
+  documentType: FileType;
   toUsername?: string;
   claimedBy?: User;
   claimed?: DateTime;
