@@ -81,10 +81,15 @@ test("Navigate, generate invite from root user, register a new user, sign out, s
 
   t.test("Accept root invite", async (t) => {
     const response = await postForm(state, `/invites/${rootInvite.id}`, {
+      csrf_token: state.csrfToken,
       action: "accept",
     });
 
-    assertRedirectResponse(t, response, `/register?return_to=%2F`);
+    assertRedirectResponse(
+      t,
+      response,
+      `/register?return_to=%2Finvites%2F${rootInvite.id}`
+    );
   });
 
   t.test("Go to registration page", async (t) => {

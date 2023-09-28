@@ -1,8 +1,8 @@
 import { urlencoded } from "body-parser";
 import { Response, Router } from "express";
+import { StatusCodes } from "http-status-codes";
 import { Duration } from "luxon";
 
-import { StatusCodes } from "http-status-codes";
 import {
   claimShare,
   createShare,
@@ -23,6 +23,7 @@ import {
   requiresAdmin,
   requiresAuth,
 } from "../utils/auth";
+import { generateCsrfToken, validateCsrfToken } from "../utils/csrf";
 import {
   BadRequestError,
   ForbiddenError,
@@ -76,8 +77,10 @@ router.get(
   "/new",
   requiresAuth(),
   requiresAdmin(),
-  async (_req: AuthenticatedRequest, res: Response) => {
+  async (req: AuthenticatedRequest, res: Response) => {
+    const csrf_token = generateCsrfToken(req, res, true);
     res.render("new_share", {
+      csrf_token,
       title: "New share",
       expirations: buildExpirations(),
     });
@@ -86,9 +89,10 @@ router.get(
 
 router.post(
   "/new",
+  urlencoded({ extended: false }),
+  validateCsrfToken(),
   requiresAuth(),
   requiresAdmin(),
-  urlencoded({ extended: false }),
   async (
     req: AuthenticatedRequestWithTypedBody<{
       action: "validate" | "create";
@@ -126,7 +130,9 @@ router.post(
       }
 
       if (action === "validate") {
+        const csrf_token = generateCsrfToken(req, res);
         return res.render("new_share", {
+          csrf_token,
           title: "New share",
           expirations: buildExpirations(share.expireDuration),
           backingUrl: share.backingUrl,
@@ -182,7 +188,9 @@ router.get("/:share_id", async (req: AuthenticatedRequest, res: Response) => {
   }
 
   // display accept form
+  const csrf_token = generateCsrfToken(req, res, true);
   return res.render("accept_share", {
+    csrf_token,
     title: "Accept this shared file?",
     share,
     fileTypeStyle: getFileTypeStyle(share.fileType),
@@ -192,6 +200,7 @@ router.get("/:share_id", async (req: AuthenticatedRequest, res: Response) => {
 router.post(
   "/:share_id",
   urlencoded({ extended: false }),
+  validateCsrfToken(),
   async (
     req: AuthenticatedRequestWithTypedBody<{ action: "accept" | "reject" }>,
     res: Response

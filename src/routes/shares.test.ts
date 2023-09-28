@@ -1,4 +1,4 @@
-import { Express, Request, Response } from "express";
+import { Express, NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import sinon from "sinon";
 import request, { Test as SuperTest } from "supertest";
@@ -6,10 +6,6 @@ import { test } from "tap";
 
 import { Duration } from "luxon";
 import { Share, User } from "../types/entity";
-import {
-  requiresAdmin as _requiresAdmin,
-  requiresAuth as _requiresAuth,
-} from "../utils/auth";
 import {
   testCredential1,
   testShare1,
@@ -65,6 +61,11 @@ const redirectToRegisterStub = sinon.stub();
 const ensureShareStub = sinon.stub();
 const renderShareStub = sinon.stub();
 const testShare = testShare1(testUser2());
+const requiresAuthStub = sinon.stub();
+const requiresAdminStub = sinon.stub();
+const testCsrfToken = "CSRF_TOKEN";
+const generateCsrfTokenFake = sinon.fake.returns(testCsrfToken);
+const validateCsrfTokenStub = sinon.stub();
 
 // helpers
 
@@ -92,14 +93,18 @@ function importModule(
         clearRegisterable: clearRegisterableFake,
         getRegisterable: getRegisterableStub,
         redirectToRegister: redirectToRegisterStub,
-        requiresAdmin: _requiresAdmin,
-        requiresAuth: _requiresAuth,
+        requiresAdmin: requiresAdminStub,
+        requiresAuth: requiresAuthStub,
       },
       "../utils/share": {
         buildExpirations: buildExpirationsStub,
         getFileTypeStyle: getFileTypeStyleStub,
         ensureShare: ensureShareStub,
         renderShare: renderShareStub,
+      },
+      "../utils/csrf": {
+        generateCsrfToken: generateCsrfTokenFake,
+        validateCsrfToken: validateCsrfTokenStub,
       },
     }),
   });
@@ -170,6 +175,19 @@ test("routes/shares", async (t) => {
   t.beforeEach(async () => {
     sinon.resetBehavior();
     sinon.resetHistory();
+
+    // give these stubs middleware behavior
+    for (const stub of [
+      requiresAdminStub,
+      requiresAuthStub,
+      validateCsrfTokenStub,
+    ]) {
+      stub.callsFake(
+        () => (_req: Request, _res: Response, next: NextFunction) => {
+          next();
+        }
+      );
+    }
   });
 
   t.test("is a Router instance", async (t) => {
@@ -194,35 +212,40 @@ test("routes/shares", async (t) => {
   });
 
   t.test("GET /", async (t) => {
-    t.test("requires authenticated session", async (t) => {
-      const { app } = createSharesTestExpressApp(t);
+    const user1 = testUser1();
+    const user2 = testUser2();
+    const share1 = testShare1(user1, user2);
+    const share2 = testShare2(user1, user2);
+    const share3 = testShare3(user2, user1);
+    share3.toUsername = "foo";
+    share3.expireDuration = Duration.fromObject({ days: 14 });
+    const share4 = testShare4(user2);
+    let app: Express;
+    let renderArgs: ViewRenderArgs;
 
-      const response = await performGetSharesRequest(app);
-
-      verifyAuthenticationRequiredResponse(t, response);
-    });
-
-    t.test("renders HTML with expected view state", async (t) => {
-      const user1 = testUser1();
-      const user2 = testUser2();
-      const share1 = testShare1(user1, user2);
-      const share2 = testShare2(user1, user2);
-      const share3 = testShare3(user2, user1);
-      share3.toUsername = "foo";
-      share3.expireDuration = Duration.fromObject({ days: 14 });
-      const share4 = testShare4(user2);
+    t.beforeEach(async () => {
       fetchSharesByClaimedUserIdStub
         .withArgs(user2.id)
         .resolves([share1, share2]);
       fetchSharesByCreatedUserIdStub
         .withArgs(user2.id)
         .resolves([share3, share4]);
-
-      const { app, renderArgs } = createSharesTestExpressApp(t, {
+      const result = createSharesTestExpressApp(t, {
         withAuth: true,
         activeUser: user2,
       });
 
+      app = result.app;
+      renderArgs = result.renderArgs;
+    });
+
+    t.test("requires authenticated session", async (t) => {
+      await performGetSharesRequest(app);
+
+      t.ok(requiresAuthStub.called);
+    });
+
+    t.test("renders HTML with expected view state", async (t) => {
       const response = await performGetSharesRequest(app);
       const { viewName, options } = renderArgs;
 
@@ -270,29 +293,41 @@ test("routes/shares", async (t) => {
   });
 
   t.test("GET /new", async (t) => {
+    let app: Express;
+    let renderArgs: ViewRenderArgs;
+
+    t.beforeEach(async () => {
+      const result = createSharesTestExpressApp(t, {
+        withAuth: true,
+        activeUser: testUser2(),
+      });
+
+      app = result.app;
+      renderArgs = result.renderArgs;
+    });
+
     t.test("requires authenticated session", async (t) => {
-      const { app } = createSharesTestExpressApp(t);
+      await performGetNewShareRequest(app);
 
-      const response = await performGetNewShareRequest(app);
-
-      verifyAuthenticationRequiredResponse(t, response, "/new");
+      t.ok(requiresAuthStub.called);
     });
 
     t.test("requires admin role", async (t) => {
-      const { app, renderArgs } = createSharesTestExpressApp(t, {
-        withAuth: true,
+      await performGetNewShareRequest(app);
+
+      t.ok(requiresAdminStub.called);
+    });
+
+    t.test("generates CSRF token", async (t) => {
+      await performGetNewShareRequest(app);
+
+      t.ok(generateCsrfTokenFake.called);
+      verifyRequest(t, generateCsrfTokenFake.firstCall.args[0], {
+        method: "GET",
+        url: `/new`,
       });
-
-      const response = await performGetNewShareRequest(app);
-
-      verifyHtmlErrorResponse(
-        t,
-        response,
-        renderArgs,
-        StatusCodes.FORBIDDEN,
-        "Error",
-        "Requires admin role"
-      );
+      verifyResponse(t, generateCsrfTokenFake.firstCall.args[1]);
+      t.equal(generateCsrfTokenFake.firstCall.args[2], true);
     });
 
     t.test("renders HTML with expected view state", async (t) => {
@@ -301,11 +336,6 @@ test("routes/shares", async (t) => {
         { value: "EXP2", description: "Expiration 2", selected: true },
       ];
       buildExpirationsStub.withArgs().returns(expirations);
-
-      const { app, renderArgs } = createSharesTestExpressApp(t, {
-        withAuth: true,
-        activeUser: testUser2(),
-      });
 
       const response = await performGetNewShareRequest(app);
       const { viewName, options } = renderArgs;
@@ -319,42 +349,75 @@ test("routes/shares", async (t) => {
   });
 
   t.test("POST /new", async (t) => {
+    const activeUser = testUser2();
+    let app: Express;
+    let renderArgs: ViewRenderArgs;
+
+    t.beforeEach(async () => {
+      const result = createSharesTestExpressApp(t, {
+        withAuth: true,
+        activeUser,
+      });
+
+      app = result.app;
+      renderArgs = result.renderArgs;
+    });
+
+    t.test("validates CSRF token", async (t) => {
+      await performPostNewShareRequest(app);
+
+      t.ok(validateCsrfTokenStub.called);
+    });
+
     t.test("requires authenticated session", async (t) => {
-      const { app } = createSharesTestExpressApp(t);
+      await performPostNewShareRequest(app);
 
-      const response = await performPostNewShareRequest(app);
-
-      verifyAuthenticationRequiredResponse(t, response, "/new");
+      t.ok(requiresAuthStub.called);
     });
 
     t.test("requires admin role", async (t) => {
-      const { app, renderArgs } = createSharesTestExpressApp(t, {
-        withAuth: true,
-      });
+      await performPostNewShareRequest(app);
 
-      const response = await performPostNewShareRequest(app);
-
-      verifyHtmlErrorResponse(
-        t,
-        response,
-        renderArgs,
-        StatusCodes.FORBIDDEN,
-        "Error",
-        "Requires admin role"
-      );
+      t.ok(requiresAdminStub.called);
     });
 
-    t.test("when user is admin", async (t) => {
-      const activeUser = testUser2();
+    function commonPostNewTests(t: Tap.Test, action: "validate" | "create") {
+      t.test("generates a new share", async (t) => {
+        newShareStub.resolves({});
 
-      function commonPostNewTests(t: Tap.Test, action: "validate" | "create") {
-        t.test("generates a new share", async (t) => {
+        await performPostNewShareRequest(app).send({
+          action,
+          backingUrl: "https://example.com/path",
+          toUsername: "foo",
+        });
+
+        t.ok(newShareStub.called);
+        t.equal(newShareStub.firstCall.args[0], activeUser);
+        t.equal(newShareStub.firstCall.args[1], "https://example.com/path");
+        t.equal(newShareStub.firstCall.args[2], "foo");
+      });
+
+      t.test("if specified, builds expires duration", async (t) => {
+        newShareStub.resolves({});
+
+        await performPostNewShareRequest(app).send({
+          action,
+          backingUrl: "https://example.com/path",
+          toUsername: "foo",
+          expires: "P2D",
+        });
+
+        t.ok(newShareStub.called);
+        t.same(
+          newShareStub.firstCall.args[3],
+          Duration.fromObject({ days: 2 })
+        );
+      });
+
+      t.test(
+        "if not specified, defaults to undefined expires duration",
+        async (t) => {
           newShareStub.resolves({});
-          const result = createSharesTestExpressApp(t, {
-            withAuth: true,
-            activeUser,
-          });
-          const { app } = result;
 
           await performPostNewShareRequest(app).send({
             action,
@@ -363,233 +426,163 @@ test("routes/shares", async (t) => {
           });
 
           t.ok(newShareStub.called);
-          t.equal(newShareStub.firstCall.args[0], activeUser);
-          t.equal(newShareStub.firstCall.args[1], "https://example.com/path");
-          t.equal(newShareStub.firstCall.args[2], "foo");
-        });
+          t.equal(newShareStub.firstCall.args[3], undefined);
+        }
+      );
 
-        t.test("if specified, builds expires duration", async (t) => {
-          newShareStub.resolves({});
-          const result = createSharesTestExpressApp(t, {
+      t.test(
+        "if a validation error occurs creating the share, renders HTML with expected user error",
+        async (t) => {
+          newShareStub.rejects({
+            type: "validation",
+            field: "bar",
+            fieldMessage: "Bad bar!",
+          });
+          const expirations = [{}];
+          buildExpirationsStub.returns(expirations);
+
+          const response = await performPostNewShareRequest(app).send({
+            action,
+            backingUrl: "https://example.com/path",
+            toUsername: "foo",
+            expires: "P2D",
+          });
+          const { viewName, options } = renderArgs;
+
+          t.equal(response.status, StatusCodes.BAD_REQUEST);
+          t.match(response.headers["content-type"], "text/html");
+          t.equal(viewName, "new_share");
+          t.equal(options.title, "New share");
+          t.equal(options.expirations, expirations);
+          t.equal(options.bar_error, "Bad bar!");
+          t.equal(options.backingUrl, "https://example.com/path");
+          t.equal(options.backingUrl_valid, true);
+          t.equal(options.toUsername, "foo");
+          t.equal(options.expires, "P2D");
+        }
+      );
+
+      t.test(
+        "if an unknown error occurs creating the share, renders HTML with expected server error",
+        async (t) => {
+          newShareStub.rejects({});
+
+          // create local app so we can suppress error logging
+          const { app, renderArgs } = createSharesTestExpressApp(t, {
             withAuth: true,
             activeUser,
+            suppressErrorOutput: true,
           });
-          const { app } = result;
 
-          await performPostNewShareRequest(app).send({
+          const response = await performPostNewShareRequest(app).send({
             action,
             backingUrl: "https://example.com/path",
             toUsername: "foo",
             expires: "P2D",
           });
 
-          t.ok(newShareStub.called);
-          t.same(
-            newShareStub.firstCall.args[3],
-            Duration.fromObject({ days: 2 })
-          );
-        });
-
-        t.test(
-          "if not specified, defaults to undefined expires duration",
-          async (t) => {
-            newShareStub.resolves({});
-            const result = createSharesTestExpressApp(t, {
-              withAuth: true,
-              activeUser,
-            });
-            const { app } = result;
-
-            await performPostNewShareRequest(app).send({
-              action,
-              backingUrl: "https://example.com/path",
-              toUsername: "foo",
-            });
-
-            t.ok(newShareStub.called);
-            t.equal(newShareStub.firstCall.args[3], undefined);
-          }
-        );
-
-        t.test(
-          "if a validation error occurs creating the share, renders HTML with expected user error",
-          async (t) => {
-            newShareStub.rejects({
-              type: "validation",
-              field: "bar",
-              fieldMessage: "Bad bar!",
-            });
-            const expirations = [{}];
-            buildExpirationsStub.returns(expirations);
-            const result = createSharesTestExpressApp(t, {
-              withAuth: true,
-              activeUser,
-            });
-            const { app, renderArgs } = result;
-
-            const response = await performPostNewShareRequest(app).send({
-              action,
-              backingUrl: "https://example.com/path",
-              toUsername: "foo",
-              expires: "P2D",
-            });
-            const { viewName, options } = renderArgs;
-
-            t.equal(response.status, StatusCodes.BAD_REQUEST);
-            t.match(response.headers["content-type"], "text/html");
-            t.equal(viewName, "new_share");
-            t.equal(options.title, "New share");
-            t.equal(options.expirations, expirations);
-            t.equal(options.bar_error, "Bad bar!");
-            t.equal(options.backingUrl, "https://example.com/path");
-            t.equal(options.backingUrl_valid, true);
-            t.equal(options.toUsername, "foo");
-            t.equal(options.expires, "P2D");
-          }
-        );
-
-        t.test(
-          "if an unknown error occurs creating the share, renders HTML with expected server error",
-          async (t) => {
-            newShareStub.rejects({});
-            const result = createSharesTestExpressApp(t, {
-              withAuth: true,
-              activeUser,
-              suppressErrorOutput: true,
-            });
-            const { app, renderArgs } = result;
-
-            const response = await performPostNewShareRequest(app).send({
-              action,
-              backingUrl: "https://example.com/path",
-              toUsername: "foo",
-              expires: "P2D",
-            });
-
-            verifyHtmlErrorResponse(
-              t,
-              response,
-              renderArgs,
-              StatusCodes.INTERNAL_SERVER_ERROR,
-              "Error",
-              "Something unexpected happened"
-            );
-          }
-        );
-      }
-
-      t.test("when action is 'validate'", async (t) => {
-        commonPostNewTests(t, "validate");
-
-        t.test("renders HTML with the expected view state", async (t) => {
-          const expireDuration = Duration.fromObject({ days: 2 });
-          newShareStub.resolves({
-            expireDuration: expireDuration,
-            backingUrl: "https://example.com/path",
-            toUsername: "foo",
-            fileTitle: "Doc Title",
-            fileType: "document",
-          });
-          const expirations = [{}];
-          buildExpirationsStub.withArgs(expireDuration).returns(expirations);
-          const fileTypeStyle = "doc_style";
-          getFileTypeStyleStub.withArgs("document").returns(fileTypeStyle);
-          const result = createSharesTestExpressApp(t, {
-            withAuth: true,
-            activeUser,
-          });
-          const { app, renderArgs } = result;
-
-          const response = await performPostNewShareRequest(app).send({
-            action: "validate",
-            backingUrl: "ignored",
-            toUsername: "ignored",
-            expires: "ignored",
-          });
-          const { viewName, options } = renderArgs;
-
-          t.equal(response.status, StatusCodes.OK);
-          t.match(response.headers["content-type"], "text/html");
-          t.equal(viewName, "new_share");
-          t.equal(options.title, "New share");
-          t.equal(options.expirations, expirations);
-          t.equal(options.backingUrl, "https://example.com/path");
-          t.equal(options.backingUrl_valid, true);
-          t.equal(options.toUsername, "foo");
-          t.equal(options.expires, "P2D");
-          t.equal(options.fileTitle, "Doc Title");
-          t.equal(options.fileType, "document");
-          t.equal(options.fileTypeStyle, fileTypeStyle);
-          t.ok(options.can_create);
-        });
-      });
-
-      t.test("when action is 'create'", async (t) => {
-        commonPostNewTests(t, "create");
-
-        t.test("creates the share", async (t) => {
-          const share = {};
-          newShareStub.resolves(share);
-          const result = createSharesTestExpressApp(t, {
-            withAuth: true,
-            activeUser,
-          });
-          const { app } = result;
-
-          await performPostNewShareRequest(app).send({
-            action: "create",
-            backingUrl: "ignored",
-            toUsername: "ignored",
-            expires: "ignored",
-          });
-
-          t.ok(createShareStub.called);
-          t.equal(createShareStub.firstCall.firstArg, share);
-        });
-
-        t.test("redirects to the shares page", async (t) => {
-          newShareStub.resolves({});
-          const result = createSharesTestExpressApp(t, {
-            withAuth: true,
-            activeUser,
-          });
-          const { app } = result;
-
-          const response = await performPostNewShareRequest(app).send({
-            action: "create",
-            backingUrl: "ignored",
-            toUsername: "ignored",
-            expires: "ignored",
-          });
-
-          verifyRedirectResponse(t, response, "/shares");
-        });
-      });
-
-      t.test(
-        "if unsupported action, renders HTML with expected user error",
-        async (t) => {
-          const result = createSharesTestExpressApp(t, {
-            withAuth: true,
-            activeUser,
-          });
-          const { app, renderArgs } = result;
-
-          const response = await performPostNewShareRequest(app).send({
-            action: "foo",
-          });
-
           verifyHtmlErrorResponse(
             t,
             response,
             renderArgs,
-            StatusCodes.BAD_REQUEST,
+            StatusCodes.INTERNAL_SERVER_ERROR,
             "Error",
-            "Unsupported new share action"
+            "Something unexpected happened"
           );
         }
       );
+    }
+
+    t.test("when action is 'validate'", async (t) => {
+      commonPostNewTests(t, "validate");
+
+      t.test("renders HTML with the expected view state", async (t) => {
+        const expireDuration = Duration.fromObject({ days: 2 });
+        newShareStub.resolves({
+          expireDuration: expireDuration,
+          backingUrl: "https://example.com/path",
+          toUsername: "foo",
+          fileTitle: "Doc Title",
+          fileType: "document",
+        });
+        const expirations = [{}];
+        buildExpirationsStub.withArgs(expireDuration).returns(expirations);
+        const fileTypeStyle = "doc_style";
+        getFileTypeStyleStub.withArgs("document").returns(fileTypeStyle);
+
+        const response = await performPostNewShareRequest(app).send({
+          action: "validate",
+          backingUrl: "ignored",
+          toUsername: "ignored",
+          expires: "ignored",
+        });
+        const { viewName, options } = renderArgs;
+
+        t.equal(response.status, StatusCodes.OK);
+        t.match(response.headers["content-type"], "text/html");
+        t.equal(viewName, "new_share");
+        t.equal(options.title, "New share");
+        t.equal(options.expirations, expirations);
+        t.equal(options.backingUrl, "https://example.com/path");
+        t.equal(options.backingUrl_valid, true);
+        t.equal(options.toUsername, "foo");
+        t.equal(options.expires, "P2D");
+        t.equal(options.fileTitle, "Doc Title");
+        t.equal(options.fileType, "document");
+        t.equal(options.fileTypeStyle, fileTypeStyle);
+        t.ok(options.can_create);
+      });
     });
+
+    t.test("when action is 'create'", async (t) => {
+      commonPostNewTests(t, "create");
+
+      t.test("creates the share", async (t) => {
+        const share = {};
+        newShareStub.resolves(share);
+
+        await performPostNewShareRequest(app).send({
+          action: "create",
+          backingUrl: "ignored",
+          toUsername: "ignored",
+          expires: "ignored",
+        });
+
+        t.ok(createShareStub.called);
+        t.equal(createShareStub.firstCall.firstArg, share);
+      });
+
+      t.test("redirects to the shares page", async (t) => {
+        newShareStub.resolves({});
+
+        const response = await performPostNewShareRequest(app).send({
+          action: "create",
+          backingUrl: "ignored",
+          toUsername: "ignored",
+          expires: "ignored",
+        });
+
+        verifyRedirectResponse(t, response, "/shares");
+      });
+    });
+
+    t.test(
+      "if unsupported action, renders HTML with expected user error",
+      async (t) => {
+        const response = await performPostNewShareRequest(app).send({
+          action: "foo",
+        });
+
+        verifyHtmlErrorResponse(
+          t,
+          response,
+          renderArgs,
+          StatusCodes.BAD_REQUEST,
+          "Error",
+          "Unsupported new share action"
+        );
+      }
+    );
   });
 
   t.test("GET /:share_id", async (t) => {
@@ -752,24 +745,52 @@ test("routes/shares", async (t) => {
         }
       );
 
-      t.test("renders HTML with the expected view state", async (t) => {
-        ensureShareStub.resolves(testShare);
-        getFileTypeStyleStub.withArgs(testShare.fileType).returns("doc_style");
+      t.test("if share can be rendered", async (t) => {
+        t.beforeEach(async () => {
+          ensureShareStub.resolves(testShare);
+          getFileTypeStyleStub
+            .withArgs(testShare.fileType)
+            .returns("doc_style");
+        });
 
-        const response = await performGetShareRequest(app, testShare.id);
-        const { viewName, options } = renderArgs;
+        t.test("generates CSRF token", async (t) => {
+          await performGetShareRequest(app, testShare.id);
 
-        t.equal(response.status, StatusCodes.OK);
-        t.match(response.headers["content-type"], "text/html");
-        t.equal(viewName, "accept_share");
-        t.equal(options.title, "Accept this shared file?");
-        t.equal(options.share, testShare);
-        t.same(options.fileTypeStyle, "doc_style");
+          t.ok(generateCsrfTokenFake.called);
+          verifyRequest(t, generateCsrfTokenFake.firstCall.args[0], {
+            method: "GET",
+            url: `/${testShare.id}`,
+          });
+          verifyResponse(t, generateCsrfTokenFake.firstCall.args[1]);
+          t.equal(generateCsrfTokenFake.firstCall.args[2], true);
+        });
+
+        t.test("renders HTML with the expected view state", async (t) => {
+          const response = await performGetShareRequest(app, testShare.id);
+          const { viewName, options } = renderArgs;
+
+          t.equal(response.status, StatusCodes.OK);
+          t.match(response.headers["content-type"], "text/html");
+          t.equal(viewName, "accept_share");
+          t.equal(options.csrf_token, testCsrfToken);
+          t.equal(options.title, "Accept this shared file?");
+          t.equal(options.share, testShare);
+          t.same(options.fileTypeStyle, "doc_style");
+        });
       });
     });
   });
 
   t.test("POST /:share_id", async (t) => {
+    t.test("validates CSRF token", async (t) => {
+      ensureShareStub.resolves(testShare);
+      const { app } = createSharesTestExpressApp(t);
+
+      await performPostExistingShareRequest(app, testShare.id);
+
+      t.ok(validateCsrfTokenStub.called);
+    });
+
     t.test("ensures invite", async (t) => {
       ensureShareStub.resolves(testShare);
       const { app } = createSharesTestExpressApp(t);
@@ -871,7 +892,6 @@ test("routes/shares", async (t) => {
             action,
           });
 
-          // TODO: FIX
           verifyRedirectResponse(t, response, `/${testShare.id}`);
         });
       });

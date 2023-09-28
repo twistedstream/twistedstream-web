@@ -1,6 +1,8 @@
 import base64 from "@hexagon/base64";
 import * as simpleWebAuthnServerDefaults from "@simplewebauthn/server";
 import { StatusCodes } from "http-status-codes";
+import { parse as parseHtml } from "node-html-parser";
+import { parse as parseSetCookie } from "set-cookie-parser";
 import sinon from "sinon";
 import request, { Response as SupertestResponse } from "supertest";
 
@@ -41,6 +43,8 @@ export function createIntegrationTestState(
 
   return {
     app,
+    cookies: {},
+    csrfToken: "",
     redirectUrl: "",
     users: options.users || [],
     credentials: options.credentials || [],
@@ -56,13 +60,27 @@ function updateStateAfterRequest(
   state: IntegrationTestState,
   response: SupertestResponse
 ) {
-  // cookie
-  const setCookie = response.headers["set-cookie"];
-  if (setCookie) {
-    state.cookie = setCookie;
+  // read set-cookie response header from server and update "browser" cookies
+  const setCookieRaw = response.headers["set-cookie"];
+  if (setCookieRaw) {
+    const cookies = parseSetCookie(setCookieRaw);
+
+    for (const cookie of cookies) {
+      if (cookie.expires?.getTime() === 0) {
+        delete state.cookies[cookie.name];
+      } else {
+        state.cookies[cookie.name] = cookie;
+      }
+    }
   }
 
-  // redirect URL
+  // capture CSRF token so it can be used with a future request
+  const csrfToken = getCsrfToken(response);
+  if (csrfToken) {
+    state.csrfToken = csrfToken;
+  }
+
+  // capture redirect URL so it can be used with a future request
   const { location } = response.headers;
   const contentType = <string>(response.headers["content-type"] || "");
   let return_to: string = "";
@@ -70,6 +88,23 @@ function updateStateAfterRequest(
     return_to = JSON.parse(response.text).return_to;
   }
   state.redirectUrl = location || return_to || "";
+}
+
+function getCsrfToken(response: SupertestResponse): string | undefined {
+  const root = parseHtml(response.text);
+  const csrfField = root.querySelector("input[name='csrf_token']");
+  if (csrfField) {
+    return csrfField.attributes.value;
+  }
+}
+
+function buildCookieRequestHeader(state: IntegrationTestState): string {
+  const cookies = Object.values(state.cookies);
+
+  return cookies.reduce(
+    (acc, cv) => `${acc}${acc ? "; " : ""}${cv.name}=${cv.value}`,
+    ""
+  );
 }
 
 // requests
@@ -82,7 +117,7 @@ export async function navigatePage(
 
   const response = await request(app)
     .get(path)
-    .set("cookie", state.cookie || "")
+    .set("cookie", buildCookieRequestHeader(state))
     .accept("text/html");
   updateStateAfterRequest(state, response);
 
@@ -98,7 +133,7 @@ export async function postJson(
 
   const response = await request(app)
     .post(path)
-    .set("cookie", state.cookie || "")
+    .set("cookie", buildCookieRequestHeader(state))
     .set("content-type", "application/json")
     .accept("application/json")
     .send(body);
@@ -116,7 +151,7 @@ export async function postForm(
 
   const response = await request(app)
     .post(path)
-    .set("cookie", state.cookie || "")
+    .set("cookie", buildCookieRequestHeader(state))
     .set("content-type", "application/x-www-form-urlencoded")
     .accept("text/html")
     .send(body);
@@ -165,7 +200,7 @@ export function assertRedirectResponse(
     "expected 302 http status"
   );
   test.ok(response.headers.location, "http location exists");
-  test.match(
+  test.equal(
     response.headers.location,
     expectedLocation,
     "expected http location"

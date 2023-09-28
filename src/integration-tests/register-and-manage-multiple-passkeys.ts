@@ -87,6 +87,7 @@ test("Register and manage multiple authenticators", async (t) => {
 
   t.test("Delete original passkey", async (t) => {
     const response = await postForm(state, "/profile", {
+      csrf_token: state.csrfToken,
       action: "delete_cred",
       cred_id: cred1.credentialID,
     });

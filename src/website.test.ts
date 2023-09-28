@@ -12,6 +12,8 @@ const cookieSessionMiddleware = {};
 const cookieSessionFake = sinon.fake.returns(cookieSessionMiddleware);
 const authMiddleware = {};
 const authFake = sinon.fake.returns(authMiddleware);
+const cookieParserMiddleware = {};
+const cookieParserFake = sinon.fake.returns(cookieParserMiddleware);
 const routes = {};
 const cookieSecret = "Bananas!";
 
@@ -28,6 +30,7 @@ function importModule(test: Tap.Test) {
     },
     "./routes": routes,
     "./utils/auth": { auth: authFake },
+    "cookie-parser": cookieParserFake,
   });
 
   return website;
@@ -73,6 +76,16 @@ test("website", async (t) => {
     t.equal(expressRouter.use.getCalls()[1].firstArg, authMiddleware);
   });
 
+  t.test("uses cookie-parser middleware", async (t) => {
+    importModule(t);
+
+    t.ok(cookieParserFake.called);
+    t.equal(cookieParserFake.firstCall.firstArg, "Bananas!");
+
+    t.ok(expressRouter.use.called);
+    t.equal(expressRouter.use.getCalls()[2].firstArg, cookieParserMiddleware);
+  });
+
   t.test("sets locals user to request user", async (t) => {
     importModule(t);
 
@@ -83,7 +96,7 @@ test("website", async (t) => {
     const res: any = { locals: {} };
     const nextFake = sinon.fake();
     const middleware: (req: any, res: any, next: NextFunction) => void =
-      expressRouter.use.getCalls()[2].firstArg;
+      expressRouter.use.getCalls()[3].firstArg;
     middleware(req, res, nextFake);
     t.equal(res.locals.user, req.user);
     t.ok(nextFake.called);
@@ -93,6 +106,6 @@ test("website", async (t) => {
     importModule(t);
 
     t.ok(expressRouter.use.called);
-    t.equal(expressRouter.use.getCalls()[3].firstArg, routes);
+    t.equal(expressRouter.use.getCalls()[4].firstArg, routes);
   });
 });

@@ -82,6 +82,7 @@ test("Share a file to any user, new user accepts, registers, and accesses share"
 
     // validate
     response = await postForm(state, `/shares/new`, {
+      csrf_token: state.csrfToken,
       action: "validate",
       backingUrl,
     });
@@ -89,6 +90,7 @@ test("Share a file to any user, new user accepts, registers, and accesses share"
 
     // create
     response = await postForm(state, `/shares/new`, {
+      csrf_token: state.csrfToken,
       action: "create",
       backingUrl,
     });
@@ -113,6 +115,7 @@ test("Share a file to any user, new user accepts, registers, and accesses share"
     const share = state.shares[0];
 
     const response = await postForm(state, `/shares/${share.id}`, {
+      csrf_token: state.csrfToken,
       action: "accept",
     });
 

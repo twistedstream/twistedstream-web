@@ -36,6 +36,8 @@
       </div>
 
       <form method="post">
+        {{> csrf_token_field}}
+        
         <div class="form-row justify-content-center">
           <div class="col text-center">
             <button type="submit" class="btn btn-primary" name="action" value="accept">Accept</button>

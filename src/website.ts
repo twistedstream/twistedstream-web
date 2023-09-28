@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import cookieSession from "cookie-session";
 import { NextFunction, Response, Router } from "express";
 
@@ -8,7 +9,7 @@ import { cookieSecret } from "./utils/config";
 
 const router = Router();
 
-// INFO: Configure session
+// Configure session
 router.use(
   cookieSession({
     name: "ts-session",
@@ -18,14 +19,17 @@ router.use(
 );
 router.use(auth());
 
-// INFO: Make user data available in all views
+// Used by csrf-csrf
+router.use(cookieParser(cookieSecret));
+
+// Make user data available in all views
 router.use((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   res.locals.user = req.user;
 
   next();
 });
 
-// INFO: Configure routes
+// Configure routes
 router.use(routes);
 
 export default router;

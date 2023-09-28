@@ -1,9 +1,9 @@
-import { Express } from "express";
+import { Express, NextFunction, Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
 import sinon from "sinon";
 import request, { Test as SuperTest } from "supertest";
 import { test } from "tap";
 
-import { StatusCodes } from "http-status-codes";
 import { ValidationError } from "../types/error";
 import {
   testCredential1,
@@ -11,8 +11,8 @@ import {
   testUser1,
 } from "../utils/testing/data";
 import {
+  ViewRenderArgs,
   createTestExpressApp,
-  verifyAuthenticationRequiredResponse,
   verifyHtmlErrorResponse,
   verifyRedirectResponse,
 } from "../utils/testing/unit";
@@ -37,6 +37,10 @@ const routerFake = sinon.fake.returns(expressRouter);
 const fetchCredentialsByUserIdStub = sinon.stub();
 const modifyUserStub = sinon.stub();
 const removeUserCredentialStub = sinon.stub();
+const requiresAuthStub = sinon.stub();
+const testCsrfToken = "CSRF_TOKEN";
+const generateCsrfTokenFake = sinon.fake.returns(testCsrfToken);
+const validateCsrfTokenStub = sinon.stub();
 
 // helpers
 
@@ -55,6 +59,13 @@ function importModule(
         fetchCredentialsByUserId: fetchCredentialsByUserIdStub,
         modifyUser: modifyUserStub,
         removeUserCredential: removeUserCredentialStub,
+      },
+      "../utils/auth": {
+        requiresAuth: requiresAuthStub,
+      },
+      "../utils/csrf": {
+        generateCsrfToken: generateCsrfTokenFake,
+        validateCsrfToken: validateCsrfTokenStub,
       },
     }),
   });
@@ -103,6 +114,15 @@ test("routes/profile", async (t) => {
   t.beforeEach(async () => {
     sinon.resetBehavior();
     sinon.resetHistory();
+
+    // give these stubs middleware behavior
+    for (const stub of [requiresAuthStub, validateCsrfTokenStub]) {
+      stub.callsFake(
+        () => (_req: Request, _res: Response, next: NextFunction) => {
+          next();
+        }
+      );
+    }
   });
 
   t.test("is a Router instance", async (t) => {
@@ -127,23 +147,27 @@ test("routes/profile", async (t) => {
   });
 
   t.test("GET /", async (t) => {
-    t.test("requires authenticated session", async (t) => {
-      const { app } = createProfileTestExpressApp(t);
+    const user1 = testUser1();
+    const cred1 = testCredential1();
+    const cred2 = testCredential2();
+    let app: Express;
+    let renderArgs: ViewRenderArgs;
 
-      const response = await performGetRequest(app);
-      verifyAuthenticationRequiredResponse(t, response);
+    t.beforeEach(async () => {
+      fetchCredentialsByUserIdStub.withArgs(user1.id).resolves([cred1, cred2]);
+      const result = createProfileTestExpressApp(t, { withAuth: true });
+
+      app = result.app;
+      renderArgs = result.renderArgs;
+    });
+
+    t.test("requires authenticated session", async (t) => {
+      await performGetRequest(app);
+
+      t.ok(requiresAuthStub.called);
     });
 
     t.test("renders HTML with expected view state", async (t) => {
-      const user1 = testUser1();
-      const cred1 = testCredential1();
-      const cred2 = testCredential2();
-      fetchCredentialsByUserIdStub.withArgs(user1.id).resolves([cred1, cred2]);
-
-      const { app, renderArgs } = createProfileTestExpressApp(t, {
-        withAuth: true,
-      });
-
       const response = await performGetRequest(app);
       const { viewName, options } = renderArgs;
 
@@ -174,11 +198,24 @@ test("routes/profile", async (t) => {
   });
 
   t.test("POST /", async (t) => {
-    t.test("requires authenticated session", async (t) => {
-      const { app } = createProfileTestExpressApp(t);
+    t.test("validates CSRF token", async (t) => {
+      const { app } = createProfileTestExpressApp(t, {
+        withAuth: true,
+      });
 
-      const response = await request(app).post("/");
-      verifyAuthenticationRequiredResponse(t, response);
+      await performPostRequest(app).send({});
+
+      t.ok(validateCsrfTokenStub.called);
+    });
+
+    t.test("requires authenticated session", async (t) => {
+      const { app } = createProfileTestExpressApp(t, {
+        withAuth: true,
+      });
+
+      await performPostRequest(app).send({});
+
+      t.ok(requiresAuthStub.called);
     });
 
     t.test("user update", async (t) => {

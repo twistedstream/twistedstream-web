@@ -15,9 +15,11 @@ const logger = {
   error: sinon.fake(),
   debug: sinon.fake(),
 };
-const redirectToLoginFake = sinon.stub().callsFake((_req: any, _res: any) => {
-  _res.send("IGNORE");
-});
+const redirectToLoginStub = sinon
+  .stub()
+  .callsFake((_req: Request, res: Response) => {
+    res.send("IGNORE");
+  });
 
 // tests
 
@@ -34,7 +36,7 @@ test("(root): error handler", async (t) => {
       buildErrorHandlerData: buildErrorHandlerDataStub,
     },
     "./utils/auth": {
-      redirectToLogin: redirectToLoginFake,
+      redirectToLogin: redirectToLoginStub,
     },
   });
 
@@ -74,9 +76,9 @@ test("(root): error handler", async (t) => {
 
       await request(app).get("/foo");
 
-      t.ok(redirectToLoginFake.called);
-      t.equal(redirectToLoginFake.firstCall.args[0], req);
-      t.equal(redirectToLoginFake.firstCall.args[1], res);
+      t.ok(redirectToLoginStub.called);
+      t.equal(redirectToLoginStub.firstCall.args[0], req);
+      t.equal(redirectToLoginStub.firstCall.args[1], res);
     });
   });
 

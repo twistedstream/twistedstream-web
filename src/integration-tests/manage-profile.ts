@@ -50,6 +50,7 @@ test("Manage profile", async (t) => {
 
   t.test("Update user's profile (display name)", async (t) => {
     const response = await postForm(state, "/profile", {
+      csrf_token: state.csrfToken,
       action: "update_profile",
       display_name: "Bob User 2",
     });
@@ -57,12 +58,11 @@ test("Manage profile", async (t) => {
     assertRedirectResponse(t, response, "/");
 
     // Bob's user profile should be updated
-    const newUser = { ...testUser1(), displayName: "Bob User 2" };
     assertUserAndAssociatedCredentials(
       t,
       state,
-      newUser.username,
-      newUser.displayName,
+      testUser1().username,
+      "Bob User 2",
       []
     );
   });

@@ -1,4 +1,6 @@
+import { CookieMap } from "set-cookie-parser";
 import { SinonStub } from "sinon";
+
 import {
   FileInfo,
   Invite,
@@ -9,7 +11,8 @@ import {
 
 export type IntegrationTestState = {
   app: any;
-  cookie?: any;
+  cookies: CookieMap;
+  csrfToken: string;
   redirectUrl: string;
   users: User[];
   credentials: RegisteredAuthenticator[];

@@ -1,4 +1,4 @@
-import { Express, Request, Response } from "express";
+import { Express, NextFunction, Request, Response } from "express";
 import sinon from "sinon";
 import request, { Test as SuperTest } from "supertest";
 import { test } from "tap";
@@ -46,6 +46,9 @@ const getRegisterableStub = sinon.stub();
 const redirectToRegisterStub = sinon.stub();
 const testInvite = testInvite1(testUser2());
 const ensureInviteFake = sinon.fake.returns(testInvite);
+const testCsrfToken = "CSRF_TOKEN";
+const generateCsrfTokenFake = sinon.fake.returns(testCsrfToken);
+const validateCsrfTokenStub = sinon.stub();
 
 // helpers
 
@@ -72,6 +75,10 @@ function importModule(
       },
       "../utils/invite": {
         ensureInvite: ensureInviteFake,
+      },
+      "../utils/csrf": {
+        generateCsrfToken: generateCsrfTokenFake,
+        validateCsrfToken: validateCsrfTokenStub,
       },
     }),
   });
@@ -120,6 +127,12 @@ test("routes/invites", async (t) => {
   t.beforeEach(async () => {
     sinon.resetBehavior();
     sinon.resetHistory();
+
+    validateCsrfTokenStub.callsFake(
+      () => (_req: Request, _res: Response, next: NextFunction) => {
+        next();
+      }
+    );
   });
 
   t.test("is a Router instance", async (t) => {
@@ -244,6 +257,18 @@ test("routes/invites", async (t) => {
         renderArgs = result.renderArgs;
       });
 
+      t.test("generates CSRF token", async (t) => {
+        await performGetRequest(app, testInvite.id);
+
+        t.ok(generateCsrfTokenFake.called);
+        verifyRequest(t, generateCsrfTokenFake.firstCall.args[0], {
+          method: "GET",
+          url: `/${testInvite.id}`,
+        });
+        verifyResponse(t, generateCsrfTokenFake.firstCall.args[1]);
+        t.equal(generateCsrfTokenFake.firstCall.args[2], true);
+      });
+
       t.test("renders invite accept form", async (t) => {
         const response = await performGetRequest(app, testInvite.id);
 
@@ -251,6 +276,7 @@ test("routes/invites", async (t) => {
         t.equal(response.status, StatusCodes.OK);
         t.match(response.headers["content-type"], "text/html");
         t.equal(viewName, "accept_invite");
+        t.equal(options.csrf_token, testCsrfToken);
         t.equal(options.title, "You've been invited");
         t.same(options.invite, testInvite);
       });
@@ -258,6 +284,14 @@ test("routes/invites", async (t) => {
   });
 
   t.test("POST /:invite_id", async (t) => {
+    t.test("validates CSRF token", async (t) => {
+      const { app } = createInvitesTestExpressApp(t);
+
+      await performPostRequest(app, testInvite.id);
+
+      t.ok(validateCsrfTokenStub.called);
+    });
+
     t.test("ensures invite", async (t) => {
       const { app } = createInvitesTestExpressApp(t);
 

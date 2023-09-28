@@ -11,6 +11,7 @@ import {
   AuthenticatedRequestWithTypedBody,
 } from "../types/express";
 import { requiresAuth } from "../utils/auth";
+import { generateCsrfToken, validateCsrfToken } from "../utils/csrf";
 import { BadRequestError, assertValue } from "../utils/error";
 
 const router = Router();
@@ -37,7 +38,9 @@ router.get(
       otherPasskeys: passkeys.filter((p) => p.id !== credential.credentialID),
     };
 
+    const csrf_token = generateCsrfToken(req, res);
     res.render("profile", {
+      csrf_token,
       title: "Profile",
       profile: viewProfile,
     });
@@ -46,8 +49,9 @@ router.get(
 
 router.post(
   "/",
-  requiresAuth(),
   urlencoded({ extended: false }),
+  validateCsrfToken(),
+  requiresAuth(),
   async (
     req: AuthenticatedRequestWithTypedBody<{
       action: "update_profile" | "delete_cred";

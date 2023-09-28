@@ -83,6 +83,7 @@ test("Share a file to an existing user, that user accepts", async (t) => {
 
     // validate
     response = await postForm(state, `/shares/new`, {
+      csrf_token: state.csrfToken,
       action: "validate",
       backingUrl,
       toUsername: user1.username,
@@ -91,6 +92,7 @@ test("Share a file to an existing user, that user accepts", async (t) => {
 
     // create
     response = await postForm(state, `/shares/new`, {
+      csrf_token: state.csrfToken,
       action: "create",
       backingUrl,
       toUsername: user1.username,
@@ -137,6 +139,7 @@ test("Share a file to an existing user, that user accepts", async (t) => {
     const share = state.shares[0];
 
     const response = await postForm(state, `/shares/${share.id}`, {
+      csrf_token: state.csrfToken,
       action: "accept",
     });
 
