@@ -257,7 +257,7 @@ test("routes/invites", async (t) => {
         renderArgs = result.renderArgs;
       });
 
-      t.test("generates CSRF token", async (t) => {
+      t.test("generates a new CSRF token", async (t) => {
         await performGetRequest(app, testInvite.id);
 
         t.ok(generateCsrfTokenFake.called);

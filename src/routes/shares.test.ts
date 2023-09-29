@@ -318,7 +318,7 @@ test("routes/shares", async (t) => {
       t.ok(requiresAdminStub.called);
     });
 
-    t.test("generates CSRF token", async (t) => {
+    t.test("generates a new CSRF token", async (t) => {
       await performGetNewShareRequest(app);
 
       t.ok(generateCsrfTokenFake.called);
@@ -430,17 +430,36 @@ test("routes/shares", async (t) => {
         }
       );
 
-      t.test(
-        "if a validation error occurs creating the share, renders HTML with expected user error",
-        async (t) => {
+      t.test("if a validation error occurs", async (t) => {
+        const expirations = [{}];
+
+        t.beforeEach(async () => {
           newShareStub.rejects({
             type: "validation",
             field: "bar",
             fieldMessage: "Bad bar!",
           });
-          const expirations = [{}];
           buildExpirationsStub.returns(expirations);
+        });
 
+        t.test("generates an existing CSRF token", async (t) => {
+          await performPostNewShareRequest(app).send({
+            action,
+            backingUrl: "https://example.com/path",
+            toUsername: "foo",
+            expires: "P2D",
+          });
+
+          t.ok(generateCsrfTokenFake.called);
+          verifyRequest(t, generateCsrfTokenFake.firstCall.args[0], {
+            method: "POST",
+            url: `/new`,
+          });
+          verifyResponse(t, generateCsrfTokenFake.firstCall.args[1]);
+          t.equal(generateCsrfTokenFake.firstCall.args[2], false);
+        });
+
+        t.test("renders HTML with expected user error", async (t) => {
           const response = await performPostNewShareRequest(app).send({
             action,
             backingUrl: "https://example.com/path",
@@ -459,8 +478,8 @@ test("routes/shares", async (t) => {
           t.equal(options.backingUrl_valid, true);
           t.equal(options.toUsername, "foo");
           t.equal(options.expires, "P2D");
-        }
-      );
+        });
+      });
 
       t.test(
         "if an unknown error occurs creating the share, renders HTML with expected server error",
@@ -496,41 +515,63 @@ test("routes/shares", async (t) => {
     t.test("when action is 'validate'", async (t) => {
       commonPostNewTests(t, "validate");
 
-      t.test("renders HTML with the expected view state", async (t) => {
+      t.test("when share is valid", async (t) => {
         const expireDuration = Duration.fromObject({ days: 2 });
-        newShareStub.resolves({
-          expireDuration: expireDuration,
-          backingUrl: "https://example.com/path",
-          toUsername: "foo",
-          fileTitle: "Doc Title",
-          fileType: "document",
-        });
         const expirations = [{}];
-        buildExpirationsStub.withArgs(expireDuration).returns(expirations);
         const fileTypeStyle = "doc_style";
-        getFileTypeStyleStub.withArgs("document").returns(fileTypeStyle);
 
-        const response = await performPostNewShareRequest(app).send({
-          action: "validate",
-          backingUrl: "ignored",
-          toUsername: "ignored",
-          expires: "ignored",
+        t.beforeEach(async () => {
+          newShareStub.resolves({
+            expireDuration: expireDuration,
+            backingUrl: "https://example.com/path",
+            toUsername: "foo",
+            fileTitle: "Doc Title",
+            fileType: "document",
+          });
+          buildExpirationsStub.withArgs(expireDuration).returns(expirations);
+          getFileTypeStyleStub.withArgs("document").returns(fileTypeStyle);
         });
-        const { viewName, options } = renderArgs;
 
-        t.equal(response.status, StatusCodes.OK);
-        t.match(response.headers["content-type"], "text/html");
-        t.equal(viewName, "new_share");
-        t.equal(options.title, "New share");
-        t.equal(options.expirations, expirations);
-        t.equal(options.backingUrl, "https://example.com/path");
-        t.equal(options.backingUrl_valid, true);
-        t.equal(options.toUsername, "foo");
-        t.equal(options.expires, "P2D");
-        t.equal(options.fileTitle, "Doc Title");
-        t.equal(options.fileType, "document");
-        t.equal(options.fileTypeStyle, fileTypeStyle);
-        t.ok(options.can_create);
+        t.test("generates an existing CSRF token", async (t) => {
+          await performPostNewShareRequest(app).send({
+            action: "validate",
+            backingUrl: "ignored",
+            toUsername: "ignored",
+            expires: "ignored",
+          });
+
+          t.ok(generateCsrfTokenFake.called);
+          verifyRequest(t, generateCsrfTokenFake.firstCall.args[0], {
+            method: "POST",
+            url: `/new`,
+          });
+          verifyResponse(t, generateCsrfTokenFake.firstCall.args[1]);
+          t.equal(generateCsrfTokenFake.firstCall.args[2], false);
+        });
+
+        t.test("renders HTML with the expected view state", async (t) => {
+          const response = await performPostNewShareRequest(app).send({
+            action: "validate",
+            backingUrl: "ignored",
+            toUsername: "ignored",
+            expires: "ignored",
+          });
+          const { viewName, options } = renderArgs;
+
+          t.equal(response.status, StatusCodes.OK);
+          t.match(response.headers["content-type"], "text/html");
+          t.equal(viewName, "new_share");
+          t.equal(options.title, "New share");
+          t.equal(options.expirations, expirations);
+          t.equal(options.backingUrl, "https://example.com/path");
+          t.equal(options.backingUrl_valid, true);
+          t.equal(options.toUsername, "foo");
+          t.equal(options.expires, "P2D");
+          t.equal(options.fileTitle, "Doc Title");
+          t.equal(options.fileType, "document");
+          t.equal(options.fileTypeStyle, fileTypeStyle);
+          t.ok(options.can_create);
+        });
       });
     });
 
@@ -753,7 +794,7 @@ test("routes/shares", async (t) => {
             .returns("doc_style");
         });
 
-        t.test("generates CSRF token", async (t) => {
+        t.test("generates a new CSRF token", async (t) => {
           await performGetShareRequest(app, testShare.id);
 
           t.ok(generateCsrfTokenFake.called);
