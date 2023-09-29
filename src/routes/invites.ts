@@ -72,7 +72,7 @@ router.post(
     if (action === "accept") {
       // authorize registration with invite and redirect to register page (to come back)
       authorizeRegistration(req, invite);
-      return redirectToRegister(req, res);
+      return redirectToRegister(req, res, true);
     }
 
     throw BadRequestError("Unsupported invite response operation");

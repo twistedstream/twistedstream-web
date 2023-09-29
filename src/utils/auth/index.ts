@@ -136,9 +136,18 @@ export function clearRegisterable(req: Request) {
   delete req.session.registerable;
 }
 
-export function redirectToRegister(req: Request, res: Response) {
+export function redirectToRegister(
+  req: Request,
+  res: Response,
+  hideSignInLink: boolean
+) {
   const return_to = req.originalUrl;
-  res.redirect(`/register?${querystring.stringify({ return_to })}`);
+  res.redirect(
+    `/register?${querystring.stringify({
+      return_to,
+      ...(hideSignInLink && { hide_sign_in: true }),
+    })}`
+  );
 }
 
 export function redirectToLogin(req: Request, res: Response) {

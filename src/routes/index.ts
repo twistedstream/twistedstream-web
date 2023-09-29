@@ -56,6 +56,7 @@ router.get("/register", (req: Request, res: Response) => {
   res.render("register", {
     title: "Sign up",
     return_to: req.query.return_to,
+    show_sign_in: !req.query.hide_sign_in,
   });
 });
 

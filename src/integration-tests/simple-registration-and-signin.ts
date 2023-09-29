@@ -88,7 +88,7 @@ test("Navigate, generate invite from root user, register a new user, sign out, s
     assertRedirectResponse(
       t,
       response,
-      `/register?return_to=%2Finvites%2F${rootInvite.id}`
+      `/register?return_to=%2Finvites%2F${rootInvite.id}&hide_sign_in=true`
     );
   });
 

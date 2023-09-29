@@ -285,20 +285,31 @@ test("utils/auth", async (t) => {
   });
 
   t.test("redirectToRegister", async (t) => {
+    const redirectFake = sinon.fake();
+    const req = { originalUrl: "/foo" };
+    const res = { redirect: redirectFake };
+
     t.test(
       "performs redirect to register endpoint with return_to of current URL",
       async (t) => {
-        const redirectFake = sinon.fake();
-        const req = { originalUrl: "/foo" };
-        const res = { redirect: redirectFake };
-
         const { redirectToRegister } = importModule(t);
-        redirectToRegister(req, res);
+        redirectToRegister(req, res, false);
 
         t.ok(redirectFake.called);
         t.equal(redirectFake.firstCall.firstArg, "/register?return_to=%2Ffoo");
       }
     );
+
+    t.test("includes hide_sign_in query param if specified", async (t) => {
+      const { redirectToRegister } = importModule(t);
+      redirectToRegister(req, res, true);
+
+      t.ok(redirectFake.called);
+      t.equal(
+        redirectFake.firstCall.firstArg,
+        "/register?return_to=%2Ffoo&hide_sign_in=true"
+      );
+    });
   });
 
   t.test("redirectToLogin", async (t) => {

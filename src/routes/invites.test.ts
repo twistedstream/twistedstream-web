@@ -371,6 +371,7 @@ test("routes/invites", async (t) => {
             method: "POST",
           });
           verifyResponse(t, redirectToRegisterStub.firstCall.args[1]);
+          t.equal(redirectToRegisterStub.firstCall.args[2], true);
         });
       });
 
