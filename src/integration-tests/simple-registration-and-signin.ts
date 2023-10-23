@@ -3,6 +3,7 @@ import { test } from "tap";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
+import { LocalFileProvider } from "../data/file-providers/local";
 import { Invite } from "../types/entity";
 import { assertValue } from "../utils/error";
 import { testCredential1 } from "../utils/testing/data";
@@ -27,6 +28,9 @@ test("Navigate, generate invite from root user, register a new user, sign out, s
     sinon.resetHistory();
   });
 
+  const fileProvider = new LocalFileProvider();
+  await fileProvider.initialize();
+
   const username = "bob";
   const displayName = "Bob User";
   const cred1 = testCredential1();
@@ -34,7 +38,7 @@ test("Navigate, generate invite from root user, register a new user, sign out, s
   let rootInvite: Invite;
 
   // start with no registered users
-  const state = createIntegrationTestState(t, {
+  const state = await createIntegrationTestState(t, fileProvider, {
     users: [],
     credentials: [],
     invites: [],
@@ -49,7 +53,7 @@ test("Navigate, generate invite from root user, register a new user, sign out, s
   });
 
   t.test("Create root user and invite", async (t) => {
-    rootInvite = assertValue(await state.createRootUserAndInvite());
+    rootInvite = assertValue(await state.initializeServices());
 
     // we should have the root admin user (with no credential)
     t.equal(state.users.length, 1);

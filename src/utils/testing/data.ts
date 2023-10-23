@@ -13,6 +13,11 @@ import {
   User,
 } from "../../types/entity";
 
+type TestShareOptions = {
+  file?: FileInfo;
+  claimedBy?: User;
+};
+
 // reusable test objects
 
 export const testNowDate = DateTime.fromObject({
@@ -119,8 +124,12 @@ export function testInvite1(createdBy: User): Invite {
   };
 }
 
-export function testShare1(createdBy: User, claimedBy?: User): Share {
-  const file = testFile1();
+export function testShare1(
+  createdBy: User,
+  options: TestShareOptions = {}
+): Share {
+  const { claimedBy } = options;
+  const file = options.file || testFile1();
 
   return {
     id: "SHARE_1",
@@ -143,11 +152,16 @@ export function testShare1(createdBy: User, claimedBy?: User): Share {
     backingUrl: `https://example.com/${file.id}`,
     fileTitle: file.title,
     fileType: file.type,
+    availableMediaTypes: file.availableMediaTypes,
   };
 }
 
-export function testShare2(createdBy: User, claimedBy?: User): Share {
-  const file = testFile2();
+export function testShare2(
+  createdBy: User,
+  options: TestShareOptions = {}
+): Share {
+  const { claimedBy } = options;
+  const file = options.file || testFile2();
 
   return {
     id: "SHARE_2",
@@ -170,11 +184,16 @@ export function testShare2(createdBy: User, claimedBy?: User): Share {
     backingUrl: `https://example.com/${file.id}`,
     fileTitle: file.title,
     fileType: file.type,
+    availableMediaTypes: file.availableMediaTypes,
   };
 }
 
-export function testShare3(createdBy: User, claimedBy?: User): Share {
-  const file = testFile3();
+export function testShare3(
+  createdBy: User,
+  options: TestShareOptions = {}
+): Share {
+  const { claimedBy } = options;
+  const file = options.file || testFile3();
 
   return {
     id: "SHARE_3",
@@ -197,11 +216,16 @@ export function testShare3(createdBy: User, claimedBy?: User): Share {
     backingUrl: `https://example.com/${file.id}`,
     fileTitle: file.title,
     fileType: file.type,
+    availableMediaTypes: file.availableMediaTypes,
   };
 }
 
-export function testShare4(createdBy: User, claimedBy?: User): Share {
-  const file = testFile3();
+export function testShare4(
+  createdBy: User,
+  options: TestShareOptions = {}
+): Share {
+  const { claimedBy } = options;
+  const file = options.file || testFile4();
 
   return {
     id: "SHARE_4",
@@ -224,6 +248,7 @@ export function testShare4(createdBy: User, claimedBy?: User): Share {
     backingUrl: `https://example.com/${file.id}`,
     fileTitle: file.title,
     fileType: file.type,
+    availableMediaTypes: file.availableMediaTypes,
   };
 }
 
@@ -232,6 +257,13 @@ export function testFile1(): FileInfo {
     id: "doc1",
     type: "document",
     title: "Example Doc",
+    availableMediaTypes: [
+      {
+        name: "application/msword",
+        description: "Microsoft Word",
+        extension: "doc",
+      },
+    ],
   };
 }
 
@@ -240,6 +272,13 @@ export function testFile2(): FileInfo {
     id: "sheet1",
     type: "spreadsheet",
     title: "Example Spreadsheet",
+    availableMediaTypes: [
+      {
+        name: "application/vnd.ms-excel",
+        description: "Microsoft Excel",
+        extension: "xls",
+      },
+    ],
   };
 }
 
@@ -248,6 +287,13 @@ export function testFile3(): FileInfo {
     id: "pres1",
     type: "presentation",
     title: "Example Presentation",
+    availableMediaTypes: [
+      {
+        name: "application/vnd.ms-powerpoint",
+        description: "Microsoft PowerPoint",
+        extension: "ppt",
+      },
+    ],
   };
 }
 
@@ -256,5 +302,12 @@ export function testFile4(): FileInfo {
     id: "pdf1",
     type: "pdf",
     title: "Example PDF",
+    availableMediaTypes: [
+      {
+        name: "application/pdf",
+        description: "PDF Document",
+        extension: "pdf",
+      },
+    ],
   };
 }

@@ -13,7 +13,10 @@ import {
   RegisteredAuthenticator,
   User,
 } from "../../types/entity";
-import { AuthenticatedRequest } from "../../types/express";
+import {
+  AuthenticatedRequest,
+  RequestWithTypedQuery,
+} from "../../types/express";
 import { now } from "../../utils/time";
 import { ForbiddenError, UnauthorizedError } from "../error";
 import {
@@ -24,7 +27,9 @@ import {
 
 // auth helpers
 
-export function capturePreAuthState(req: Request) {
+export function capturePreAuthState(
+  req: RequestWithTypedQuery<{ return_to: string }>
+) {
   req.session = req.session || {};
   const { return_to } = req.query;
   req.session.return_to = return_to;

@@ -27,12 +27,25 @@ export interface RegisteredAuthenticator extends Authenticator {
   user: User;
 }
 
-export type FileType = "document" | "spreadsheet" | "presentation" | "pdf";
+export type FileType =
+  | "document"
+  | "spreadsheet"
+  | "presentation"
+  | "pdf"
+  | "image"
+  | "video";
+
+export interface MediaType {
+  name: string;
+  description: string;
+  extension: string;
+}
 
 export interface FileInfo {
   id: string;
   title: string;
   type: FileType;
+  availableMediaTypes: MediaType[];
 }
 
 export interface RegisterableSource {
@@ -51,6 +64,7 @@ export interface Share extends RegisterableSource {
   backingUrl: string;
   fileTitle: string;
   fileType: FileType;
+  availableMediaTypes: MediaType[];
   toUsername?: string;
   claimedBy?: User;
   claimed?: DateTime;

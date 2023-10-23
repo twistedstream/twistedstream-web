@@ -14,6 +14,7 @@ import { Share } from "../types/entity";
 import {
   AuthenticatedRequest,
   AuthenticatedRequestWithTypedBody,
+  AuthenticatedRequestWithTypedQuery,
 } from "../types/express";
 import {
   authorizeRegistration,
@@ -35,7 +36,7 @@ import {
   buildExpirations,
   ensureShare,
   getFileTypeStyle,
-  renderShare,
+  renderSharedFile,
 } from "../utils/share";
 
 const router = Router();
@@ -158,53 +159,60 @@ router.post(
   }
 );
 
-router.get("/:share_id", async (req: AuthenticatedRequest, res: Response) => {
-  const share = await ensureShare(req);
-  const { user } = req;
+router.get(
+  "/:share_id",
+  async (
+    req: AuthenticatedRequestWithTypedQuery<{ media_type?: string }>,
+    res: Response
+  ) => {
+    const share = await ensureShare(req);
+    const { user } = req;
+    const { media_type } = req.query;
 
-  if (user) {
-    if (share.claimed) {
-      // render share
+    if (user) {
+      if (share.claimed) {
+        // render share
+        return renderSharedFile(req, res, share, media_type);
+      }
 
-      return renderShare(res, share);
+      if (getRegisterable(req)) {
+        // claim share by newly registered user
+        clearRegisterable(req);
+        const claimedShare = await claimShare(share.id, user);
+        logger.info(claimedShare, "New user has claimed share");
+
+        // render share
+        return renderSharedFile(req, res, claimedShare, media_type);
+      }
+    } else {
+      // check to see if we need to allow user to sign in
+      if (
+        // so user has chance to auth and access share
+        share.claimed ||
+        // (to come back) if share was intended for a specific user
+        share.toUsername
+      ) {
+        throw UnauthorizedError();
+      }
     }
 
-    if (getRegisterable(req)) {
-      // claim share by newly registered user
-      clearRegisterable(req);
-      const claimedShare = await claimShare(share.id, user);
-      logger.info(claimedShare, "New user has claimed share");
-
-      // render share
-      return renderShare(res, claimedShare);
-    }
-  } else {
-    if (
-      // redirect to login so user has chance to auth and access share
-      share.claimed ||
-      // redirect to login (to come back) if share was intended for a specific user
-      share.toUsername
-    ) {
-      throw UnauthorizedError();
-    }
+    // display accept form
+    const csrf_token = generateCsrfToken(req, res, true);
+    return res.render("accept_share", {
+      csrf_token,
+      title: "Accept this shared file?",
+      share,
+      fileTypeStyle: getFileTypeStyle(share.fileType),
+    });
   }
-
-  // display accept form
-  const csrf_token = generateCsrfToken(req, res, true);
-  return res.render("accept_share", {
-    csrf_token,
-    title: "Accept this shared file?",
-    share,
-    fileTypeStyle: getFileTypeStyle(share.fileType),
-  });
-});
+);
 
 router.post(
   "/:share_id",
   urlencoded({ extended: false }),
   validateCsrfToken(),
   async (
-    req: AuthenticatedRequestWithTypedBody<{ action: "accept" | "reject" }>,
+    req: AuthenticatedRequest<{ action: "accept" | "reject" }>,
     res: Response
   ) => {
     const share = await ensureShare(req);

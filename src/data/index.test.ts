@@ -1,17 +1,12 @@
 import sinon from "sinon";
 import { test } from "tap";
-import {
-  testFile1,
-  testFile2,
-  testFile3,
-  testFile4,
-} from "../utils/testing/data";
 
 // test objects
 
 const logger = {
   info: sinon.fake(),
 };
+
 const inMemoryDataProviderConstructorFake = sinon.fake();
 class MockInMemoryDataProvider {
   constructor(options: any) {
@@ -22,13 +17,35 @@ class MockInMemoryDataProvider {
   isMock: boolean;
 }
 
+const localFileProviderConstructorFake = sinon.fake();
+class MockLocalFileProvider {
+  constructor() {
+    localFileProviderConstructorFake();
+    this.isMock = true;
+  }
+
+  isMock: boolean;
+}
+
 // helpers
 
-function importModule(test: Tap.Test, dataProviderName: string) {
+type ImportModuleOptions = {
+  dataProviderName?: string;
+  fileProviderName?: string;
+};
+
+function importModule(test: Tap.Test, options: ImportModuleOptions = {}) {
+  const { dataProviderName, fileProviderName } = options;
+
   return test.mock("./index", {
-    "../utils/config": { dataProviderName },
+    "../utils/config": { dataProviderName, fileProviderName },
     "../utils/logger": { logger },
-    "./in-memory": { InMemoryDataProvider: MockInMemoryDataProvider },
+    "./data-providers/in-memory": {
+      InMemoryDataProvider: MockInMemoryDataProvider,
+    },
+    "./file-providers/local": {
+      LocalFileProvider: MockLocalFileProvider,
+    },
   });
 }
 
@@ -40,24 +57,26 @@ test("data/index", async (t) => {
     sinon.resetHistory();
   });
 
-  test("getProvider", async (t) => {
-    t.test("If provider hasn't been loaded yet", async (t) => {
+  t.test("getDataProvider", async (t) => {
+    t.test("when provider hasn't been loaded yet", async (t) => {
       t.test(
-        "If no provider is configured, throw expected exception",
+        "if no provider is configured, throw expected exception",
         async (t) => {
-          const { getProvider } = importModule(t, "");
+          const { getDataProvider } = importModule(t);
 
-          t.throws(() => getProvider(), {
+          t.throws(() => getDataProvider(), {
             name: "AssertionError",
             message: "Missing config: data provider name",
           });
         }
       );
 
-      t.test("If in-memory provider configured, create it", async (t) => {
-        const { getProvider } = importModule(t, "in-memory");
+      t.test("if 'in-memory' provider configured, create it", async (t) => {
+        const { getDataProvider } = importModule(t, {
+          dataProviderName: "in-memory",
+        });
 
-        getProvider();
+        getDataProvider();
 
         t.ok(inMemoryDataProviderConstructorFake.called);
         t.same(inMemoryDataProviderConstructorFake.firstCall.firstArg, {
@@ -65,55 +84,137 @@ test("data/index", async (t) => {
           credentials: [],
           invites: [],
           shares: [],
-          files: [testFile1(), testFile2(), testFile3(), testFile4()],
         });
       });
 
       t.test(
-        "If configured provider is not supported, throw expected exception",
+        "if configured provider is not supported, throw expected exception",
         async (t) => {
-          const { getProvider } = importModule(t, "no-exist");
+          const { getDataProvider } = importModule(t, {
+            dataProviderName: "no-exist",
+          });
 
-          t.throws(() => getProvider(), {
+          t.throws(() => getDataProvider(), {
             name: "AssertionError",
             message: "Unsupported data provider name: no-exist",
           });
         }
       );
 
-      t.test("Log loaded data provider name", async (t) => {
-        const { getProvider } = importModule(t, "in-memory");
+      t.test("log loaded data provider name", async (t) => {
+        const { getDataProvider } = importModule(t, {
+          dataProviderName: "in-memory",
+        });
 
-        getProvider();
+        getDataProvider();
 
         t.ok(logger.info.called);
         t.match(logger.info.firstCall.firstArg, "in-memory");
       });
 
-      t.test("Return loaded data provider", async (t) => {
-        const { getProvider } = importModule(t, "in-memory");
+      t.test("return loaded data provider", async (t) => {
+        const { getDataProvider } = importModule(t, {
+          dataProviderName: "in-memory",
+        });
 
-        const result = getProvider();
+        const result = getDataProvider();
 
         t.ok(result);
         t.ok(result.isMock);
       });
     });
 
-    t.test(
-      "If provider has already been loaded, return cached provider",
-      async (t) => {
-        const { getProvider } = importModule(t, "in-memory");
+    t.test("return cached provider", async (t) => {
+      const { getDataProvider } = importModule(t, {
+        dataProviderName: "in-memory",
+      });
 
-        getProvider();
-        sinon.resetHistory();
+      getDataProvider();
+      sinon.resetHistory();
 
-        const result = getProvider();
+      const result = getDataProvider();
+
+      t.ok(result);
+      t.ok(result.isMock);
+      t.notOk(inMemoryDataProviderConstructorFake.called);
+    });
+  });
+
+  t.test("getFileProvider", async (t) => {
+    t.test("when provider hasn't been loaded yet", async (t) => {
+      t.test(
+        "if no provider is configured, throw expected exception",
+        async (t) => {
+          const { getFileProvider } = importModule(t);
+
+          t.throws(() => getFileProvider(), {
+            name: "AssertionError",
+            message: "Missing config: file provider name",
+          });
+        }
+      );
+
+      t.test("if 'local' provider configured, create it", async (t) => {
+        const { getFileProvider } = importModule(t, {
+          fileProviderName: "local",
+        });
+
+        getFileProvider();
+
+        t.ok(localFileProviderConstructorFake.called);
+        t.equal(localFileProviderConstructorFake.firstCall.args.length, 0);
+      });
+
+      t.test(
+        "if configured provider is not supported, throw expected exception",
+        async (t) => {
+          const { getFileProvider } = importModule(t, {
+            fileProviderName: "no-exist",
+          });
+
+          t.throws(() => getFileProvider(), {
+            name: "AssertionError",
+            message: "Unsupported file provider name: no-exist",
+          });
+        }
+      );
+
+      t.test("log loaded data provider name", async (t) => {
+        const { getFileProvider } = importModule(t, {
+          fileProviderName: "local",
+        });
+
+        getFileProvider();
+
+        t.ok(logger.info.called);
+        t.match(logger.info.firstCall.firstArg, "local");
+      });
+
+      t.test("return loaded data provider", async (t) => {
+        const { getFileProvider } = importModule(t, {
+          fileProviderName: "local",
+        });
+
+        const result = getFileProvider();
 
         t.ok(result);
         t.ok(result.isMock);
-        t.notOk(inMemoryDataProviderConstructorFake.called);
-      }
-    );
+      });
+    });
+
+    t.test("return cached provider", async (t) => {
+      const { getFileProvider } = importModule(t, {
+        fileProviderName: "local",
+      });
+
+      getFileProvider();
+      sinon.resetHistory();
+
+      const result = getFileProvider();
+
+      t.ok(result);
+      t.ok(result.isMock);
+      t.notOk(localFileProviderConstructorFake.called);
+    });
   });
 });

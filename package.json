@@ -51,6 +51,7 @@
     "express-async-errors": "^3.1.1",
     "express-handlebars": "^6.0.6",
     "express-pino-logger": "^7.0.0",
+    "friendly-mimes": "^2.0.0",
     "http-status-codes": "^2.2.0",
     "lodash": "^4.17.21",
     "luxon": "^3.3.0",

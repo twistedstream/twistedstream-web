@@ -1,19 +1,21 @@
+import { parse as parseHtml } from "node-html-parser";
 import sinon from "sinon";
 import { test } from "tap";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
 import supertest from "supertest";
+import { LocalFileProvider } from "../data/file-providers/local";
+import { assertValue } from "../utils/error";
 import {
   testCredential1,
   testCredential2,
-  testFile1,
   testUser1,
   testUser2,
 } from "../utils/testing/data";
 import {
+  assertDownloadResponse,
   assertHtmlResponse,
-  assertJsonResponse,
   assertRedirectResponse,
   createIntegrationTestState,
   doSignIn,
@@ -30,6 +32,12 @@ test("Share a file to an existing user, that user accepts", async (t) => {
     sinon.resetHistory();
   });
 
+  // files
+  const fileProvider = new LocalFileProvider();
+  await fileProvider.initialize();
+  const files = assertValue(fileProvider.files).all;
+  const file1 = files[0];
+
   // regular user
   const user1 = testUser1();
   const cred1 = testCredential1();
@@ -37,10 +45,8 @@ test("Share a file to an existing user, that user accepts", async (t) => {
   const user2 = testUser2();
   const cred2 = testCredential2();
 
-  const file1 = testFile1();
-
   // start with a regular user and an admin user (that can create shares)
-  const state = createIntegrationTestState(t, {
+  const state = await createIntegrationTestState(t, fileProvider, {
     users: [user1, user2],
     credentials: [
       { ...cred1, user: user1 },
@@ -48,7 +54,6 @@ test("Share a file to an existing user, that user accepts", async (t) => {
     ],
     invites: [],
     shares: [],
-    files: [file1],
   });
 
   t.test("Initial data state", async (t) => {
@@ -146,18 +151,42 @@ test("Share a file to an existing user, that user accepts", async (t) => {
     assertRedirectResponse(t, response, `/shares/${share.id}`);
   });
 
+  let downloadLink1: string;
+
   t.test(
     "Follow redirect back to the share link and validate content",
     async (t) => {
       const share = state.shares[0];
 
       const response = await navigatePage(state, state.redirectUrl);
-      assertJsonResponse(t, response, (json) => {
-        t.equal(json.id, share.id);
-        t.equal(json.claimedBy.id, user1.id);
-      });
 
       t.same(share.claimedBy, user1);
+
+      assertHtmlResponse(t, response);
+      const root = parseHtml(response.text);
+      const downloadLinks = root.querySelectorAll("a.download_link");
+      t.equal(1, downloadLinks.length);
+      downloadLink1 = downloadLinks[0].attrs["href"];
+      t.equal(
+        `/shares/${share.id}?media_type=${encodeURIComponent(
+          file1.availableMediaTypes[0].name
+        )}`,
+        downloadLink1
+      );
+    }
+  );
+
+  t.test(
+    "Follow first download link and validate downloaded content",
+    async (t) => {
+      const response = await navigatePage(state, downloadLink1);
+
+      await assertDownloadResponse(
+        t,
+        response,
+        file1.availableMediaTypes[0].name,
+        file1
+      );
     }
   );
 });

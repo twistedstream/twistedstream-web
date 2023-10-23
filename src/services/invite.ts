@@ -1,36 +1,14 @@
-import { getProvider } from "../data";
+import { getDataProvider } from "../data";
 import { Invite, User } from "../types/entity";
 import { assertValue } from "../utils/error";
 import { unique } from "../utils/identifier";
 import { now } from "../utils/time";
-import { newInvite as _newInvite } from "./invite";
 
-const provider = getProvider();
+const provider = getDataProvider();
 const { getUserCount, insertUser, insertInvite, findInviteById, updateInvite } =
   provider;
 
 // service
-
-export async function createRootUserAndInvite(): Promise<Invite | undefined> {
-  // only if no users yet
-  const count = await getUserCount();
-  if (count === 0) {
-    // create root admin
-    const rootAdmin = await insertUser({
-      id: unique(),
-      created: now(),
-      username: "root",
-      displayName: "Root Admin",
-      isAdmin: true,
-    });
-
-    // create first invite
-    const firstInvite =
-      await // call imported version of newInvite so it can be mocked
-      _newInvite(rootAdmin, true);
-    return insertInvite(firstInvite);
-  }
-}
 
 export async function newInvite(by: User, isAdmin: boolean): Promise<Invite> {
   const invite: Invite = {

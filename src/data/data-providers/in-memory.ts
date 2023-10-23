@@ -1,42 +1,37 @@
-import { Dictionary, cloneDeep, groupBy } from "lodash";
+import { cloneDeep } from "lodash";
 
-import { IDataProvider } from "../types/data";
+import { IDataProvider } from "../../types/data";
 import {
   Authenticator,
-  FileInfo,
   Invite,
   RegisteredAuthenticator,
   Share,
   User,
-} from "../types/entity";
-import { InMemoryDataProviderOptions } from "../types/test";
-import { assertValue } from "../utils/error";
-import { logger } from "../utils/logger";
+} from "../../types/entity";
+import { InMemoryDataProviderOptions } from "../../types/test";
+import { assertValue } from "../../utils/error";
+import { logger } from "../../utils/logger";
 
 export class InMemoryDataProvider implements IDataProvider {
+  private _initialized: boolean = false;
   private _users: User[];
   private _credentials: RegisteredAuthenticator[];
   private _invites: Invite[];
   private _shares: Share[];
-  private _filesByUrl: Dictionary<FileInfo[]>;
 
   constructor({
     users,
     credentials,
     invites,
     shares,
-    files,
   }: InMemoryDataProviderOptions) {
     this._users = users || [];
     this._credentials = credentials || [];
     this._invites = invites || [];
     this._shares = shares || [];
-    this._filesByUrl = groupBy(
-      files || [],
-      (f) => `https://example.com/${f.id}`
-    );
 
     // bind method "this"'s to instance "this"
+    this.initialize = this.initialize.bind(this);
     this.getUserCount = this.getUserCount.bind(this);
     this.findUserById = this.findUserById.bind(this);
     this.findUserByName = this.findUserByName.bind(this);
@@ -53,9 +48,17 @@ export class InMemoryDataProvider implements IDataProvider {
     this.findShareById = this.findShareById.bind(this);
     this.findSharesByClaimedUserId = this.findSharesByClaimedUserId.bind(this);
     this.findSharesByCreatedUserId = this.findSharesByCreatedUserId.bind(this);
-    this.findFileInfo = this.findFileInfo.bind(this);
     this.insertShare = this.insertShare.bind(this);
     this.updateShare = this.updateShare.bind(this);
+  }
+
+  // IDataProvider implementation
+
+  async initialize(): Promise<void> {
+    if (!this._initialized) {
+      logger.info("In-memory data provider initialized");
+      this._initialized = true;
+    }
   }
 
   // users
@@ -210,15 +213,6 @@ export class InMemoryDataProvider implements IDataProvider {
     if (foundShare) {
       foundShare.claimed = share.claimed;
       foundShare.claimedBy = share.claimedBy;
-    }
-  }
-
-  // files
-
-  async findFileInfo(url: string): Promise<FileInfo | undefined> {
-    const files = this._filesByUrl[url];
-    if (files) {
-      return files[0];
     }
   }
 }

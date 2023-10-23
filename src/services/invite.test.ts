@@ -5,7 +5,6 @@ import { testNowDate } from "../utils/testing/data";
 
 // test objects
 const dataProvider = {
-  getUserCount: sinon.stub(),
   insertUser: sinon.stub(),
   insertInvite: sinon.stub(),
   findInviteById: sinon.stub(),
@@ -18,16 +17,12 @@ const newInviteStub = sinon.stub();
 
 // helpers
 
-function importModule(test: Tap.Test, mockNewInvite: boolean) {
+function importModule(test: Tap.Test) {
   const dependencies: any = {
-    "../data": { getProvider: () => dataProvider },
+    "../data": { getDataProvider: () => dataProvider },
     "../utils/time": { now: nowFake },
     "../utils/identifier": { unique: uniqueStub },
   };
-  // mock newInvite export
-  if (mockNewInvite) {
-    dependencies["./invite"] = { newInvite: newInviteStub };
-  }
 
   return test.mock("./invite", dependencies);
 }
@@ -40,96 +35,11 @@ test("services/invite", async (t) => {
     sinon.resetHistory();
   });
 
-  t.test("createRootUserAndInvite", async (t) => {
-    let createRootUserAndInvite: any;
-
-    t.beforeEach(async () => {
-      createRootUserAndInvite = importModule(t, true).createRootUserAndInvite;
-    });
-
-    t.test("gets the user count", async (t) => {
-      try {
-        await createRootUserAndInvite();
-      } catch {}
-
-      t.ok(dataProvider.getUserCount.called);
-      t.equal(dataProvider.getUserCount.firstCall.args.length, 0);
-    });
-
-    t.test("when no users", async (t) => {
-      t.beforeEach(() => {
-        dataProvider.getUserCount.resolves(0);
-        uniqueStub.returns("user-id");
-      });
-
-      t.test("creates root admin user", async (t) => {
-        try {
-          await createRootUserAndInvite();
-        } catch {}
-
-        t.ok(dataProvider.insertUser.called);
-        t.same(dataProvider.insertUser.firstCall.firstArg, {
-          id: "user-id",
-          created: testNowDate,
-          username: "root",
-          displayName: "Root Admin",
-          isAdmin: true,
-        });
-      });
-
-      t.test("creates first admin invite", async (t) => {
-        const rootAdmin = {};
-        dataProvider.insertUser.resolves(rootAdmin);
-
-        try {
-          await createRootUserAndInvite();
-        } catch {}
-
-        t.ok(newInviteStub.called);
-        t.equal(newInviteStub.firstCall.args[0], rootAdmin);
-        t.equal(newInviteStub.firstCall.args[1], true);
-      });
-
-      t.test("inserts admin invite", async (t) => {
-        const firstInvite = {};
-        newInviteStub.resolves(firstInvite);
-
-        try {
-          await createRootUserAndInvite();
-        } catch {}
-
-        t.ok(dataProvider.insertInvite.called);
-        t.equal(dataProvider.insertInvite.firstCall.firstArg, firstInvite);
-      });
-
-      t.test("returns new inserted admin invite", async (t) => {
-        const insertedInvite = {};
-        dataProvider.insertInvite.resolves(insertedInvite);
-
-        const result = await createRootUserAndInvite();
-
-        t.ok(result);
-        t.equal(result, insertedInvite);
-      });
-    });
-
-    t.test("if some users, does nothing", async (t) => {
-      dataProvider.getUserCount.resolves(1);
-
-      await createRootUserAndInvite();
-
-      t.notOk(dataProvider.insertUser.called);
-      t.notOk(uniqueStub.called);
-      t.notOk(nowFake.called);
-      t.notOk(dataProvider.insertInvite.called);
-    });
-  });
-
   t.test("newInvite", async (t) => {
     let newInvite: any;
 
     t.beforeEach(async () => {
-      newInvite = importModule(t, false).newInvite;
+      newInvite = importModule(t).newInvite;
     });
 
     t.test("creates an invite with expected core data", async (t) => {
@@ -172,7 +82,7 @@ test("services/invite", async (t) => {
     let fetchInviteById: any;
 
     t.beforeEach(async () => {
-      fetchInviteById = importModule(t, false).fetchInviteById;
+      fetchInviteById = importModule(t).fetchInviteById;
     });
 
     t.test("finds the invite by ID", async (t) => {
@@ -199,7 +109,7 @@ test("services/invite", async (t) => {
     let claimInvite: any;
 
     t.beforeEach(async () => {
-      claimInvite = importModule(t, false).claimInvite;
+      claimInvite = importModule(t).claimInvite;
     });
 
     t.test("finds existing invite", async (t) => {

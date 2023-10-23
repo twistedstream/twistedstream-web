@@ -1,38 +1,53 @@
 import assert from "assert";
 
-import { IDataProvider } from "../types/data";
-import { dataProviderName } from "../utils/config";
+import { IDataProvider, IFileProvider } from "../types/data";
+import { dataProviderName, fileProviderName } from "../utils/config";
 import { logger } from "../utils/logger";
-import {
-  testFile1,
-  testFile2,
-  testFile3,
-  testFile4,
-} from "../utils/testing/data";
-import { InMemoryDataProvider } from "./in-memory";
+import { InMemoryDataProvider } from "./data-providers/in-memory";
+import { LocalFileProvider } from "./file-providers/local";
 
-let provider: IDataProvider;
+let dataProvider: IDataProvider;
+let fileProvider: IFileProvider;
 
-export function getProvider(): IDataProvider {
-  if (!provider) {
+export function getDataProvider(): IDataProvider {
+  if (!dataProvider) {
     assert(dataProviderName, "Missing config: data provider name");
     switch (dataProviderName) {
       case "in-memory":
-        provider = new InMemoryDataProvider({
+        dataProvider = new InMemoryDataProvider({
           users: [],
           credentials: [],
           invites: [],
           shares: [],
-          files: [testFile1(), testFile2(), testFile3(), testFile4()],
         });
         break;
+
       // FUTURE: Google Sheets data provider
     }
 
-    assert(provider, `Unsupported data provider name: ${dataProviderName}`);
+    assert(dataProvider, `Unsupported data provider name: ${dataProviderName}`);
 
     logger.info(`Data provider: ${dataProviderName}`);
   }
 
-  return provider;
+  return dataProvider;
+}
+
+export function getFileProvider(): IFileProvider {
+  if (!fileProvider) {
+    assert(fileProviderName, "Missing config: file provider name");
+    switch (fileProviderName) {
+      case "local":
+        fileProvider = new LocalFileProvider();
+        break;
+
+      // FUTURE: Google Drive data provider
+    }
+
+    assert(fileProvider, `Unsupported file provider name: ${fileProviderName}`);
+
+    logger.info(`File provider: ${fileProviderName}`);
+  }
+
+  return fileProvider;
 }

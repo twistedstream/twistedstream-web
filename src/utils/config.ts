@@ -18,6 +18,7 @@ export const githubProfileUrl = <string>process.env.GITHUB_PROFILE_URL;
 export const cookieSecret = <string>process.env.COOKIE_SECRET;
 export const csrfSecret = <string>process.env.CSRF_SECRET;
 export const dataProviderName = <string>process.env.DATA_PROVIDER_NAME;
+export const fileProviderName = <string>process.env.FILE_PROVIDER_NAME;
 export const maxInviteLifetime = Duration.fromISO(
   <string>process.env.MAX_INVITE_LIFETIME
 );

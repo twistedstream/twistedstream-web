@@ -1,18 +1,20 @@
+import { parse as parseHtml } from "node-html-parser";
 import sinon from "sinon";
 import { test } from "tap";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
 import supertest from "supertest";
+import { LocalFileProvider } from "../data/file-providers/local";
+import { assertValue } from "../utils/error";
 import {
   testCredential1,
   testCredential2,
-  testFile1,
   testUser2,
 } from "../utils/testing/data";
 import {
+  assertDownloadResponse,
   assertHtmlResponse,
-  assertJsonResponse,
   assertRedirectResponse,
   assertUserAndAssociatedCredentials,
   createIntegrationTestState,
@@ -31,6 +33,12 @@ test("Share a file to any user, new user accepts, registers, and accesses share"
     sinon.resetHistory();
   });
 
+  // files
+  const fileProvider = new LocalFileProvider();
+  await fileProvider.initialize();
+  const files = assertValue(fileProvider.files).all;
+  const file1 = files[0];
+
   // regular user
   const username = "bob";
   const displayName = "Bob User";
@@ -39,15 +47,12 @@ test("Share a file to any user, new user accepts, registers, and accesses share"
   const user2 = testUser2();
   const cred2 = testCredential2();
 
-  const file1 = testFile1();
-
   // start with an admin user (that can create shares)
-  const state = createIntegrationTestState(t, {
+  const state = await createIntegrationTestState(t, fileProvider, {
     users: [user2],
     credentials: [{ ...cred2, user: user2 }],
     invites: [],
     shares: [],
-    files: [file1],
   });
 
   t.test("Initial data state", async (t) => {
@@ -142,6 +147,8 @@ test("Share a file to any user, new user accepts, registers, and accesses share"
     ]);
   });
 
+  let downloadLink1: string;
+
   t.test(
     "Follow redirect back to the share link and validate content",
     async (t) => {
@@ -149,12 +156,34 @@ test("Share a file to any user, new user accepts, registers, and accesses share"
       const claimingUser = state.users[1];
 
       const response = await navigatePage(state, state.redirectUrl);
-      assertJsonResponse(t, response, (json) => {
-        t.equal(json.id, share.id);
-        t.equal(json.claimedBy.id, claimingUser.id);
-      });
 
       t.same(share.claimedBy, claimingUser);
+
+      assertHtmlResponse(t, response);
+      const root = parseHtml(response.text);
+      const downloadLinks = root.querySelectorAll("a.download_link");
+      t.equal(1, downloadLinks.length);
+      downloadLink1 = downloadLinks[0].attrs["href"];
+      t.equal(
+        `/shares/${share.id}?media_type=${encodeURIComponent(
+          file1.availableMediaTypes[0].name
+        )}`,
+        downloadLink1
+      );
+    }
+  );
+
+  t.test(
+    "Follow first download link and validate downloaded content",
+    async (t) => {
+      const response = await navigatePage(state, downloadLink1);
+
+      await assertDownloadResponse(
+        t,
+        response,
+        file1.availableMediaTypes[0].name,
+        file1
+      );
     }
   );
 });

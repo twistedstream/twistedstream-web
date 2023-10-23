@@ -1,13 +1,16 @@
 import base64 from "@hexagon/base64";
 import * as simpleWebAuthnServerDefaults from "@simplewebauthn/server";
+import fs from "fs/promises";
 import { StatusCodes } from "http-status-codes";
 import { parse as parseHtml } from "node-html-parser";
 import { parse as parseSetCookie } from "set-cookie-parser";
 import sinon from "sinon";
 import request, { Response as SupertestResponse } from "supertest";
 
-import { InMemoryDataProvider } from "../../data/in-memory";
-import { Authenticator } from "../../types/entity";
+import path from "path";
+import { InMemoryDataProvider } from "../../data/data-providers/in-memory";
+import { LocalFileProvider } from "../../data/file-providers/local";
+import { Authenticator, FileInfo } from "../../types/entity";
 import {
   InMemoryDataProviderOptions,
   IntegrationTestState,
@@ -15,18 +18,23 @@ import {
 
 // general
 
-export function createIntegrationTestState(
+export async function createIntegrationTestState(
   test: Tap.Test,
-  options: InMemoryDataProviderOptions
-): IntegrationTestState {
+  fileProvider: LocalFileProvider,
+  dataProviderOptions: InMemoryDataProviderOptions
+): Promise<IntegrationTestState> {
   const verifyRegistrationResponseStub = sinon.stub();
   const verifyAuthenticationResponseStub = sinon.stub();
 
-  const dataProvider = new InMemoryDataProvider(options);
+  const dataProvider = new InMemoryDataProvider(dataProviderOptions);
+  await dataProvider.initialize();
+  // const fileProvider = new LocalFileProvider();
+  // await fileProvider.initialize();
 
   const { default: app } = test.mock("../../app", {
     "../../data": {
-      getProvider: () => dataProvider,
+      getDataProvider: () => dataProvider,
+      getFileProvider: () => fileProvider,
     },
     "@simplewebauthn/server": {
       ...simpleWebAuthnServerDefaults,
@@ -35,9 +43,9 @@ export function createIntegrationTestState(
     },
   });
 
-  const { createRootUserAndInvite } = test.mock("../../services/invite", {
+  const { initializeServices } = test.mock("../../services", {
     "../../data": {
-      getProvider: () => dataProvider,
+      getDataProvider: () => dataProvider,
     },
   });
 
@@ -46,11 +54,11 @@ export function createIntegrationTestState(
     cookies: {},
     csrfToken: "",
     redirectUrl: "",
-    users: options.users || [],
-    credentials: options.credentials || [],
-    invites: options.invites || [],
-    shares: options.shares || [],
-    createRootUserAndInvite,
+    users: dataProviderOptions.users || [],
+    credentials: dataProviderOptions.credentials || [],
+    invites: dataProviderOptions.invites || [],
+    shares: dataProviderOptions.shares || [],
+    initializeServices,
     verifyRegistrationResponseStub,
     verifyAuthenticationResponseStub,
   };
@@ -205,6 +213,33 @@ export function assertRedirectResponse(
     expectedLocation,
     "expected http location"
   );
+}
+
+export async function assertDownloadResponse(
+  test: Tap.Test,
+  response: SupertestResponse,
+  expectedContentType: string,
+  expectedContentFile: FileInfo
+) {
+  test.equal(response.status, StatusCodes.OK, "expected OK http status");
+  test.match(
+    response.headers["content-type"],
+    expectedContentType,
+    "expected html content"
+  );
+
+  // string compare the response content with the expected test file
+  const mediaType = expectedContentFile.availableMediaTypes.find(
+    (t) => t.name === expectedContentType
+  );
+  const fileName = `${expectedContentFile.title}.${mediaType?.extension}`;
+  const fileData = await fs.readFile(
+    path.join(__dirname, `../../data/file-providers/files/${fileName}`),
+    { encoding: "utf-8" }
+  );
+  test.equal(response.text, fileData);
+
+  response;
 }
 
 export function assertNoUsersOrCredentials(

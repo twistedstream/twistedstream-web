@@ -91,6 +91,22 @@ test("utils/config", async (t) => {
     });
   });
 
+  t.test("dataProviderName", async (t) => {
+    const { dataProviderName } = importModule(t);
+
+    t.test("is expected value", async (t) => {
+      t.equal(dataProviderName, "in-memory");
+    });
+  });
+
+  t.test("fileProviderName", async (t) => {
+    const { fileProviderName } = importModule(t);
+
+    t.test("is expected value", async (t) => {
+      t.equal(fileProviderName, "local");
+    });
+  });
+
   t.test("packageName", async (t) => {
     const { packageName } = importModule(t);
 

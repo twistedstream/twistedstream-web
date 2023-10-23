@@ -59,7 +59,7 @@ const clearRegisterableFake = sinon.fake();
 const getRegisterableStub = sinon.stub();
 const redirectToRegisterStub = sinon.stub();
 const ensureShareStub = sinon.stub();
-const renderShareStub = sinon.stub();
+const renderSharedFileStub = sinon.stub();
 const testShare = testShare1(testUser2());
 const requiresAuthStub = sinon.stub();
 const requiresAdminStub = sinon.stub();
@@ -100,7 +100,7 @@ function importModule(
         buildExpirations: buildExpirationsStub,
         getFileTypeStyle: getFileTypeStyleStub,
         ensureShare: ensureShareStub,
-        renderShare: renderShareStub,
+        renderSharedFile: renderSharedFileStub,
       },
       "../utils/csrf": {
         generateCsrfToken: generateCsrfTokenFake,
@@ -156,8 +156,14 @@ function performPostNewShareRequest(app: Express): SuperTest {
     .set("Content-Type", "application/x-www-form-urlencoded");
 }
 
-function performGetShareRequest(app: Express, shareId: string): SuperTest {
-  return request(app).get(`/${shareId}`);
+function performGetShareRequest(
+  app: Express,
+  shareId: string,
+  mediaType?: string
+): SuperTest {
+  return request(app).get(
+    `/${shareId}${mediaType ? "?media_type=" + mediaType : ""}`
+  );
 }
 
 function performPostExistingShareRequest(
@@ -214,9 +220,9 @@ test("routes/shares", async (t) => {
   t.test("GET /", async (t) => {
     const user1 = testUser1();
     const user2 = testUser2();
-    const share1 = testShare1(user1, user2);
-    const share2 = testShare2(user1, user2);
-    const share3 = testShare3(user2, user1);
+    const share1 = testShare1(user1, { claimedBy: user2 });
+    const share2 = testShare2(user1, { claimedBy: user2 });
+    const share3 = testShare3(user2, { claimedBy: user1 });
     share3.toUsername = "foo";
     share3.expireDuration = Duration.fromObject({ days: 14 });
     const share4 = testShare4(user2);
@@ -654,20 +660,27 @@ test("routes/shares", async (t) => {
         renderArgs = result.renderArgs;
       });
 
-      t.test("if claimed, renders the existing share", async (t) => {
-        const share = testShare1(testUser2(), testUser1());
+      t.test("if claimed, renders the existing shared file", async (t) => {
+        const share = testShare1(testUser2(), { claimedBy: testUser1() });
 
         ensureShareStub.resolves(share);
-        renderShareStub.callsFake((res: Response, _share: Share) => {
-          res.send("ignored");
+        renderSharedFileStub.callsFake(
+          (_req: Request, res: Response, _share: Share, _mediaType: string) => {
+            res.send("ignored");
+          }
+        );
+
+        await performGetShareRequest(app, share.id, "some/media-type");
+
+        t.ok(renderSharedFileStub.called);
+
+        verifyRequest(t, renderSharedFileStub.firstCall.args[0], {
+          method: "GET",
+          url: "/SHARE_1?media_type=some/media-type",
         });
-
-        await performGetShareRequest(app, share.id);
-
-        t.ok(renderShareStub.called);
-
-        verifyResponse(t, renderShareStub.firstCall.args[0]);
-        t.equal(renderShareStub.firstCall.args[1], share);
+        verifyResponse(t, renderSharedFileStub.firstCall.args[1]);
+        t.equal(renderSharedFileStub.firstCall.args[2], share);
+        t.equal(renderSharedFileStub.firstCall.args[3], "some/media-type");
       });
 
       t.test("gets registerable state", async (t) => {
@@ -686,9 +699,11 @@ test("routes/shares", async (t) => {
         t.beforeEach(async () => {
           ensureShareStub.resolves(testShare);
           getRegisterableStub.returns({});
-          renderShareStub.callsFake((res: Response, _share: Share) => {
-            res.send("ignored");
-          });
+          renderSharedFileStub.callsFake(
+            (_req: Request, res: Response, _share: Share) => {
+              res.send("ignored");
+            }
+          );
         });
 
         t.test("clears registerable state", async (t) => {
@@ -726,9 +741,13 @@ test("routes/shares", async (t) => {
 
           await performGetShareRequest(app, testShare.id);
 
-          t.ok(renderShareStub.called);
-          verifyResponse(t, renderShareStub.firstCall.args[0]);
-          t.equal(renderShareStub.firstCall.args[1], claimedShare);
+          t.ok(renderSharedFileStub.called);
+          verifyRequest(t, renderSharedFileStub.firstCall.args[0], {
+            method: "GET",
+            url: "/SHARE_1",
+          });
+          verifyResponse(t, renderSharedFileStub.firstCall.args[1]);
+          t.equal(renderSharedFileStub.firstCall.args[2], claimedShare);
         });
       });
 
@@ -765,7 +784,7 @@ test("routes/shares", async (t) => {
       });
 
       t.test("if share was claimed, redirects to the login page", async (t) => {
-        const share = testShare1(testUser2(), testUser1());
+        const share = testShare1(testUser2(), { claimedBy: testUser1() });
         ensureShareStub.resolves(share);
 
         const response = await performGetShareRequest(app, share.id);
@@ -848,7 +867,7 @@ test("routes/shares", async (t) => {
     t.test(
       "if share is claimed, renders HTML with expected user error",
       async (t) => {
-        const share = testShare1(testUser2(), testUser1());
+        const share = testShare1(testUser2(), { claimedBy: testUser1() });
         ensureShareStub.resolves(share);
         const { app, renderArgs } = createSharesTestExpressApp(t);
 

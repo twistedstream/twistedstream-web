@@ -1,4 +1,5 @@
 import { Request, Response, Router } from "express";
+import { RequestWithTypedQuery } from "../types/express";
 import { capturePreAuthState, getRegisterable, signOut } from "../utils/auth";
 import {
   companyName,
@@ -46,28 +47,37 @@ router.get("/github", (_req: Request, res: Response) => {
   res.redirect(githubProfileUrl);
 });
 
-router.get("/register", (req: Request, res: Response) => {
-  capturePreAuthState(req);
+router.get(
+  "/register",
+  (
+    req: RequestWithTypedQuery<{ return_to: string; hide_sign_in: string }>,
+    res: Response
+  ) => {
+    capturePreAuthState(req);
 
-  if (!getRegisterable(req)) {
-    throw ForbiddenError("Registration not allowed without an invitation");
+    if (!getRegisterable(req)) {
+      throw ForbiddenError("Registration not allowed without an invitation");
+    }
+
+    res.render("register", {
+      title: "Sign up",
+      return_to: req.query.return_to,
+      show_sign_in: !req.query.hide_sign_in,
+    });
   }
+);
 
-  res.render("register", {
-    title: "Sign up",
-    return_to: req.query.return_to,
-    show_sign_in: !req.query.hide_sign_in,
-  });
-});
+router.get(
+  "/login",
+  (req: RequestWithTypedQuery<{ return_to: string }>, res: Response) => {
+    capturePreAuthState(req);
 
-router.get("/login", (req: Request, res: Response) => {
-  capturePreAuthState(req);
-
-  res.render("login", {
-    title: "Sign in",
-    return_to: req.query.return_to,
-  });
-});
+    res.render("login", {
+      title: "Sign in",
+      return_to: req.query.return_to,
+    });
+  }
+);
 
 router.get("/logout", (req: Request, res: Response) => {
   signOut(req);

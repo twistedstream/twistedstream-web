@@ -1,22 +1,24 @@
 import { Duration } from "luxon";
 
-import { getProvider } from "../data";
+import { getDataProvider, getFileProvider } from "../data";
 import { Share, User } from "../types/entity";
 import { ValidationError } from "../types/error";
 import { assertValue } from "../utils/error";
 import { unique } from "../utils/identifier";
 import { now } from "../utils/time";
 
-const provider = getProvider();
+const dataProvider = getDataProvider();
 const {
-  findFileInfo,
   findSharesByClaimedUserId,
   findSharesByCreatedUserId,
   findShareById,
   findUserByName,
   insertShare,
   updateShare,
-} = provider;
+} = dataProvider;
+
+const fileProvider = getFileProvider();
+const { getFileInfo } = fileProvider;
 
 // service
 
@@ -45,7 +47,7 @@ export async function newShare(
   expireDuration?: Duration
 ): Promise<Share> {
   // get file info and make sure it exists
-  const fileInfo = await findFileInfo(backingUrl);
+  const fileInfo = await getFileInfo(backingUrl);
   if (!fileInfo) {
     throw new ValidationError("Share", "backingUrl", "File not found");
   }
@@ -68,6 +70,7 @@ export async function newShare(
     expireDuration,
     fileTitle: fileInfo.title,
     fileType: fileInfo.type,
+    availableMediaTypes: fileInfo.availableMediaTypes,
   };
 
   return share;

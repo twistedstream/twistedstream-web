@@ -1,4 +1,4 @@
-import { getProvider } from "../../data";
+import { getDataProvider } from "../../data";
 import {
   Authenticator,
   RegisteredAuthenticator,
@@ -8,7 +8,7 @@ import { unique } from "../../utils/identifier";
 import { now } from "../../utils/time";
 import { validateUser } from "./validation";
 
-const provider = getProvider();
+const provider = getDataProvider();
 const {
   insertCredential,
   insertUser,

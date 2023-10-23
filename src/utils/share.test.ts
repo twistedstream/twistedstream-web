@@ -8,10 +8,18 @@ import { assertValue } from "../utils/error";
 // test objects
 
 const logger = {
+  info: sinon.fake(),
   warn: sinon.fake(),
 };
 const fetchShareByIdStub = sinon.stub();
 const nowStub = sinon.stub();
+
+const getFileInfoStub = sinon.stub();
+const sendFileStub = sinon.stub();
+const fileProvider = {
+  getFileInfo: getFileInfoStub,
+  sendFile: sendFileStub,
+};
 
 // helpers
 
@@ -20,6 +28,9 @@ function importModule(test: Tap.Test) {
     "../utils/logger": { logger },
     "../services/share": { fetchShareById: fetchShareByIdStub },
     "./time": { now: nowStub },
+    "../data": {
+      getFileProvider: () => fileProvider,
+    },
   });
 }
 
@@ -333,21 +344,120 @@ test("utils/share", async (t) => {
     });
   });
 
-  t.test("renderShare", async (t) => {
-    let renderShare: any;
+  t.test("renderSharedFile", async (t) => {
+    const req = {
+      user: { username: "bob" },
+    };
+    const res = {
+      render: sinon.fake(),
+    };
+    const share = { id: "SHARE_ID", backingUrl: "https://foo.com/bar" };
+    let renderSharedFile: any;
 
     t.beforeEach(async () => {
-      renderShare = importModule(t).renderShare;
+      renderSharedFile = importModule(t).renderSharedFile;
     });
 
-    t.test("renders the share as JSON", async (t) => {
-      const res = { json: sinon.stub() };
-      const share = {};
+    t.test("gets the file info from the backing URL", async (t) => {
+      try {
+        await renderSharedFile(req, res, share, "some/media-type");
+      } catch {}
 
-      renderShare(res, share);
+      t.ok(getFileInfoStub.called);
+      t.equal(getFileInfoStub.firstCall.firstArg, "https://foo.com/bar");
+    });
 
-      t.ok(res.json.called);
-      t.equal(res.json.firstCall.firstArg, share);
+    t.test("if file doesn't exist, throws expected error", async (t) => {
+      getFileInfoStub.resolves(undefined);
+
+      t.rejects(() => renderSharedFile(req, res, share, "some/media-type"), {
+        message: "File no longer exists",
+        statusCode: StatusCodes.FORBIDDEN,
+      });
+    });
+
+    t.test("when file does exist", async (t) => {
+      const mediaType1 = {
+        name: "some/media-type",
+        description: "Some Media Type",
+        extension: "some",
+      };
+      const mediaType2 = {
+        name: "other/media-type",
+        description: "Other Media Type",
+        extension: "other",
+      };
+
+      const file = {
+        title: "Some file",
+        type: "document",
+        availableMediaTypes: [mediaType1, mediaType2],
+      };
+
+      t.beforeEach(async () => {
+        getFileInfoStub.resolves(file);
+      });
+
+      t.test(
+        "if no media type is specified, renders HTML with expected view state",
+        async (t) => {
+          await renderSharedFile(req, res, share);
+
+          t.ok(res.render.called);
+          t.equal(res.render.firstCall.args[0], "shared_file");
+          t.same(res.render.firstCall.args[1], {
+            title: "Ready to download your shared file?",
+            fileTitle: "Some file",
+            fileType: "document",
+            fileTypeStyle: "primary",
+            downloadLinks: [
+              {
+                media_description: "Some Media Type",
+                file_extension: "some",
+                url: "/shares/SHARE_ID?media_type=some%2Fmedia-type",
+              },
+              {
+                media_description: "Other Media Type",
+                file_extension: "other",
+                url: "/shares/SHARE_ID?media_type=other%2Fmedia-type",
+              },
+            ],
+          });
+        }
+      );
+
+      t.test("when a media type is specified", async (t) => {
+        t.test(
+          "if media type is not compatible with the file, throws expected error",
+          async (t) => {
+            t.rejects(() => renderSharedFile(req, res, share, "foo"), {
+              message: "Unsupported media type for this file: foo",
+            });
+          }
+        );
+
+        t.test("sends the file contents to the server response", async (t) => {
+          await renderSharedFile(req, res, share, "some/media-type");
+
+          t.ok(sendFileStub.called);
+          t.equal(sendFileStub.firstCall.args[0], file);
+          t.equal(sendFileStub.firstCall.args[1], mediaType1);
+          t.equal(sendFileStub.firstCall.args[2], res);
+        });
+
+        t.test("logs the file access", async (t) => {
+          await renderSharedFile(req, res, share, "some/media-type");
+
+          t.ok(logger.info.called);
+          t.equal(logger.info.firstCall.args[0].share, share);
+          t.equal(logger.info.firstCall.args[0].file, file);
+          t.equal(logger.info.firstCall.args[0].mediaType, "some/media-type");
+          t.equal(
+            logger.info.firstCall.args[1],
+            "Shared file downloaded by user 'bob'"
+          );
+        });
+      });
     });
   });
 });

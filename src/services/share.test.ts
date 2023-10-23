@@ -14,6 +14,10 @@ const dataProvider = {
   updateShare: sinon.stub(),
 };
 
+const fileProvider = {
+  getFileInfo: sinon.stub(),
+};
+
 const uniqueStub = sinon.stub();
 const nowFake = sinon.fake.returns(testNowDate);
 
@@ -21,7 +25,10 @@ const nowFake = sinon.fake.returns(testNowDate);
 
 function importModule(test: Tap.Test) {
   return test.mock("./share", {
-    "../data": { getProvider: () => dataProvider },
+    "../data": {
+      getDataProvider: () => dataProvider,
+      getFileProvider: () => fileProvider,
+    },
     "../utils/time": { now: nowFake },
     "../utils/identifier": { unique: uniqueStub },
   });
@@ -134,15 +141,15 @@ test("services/share", async (t) => {
         await newShare({}, "https://example.com/doc1");
       } catch {}
 
-      t.ok(dataProvider.findFileInfo.called);
+      t.ok(fileProvider.getFileInfo.called);
       t.equal(
-        dataProvider.findFileInfo.firstCall.firstArg,
+        fileProvider.getFileInfo.firstCall.firstArg,
         "https://example.com/doc1"
       );
     });
 
     t.test("If file info does't exist, throws expected error", async (t) => {
-      dataProvider.findFileInfo.resolves(undefined);
+      fileProvider.getFileInfo.resolves(undefined);
 
       t.rejects(() => newShare({}, "https://example.com/doc1"), {
         fieldMessage: "File not found",
@@ -154,9 +161,16 @@ test("services/share", async (t) => {
 
     t.test("when file exists", async (t) => {
       t.beforeEach(async () => {
-        dataProvider.findFileInfo.resolves({
+        fileProvider.getFileInfo.resolves({
           title: "Test Document",
           type: "document",
+          availableMediaTypes: [
+            {
+              name: "simple/doc",
+              description: "Simple Doc",
+              fileExtension: "d",
+            },
+          ],
         });
       });
 
@@ -209,6 +223,13 @@ test("services/share", async (t) => {
             expireDuration,
             fileTitle: "Test Document",
             fileType: "document",
+            availableMediaTypes: [
+              {
+                name: "simple/doc",
+                description: "Simple Doc",
+                fileExtension: "d",
+              },
+            ],
           });
         });
       });
@@ -233,6 +254,13 @@ test("services/share", async (t) => {
             expireDuration: undefined,
             fileTitle: "Test Document",
             fileType: "document",
+            availableMediaTypes: [
+              {
+                name: "simple/doc",
+                description: "Simple Doc",
+                fileExtension: "d",
+              },
+            ],
           });
         });
       });

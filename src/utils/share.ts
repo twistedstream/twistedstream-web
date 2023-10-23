@@ -1,12 +1,22 @@
 import { Response } from "express";
 import { Duration } from "luxon";
+import querystring from "querystring";
 
+import { getFileProvider } from "../data";
 import { fetchShareById } from "../services/share";
 import { FileType, Share } from "../types/entity";
 import { AuthenticatedRequest } from "../types/express";
-import { BadRequestError, ForbiddenError, NotFoundError } from "./error";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+  assertValue,
+} from "./error";
 import { logger } from "./logger";
 import { now } from "./time";
+
+const fileProvider = getFileProvider();
+const { getFileInfo, sendFile } = fileProvider;
 
 const EXPIRATIONS: string[] = [
   "PT5M",
@@ -110,7 +120,45 @@ export async function ensureShare(req: AuthenticatedRequest): Promise<Share> {
   return share;
 }
 
-export function renderShare(res: Response, share: Share) {
-  // FUTURE: render by file type
-  res.json(share);
+export async function renderSharedFile(
+  req: AuthenticatedRequest,
+  res: Response,
+  share: Share,
+  mediaType?: string
+) {
+  const file = await getFileInfo(share.backingUrl);
+  if (!file) {
+    throw ForbiddenError("File no longer exists");
+  }
+
+  if (!mediaType) {
+    const downloadLinks = file.availableMediaTypes.map((t) => ({
+      media_description: t.description,
+      file_extension: t.extension,
+      url: `/shares/${share.id}?${querystring.stringify({
+        media_type: t.name,
+      })}`,
+    }));
+
+    return res.render("shared_file", {
+      title: "Ready to download your shared file?",
+      fileTitle: file.title,
+      fileType: file.type,
+      fileTypeStyle: getFileTypeStyle(file.type),
+      downloadLinks,
+    });
+  }
+
+  const selectedMediaType = file.availableMediaTypes.find(
+    (t) => t.name === mediaType
+  );
+  if (!selectedMediaType) {
+    throw BadRequestError(`Unsupported media type for this file: ${mediaType}`);
+  }
+
+  await sendFile(file, selectedMediaType, res);
+  logger.info(
+    { share, file, mediaType },
+    `Shared file downloaded by user '${assertValue(req.user).username}'`
+  );
 }

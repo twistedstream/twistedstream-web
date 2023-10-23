@@ -25,7 +25,7 @@ const nowFake = sinon.fake.returns(testNowDate);
 
 function importModule(test: Tap.Test) {
   return test.mock("./index", {
-    "../../data": { getProvider: () => dataProvider },
+    "../../data": { getDataProvider: () => dataProvider },
     "../../utils/identifier": { unique: uniqueStub },
     "../../utils/time": { now: nowFake },
     "./validation": {

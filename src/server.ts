@@ -8,11 +8,15 @@ import http from "http";
 import https from "https";
 import { Server } from "net";
 import path from "path";
+
 import app from "./app";
-import { createRootUserAndInvite } from "./services/invite";
+import { getDataProvider, getFileProvider } from "./data";
+import { initializeServices } from "./services";
 import { logger } from "./utils/logger";
 
-let serverName: string, server: Server;
+let server: Server;
+let serverName: string;
+
 if (environment === "production") {
   // Docker: create simple HTTP server
   serverName = "HTTP";
@@ -27,30 +31,33 @@ if (environment === "production") {
   server = https.createServer(certOptions, app);
 }
 
-server.listen(port, () => {
-  logger.info(
-    {
-      port,
-      rpID,
-      baseUrl,
-    },
-    `${serverName} server started`
-  );
-});
+const dataProvider = getDataProvider();
+const fileProvider = getFileProvider();
+
+(async () => {
+  // initialize providers and services before starting server
+  await dataProvider.initialize();
+  await fileProvider.initialize();
+  const firstInvite = await initializeServices();
+  if (firstInvite) {
+    logger.info(
+      {
+        url: `${baseUrl}/invites/${firstInvite.id}`,
+      },
+      "Root invite"
+    );
+  }
+
+  server.listen(port, () => {
+    logger.info(
+      {
+        port,
+        rpID,
+        baseUrl,
+      },
+      `${serverName} server started`
+    );
+  });
+})();
 
 export default server;
-
-createRootUserAndInvite()
-  .then((firstInvite) => {
-    if (firstInvite) {
-      logger.info(
-        {
-          url: `${baseUrl}/invites/${firstInvite.id}`,
-        },
-        "Root invite"
-      );
-    }
-  })
-  .catch((err) => {
-    logger.error(err, "Error attempting to create root user and invite.");
-  });

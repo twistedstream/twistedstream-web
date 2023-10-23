@@ -1,13 +1,17 @@
+import { Response } from "express";
 import {
   Authenticator,
   FileInfo,
   Invite,
+  MediaType,
   RegisteredAuthenticator,
   Share,
   User,
 } from "./entity";
 
 export interface IDataProvider {
+  initialize(): Promise<void>;
+
   // users
 
   getUserCount(): Promise<number>;
@@ -53,9 +57,15 @@ export interface IDataProvider {
 
   findSharesByCreatedUserId(userID: string): Promise<Share[]>;
 
-  findFileInfo(url: string): Promise<FileInfo | undefined>;
-
   insertShare(share: Share): Promise<Share>;
 
   updateShare(share: Share): Promise<void>;
+}
+
+export interface IFileProvider {
+  initialize(): Promise<void>;
+
+  getFileInfo(url: string): Promise<FileInfo | undefined>;
+
+  sendFile(file: FileInfo, mediaType: MediaType, destination: Response): void;
 }
