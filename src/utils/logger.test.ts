@@ -1,7 +1,7 @@
-import { test } from "tap";
 import sinon from "sinon";
+import { test } from "tap";
 
-// NOTE: Env vars are being sourced from .env.test
+// NOTE: Env vars are being sourced from test.env
 
 test("utils/logger", async (t) => {
   t.test("logger", async (t) => {
