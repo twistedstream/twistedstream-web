@@ -1,46 +1,54 @@
-import { Express, Request, Response, NextFunction } from "express";
+import { IRouter, NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
+import { AuthenticatedRequest } from "./types/express";
+import { redirectToLogin } from "./utils/auth";
+import { buildErrorHandlerData, NotFoundError } from "./utils/error";
 import { logger } from "./utils/logger";
-import { generateCorrelationId, NotFoundError } from "./utils/error";
 
-const errorHandler = (app: Express) => {
-  // INFO: Catch unhandled requests and convert to 404
-  app.use((_req: Request, _res: Response, next: NextFunction) => {
+const errorHandler = (router: IRouter) => {
+  // Catch unhandled requests and convert to 404
+  router.use((_req: Request, _res: Response, next: NextFunction) => {
     next(NotFoundError());
   });
 
-  // INFO: Handle all errors
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const statusCode: StatusCodes =
-      err.statusCode || err.status || StatusCodes.INTERNAL_SERVER_ERROR;
-    res.status(statusCode);
+  // Handle all errors
+  router.use(
+    (
+      err: any,
+      req: AuthenticatedRequest,
+      res: Response,
+      _next: NextFunction
+    ) => {
+      const { message, statusCode, correlation_id } =
+        buildErrorHandlerData(err);
 
-    const message =
-      statusCode < StatusCodes.INTERNAL_SERVER_ERROR
-        ? <string>err.message
-        : "Something unexpected happened";
+      if (statusCode === StatusCodes.UNAUTHORIZED) {
+        logger.debug("error-handler: Redirecting UNAUTHORIZED to login page");
+        return redirectToLogin(req, res);
+      }
 
-    if (statusCode === StatusCodes.NOT_FOUND) {
-      return res.render("404", {
-        title: "Sorry, which page?",
-        message: err.message,
+      res.status(statusCode);
+
+      if (statusCode === StatusCodes.INTERNAL_SERVER_ERROR) {
+        logger.error({ err, correlation_id });
+      }
+
+      if (statusCode === StatusCodes.NOT_FOUND) {
+        return res.render("404", {
+          title: "Sorry, which page?",
+          message: err.message,
+        });
+      }
+
+      res.render("error", {
+        title: "Error",
+        message,
+        error_status: statusCode,
+        correlation_id,
       });
     }
-
-    let correlation_id: string = "";
-    if (statusCode >= StatusCodes.INTERNAL_SERVER_ERROR) {
-      correlation_id = generateCorrelationId();
-      logger.error({ err, correlation_id });
-    }
-
-    res.render("error", {
-      title: "Error",
-      message,
-      error_status: statusCode,
-      correlation_id,
-    });
-  });
+  );
 };
 
 export default errorHandler;

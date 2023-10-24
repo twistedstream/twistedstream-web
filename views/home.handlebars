@@ -4,9 +4,9 @@
 
   {{#*inline "body"}}
     <div class="container-fluid">
-      <div class="row">
+      <div class="row mt-2">
         <div class="col text-center">
-          <img src="/images/logo.png" class="img-fluid">
+          <img src="/images/logo-lg.png" class="img-fluid">
         </div>
       </div>
 
@@ -19,7 +19,11 @@
             |
             <a href="/github" target="_blank">GitHub</a>
             |
-            <a href="/blog" target="_blank">Blog</a>     
+            <a href="/blog" target="_blank">Blog</a>
+            {{#if user}}
+            |
+            <a href="/shares"><i>Shares</i></a>
+            {{/if}}
           </p>
         </div>
       </div>
