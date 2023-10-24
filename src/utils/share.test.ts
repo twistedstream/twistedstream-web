@@ -121,6 +121,18 @@ test("utils/share", async (t) => {
 
       t.equal(result, "danger");
     });
+
+    t.test("if image, returns expected style", async (t) => {
+      const result = getFileTypeStyle("image");
+
+      t.equal(result, "info");
+    });
+
+    t.test("if video, returns expected style", async (t) => {
+      const result = getFileTypeStyle("video");
+
+      t.equal(result, "secondary");
+    });
   });
 
   t.test("ensureShare", async (t) => {

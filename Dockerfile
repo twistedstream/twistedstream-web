@@ -21,7 +21,8 @@ COPY --from=build_stage /app/package-lock.json /app/
 COPY --from=build_stage /app/dist/ /app/
 COPY --from=build_stage /app/public/ /app/public/
 COPY --from=build_stage /app/views/ /app/views/
-RUN npm ci --production
+# copy local file provider test files
+COPY --from=build_stage /app/src/data/file-providers/files/ /app/data/file-providers/files/
 
 EXPOSE 8000
 ENV NODE_ENV="production"

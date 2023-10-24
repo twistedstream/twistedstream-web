@@ -1,11 +1,14 @@
 import sinon from "sinon";
 import { test } from "tap";
+import { MediaType } from "../../../types/entity";
 
 // test objects
 
 const readdirStub = sinon.stub();
 const uniqueStub = sinon.stub();
 const createReadStreamStub = sinon.stub();
+const resolveFileTypeStub = sinon.stub();
+const fileTypeFromMediaTypeStub = sinon.stub();
 
 // helpers
 
@@ -13,7 +16,9 @@ function importModule(test: Tap.Test) {
   return test.mock("./index", {
     "node:fs/promises": { readdir: readdirStub },
     "node:fs": { createReadStream: createReadStreamStub },
+    "friendly-mimes": { resolveFileType: resolveFileTypeStub },
     "../../../utils/identifier": { unique: uniqueStub },
+    "../../../utils/file": { fileTypeFromMediaType: fileTypeFromMediaTypeStub },
   });
 }
 
@@ -43,9 +48,63 @@ test("data/file-providers/local", async (t) => {
     });
 
     t.test("filters and transforms the files to expected output", async (t) => {
-      readdirStub.resolves(["file1.doc", "file2.ts", "file3.xls"]);
+      readdirStub.resolves([
+        // returned
+        "file1.doc",
+        // not returned because no known MIME type
+        "file2.ts",
+        // returned
+        "file3.xls",
+        // not returned because no supported media type
+        "file4.sh",
+        // returned
+        "file.5.ppt",
+        // not returned because no supported media type
+        "file6",
+      ]);
+
+      // mime behavior
+      resolveFileTypeStub.callsFake((fileExtension: string) => {
+        switch (fileExtension) {
+          case ".doc":
+            return { mime: "application/msword", name: "Microsoft Word" };
+          case ".xls":
+            return {
+              mime: "application/vnd.ms-excel",
+              name: "Microsoft Excel",
+            };
+          case ".ppt":
+            return {
+              mime: "application/vnd.ms-powerpoint",
+              name: "Microsoft PowerPoint",
+            };
+          case ".sh":
+            return { mime: "application/x-sh", name: "Bourne shell script" };
+          case "":
+            return {
+              mime: "application/pgp-encrypted",
+              name: "Pretty Good Privacy",
+            };
+          default:
+            throw new Error("Unsupported!");
+        }
+      });
+
+      // file type behavior
+      fileTypeFromMediaTypeStub.callsFake((mediaType: MediaType) => {
+        switch (mediaType.name) {
+          case "application/msword":
+            return "document";
+          case "application/vnd.ms-excel":
+            return "spreadsheet";
+          case "application/vnd.ms-powerpoint":
+            return "presentation";
+        }
+      });
+
       uniqueStub.onFirstCall().returns("FILE_1");
       uniqueStub.onSecondCall().returns("FILE_2");
+      uniqueStub.onThirdCall().returns("FILE_3");
 
       const result = await loadFiles();
 
@@ -75,11 +134,25 @@ test("data/file-providers/local", async (t) => {
         ],
       };
 
+      const file5 = {
+        id: "FILE_3",
+        title: "file.5",
+        type: "presentation",
+        availableMediaTypes: [
+          {
+            name: "application/vnd.ms-powerpoint",
+            description: "Microsoft PowerPoint",
+            extension: "ppt",
+          },
+        ],
+      };
+
       t.same(result, {
-        all: [file1, file3],
+        all: [file1, file3, file5],
         byUrl: {
           "https://example.com/FILE_1": file1,
           "https://example.com/FILE_2": file3,
+          "https://example.com/FILE_3": file5,
         },
       });
     });

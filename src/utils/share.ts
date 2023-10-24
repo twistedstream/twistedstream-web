@@ -51,6 +51,10 @@ export function getFileTypeStyle(fileType: FileType) {
       return "warning";
     case "pdf":
       return "danger";
+    case "image":
+      return "info";
+    case "video":
+      return "secondary";
   }
 }
 

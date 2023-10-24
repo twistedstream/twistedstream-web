@@ -1,6 +1,8 @@
 import { FileType, MediaType } from "../types/entity";
 
-export function fileTypeFromMediaType(mediaType: MediaType): FileType {
+export function fileTypeFromMediaType(
+  mediaType: MediaType
+): FileType | undefined {
   switch (mediaType.name) {
     case "application/vnd.google-apps.document":
     case "application/msword":
@@ -37,8 +39,5 @@ export function fileTypeFromMediaType(mediaType: MediaType): FileType {
     case "video/quicktime":
     case "video/avi":
       return "video";
-
-    default:
-      throw new Error("Unsupported media type");
   }
 }
