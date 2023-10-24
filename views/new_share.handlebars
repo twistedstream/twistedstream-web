@@ -22,31 +22,31 @@
           <form method="post">
             {{> csrf_token_field}}
 
-            <div class="form-row justify-content-center">
+            <div class="form-row">
               <div class="col mb-2">
                 {{> textbox_field name="backingUrl" type="text" value=backingUrl error=backingUrl_error valid=backingUrl_valid placeholder="File URL" required=true}}
               </div>
-              <div class="col-sm-auto">
+              <div class="col-sm-auto text-center">
                 <button type="submit" class="btn btn-secondary mb-2" name="action" value="validate">Validate</button>
               </div>
             </div>
 
             {{#if fileTitle}}
-            <div class="form-row justify-content-center">
-              <div class="col-sm-auto mt-2">
+            <div class="form-row mt-2">
+              <div class="col text-center">
                 <span class="badge badge-{{fileTypeStyle}}">{{fileType}}</span>
               </div>
             </div>
-            <div class="form-row justify-content-center">
-              <div class="col-sm-auto mt-1 mb-2">
+            <div class="form-row mt-1">
+              <div class="col text-center">
                 <code>{{fileTitle}}</code>
               </div>
             </div>
             {{/if}}
 
             {{#if backingUrl_valid}}
-            <div class="form-row justify-content-center">
-              <div class="col-sm">
+            <div class="form-row mt-2">
+              <div class="col-sm mb-2">
                 <div class="input-group">
                   <div class="input-group-prepend">
                     <div class="input-group-text">@</div>
@@ -55,7 +55,7 @@
                 </div>
               </div>
 
-              <div class="col-sm-auto">
+              <div class="col-sm-auto mb-2">
                 <select class="form-control" name="expires">
                   <option {{#unless expires}}selected{{/unless}} value="">Never expires</option>
                   {{#each expirations}}
@@ -64,7 +64,7 @@
                 </select>
               </div>
 
-              <div class="col-sm-auto">
+              <div class="col-sm-auto mb-2 text-center">
                 <button type="submit" class="btn btn-primary" name="action" value="create">Create</button>
               </div>
             </div>
