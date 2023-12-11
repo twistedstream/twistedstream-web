@@ -3,6 +3,7 @@ import assert from "assert";
 import { IDataProvider, IFileProvider } from "../types/data";
 import { dataProviderName, fileProviderName } from "../utils/config";
 import { logger } from "../utils/logger";
+import { GoogleSheetsDataProvider } from "./data-providers/google-sheets";
 import { InMemoryDataProvider } from "./data-providers/in-memory";
 import { LocalFileProvider } from "./file-providers/local";
 
@@ -22,7 +23,9 @@ export function getDataProvider(): IDataProvider {
         });
         break;
 
-      // FUTURE: Google Sheets data provider
+      case "google-sheets":
+        dataProvider = new GoogleSheetsDataProvider();
+        break;
     }
 
     assert(dataProvider, `Unsupported data provider name: ${dataProviderName}`);
