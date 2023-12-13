@@ -1,7 +1,7 @@
 import { resolveMime } from "friendly-mimes";
 import { DateTime, Duration } from "luxon";
 import { Share } from "../../../types/entity";
-import { ColumnConstraints, RowData } from "../../../types/row";
+import { ColumnConstraints, RowData } from "../../../types/table";
 import { rowToUser, userToRow } from "./user";
 
 export const SHARE_SHEET_NAME = "shares";

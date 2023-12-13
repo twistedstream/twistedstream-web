@@ -6,12 +6,12 @@ import {
   Row,
   RowData,
   SearchPredicate,
-} from "../../../types/row";
+} from "../../../types/table";
 import { googleSpreadsheetId as spreadsheetId } from "../../../utils/config";
 import { assertValue } from "../../../utils/error";
 import { sheets } from "./client";
+import { processUpdatedData, rowToValues, valuesToRow } from "./row";
 import { enforceConstraints, openTable } from "./table";
-import { parseRange, rowToValues, valuesToRow } from "./value";
 
 const mutex = new Mutex();
 
@@ -96,45 +96,17 @@ export async function insertRow(
       },
     });
 
-    // TODO: pull out into helper function
-    const { range, values } = assertValue(
-      assertValue(appendResult.data.updates).updatedData
-    );
-    if (values?.length !== 1) {
-      throw new Error("Unexpected multiple rows updated");
-    }
-    const returnedRowValues = assertValue(values)[0];
-    if (
+    // process and return inserted row
+    const { updatedRowValues, updatedRowNumber } = processUpdatedData(
+      assertValue(appendResult.data.updates?.updatedData),
+      sheetName,
       rowValues
-        .map((value, index) => {
-          const returnedValue = returnedRowValues[index];
-          if (value === returnedValue) {
-            return true;
-          }
-          if (value === undefined && returnedValue === "") {
-            return true;
-          }
-          if (value === "" && returnedValue === undefined) {
-            return true;
-          }
-          return false;
-        })
-        .some((isEqual) => !isEqual)
-    ) {
-      throw new Error(
-        "One or more response row values don't match corresponding request value values"
-      );
-    }
-
-    const { sheet, startRow, endRow } = parseRange(assertValue(range));
-    if (sheetName !== sheet) {
-      throw new Error("Sheet names don't match");
-    }
-    if (startRow !== endRow) {
-      throw new Error("Start row doesn't match end row");
-    }
-
-    const insertedRow = valuesToRow(returnedRowValues, columns, startRow);
+    );
+    const insertedRow = valuesToRow(
+      updatedRowValues,
+      columns,
+      updatedRowNumber
+    );
     return { insertedRow };
   });
 }
@@ -176,43 +148,13 @@ export async function updateRow(
       },
     });
 
-    // TODO: pull out into helper function
-    const { range, values } = assertValue(updateResult.data.updatedData);
-    if (values?.length !== 1) {
-      throw new Error("Unexpected multiple rows updated");
-    }
-    const returnedRowValues = assertValue(values)[0];
-    if (
+    // process and return updated row
+    const { updatedRowValues, updatedRowNumber } = processUpdatedData(
+      assertValue(updateResult.data.updatedData),
+      sheetName,
       rowValues
-        .map((value, index) => {
-          const returnedValue = returnedRowValues[index];
-          if (value === returnedValue) {
-            return true;
-          }
-          if (value === undefined && returnedValue === "") {
-            return true;
-          }
-          if (value === "" && returnedValue === undefined) {
-            return true;
-          }
-          return false;
-        })
-        .some((isEqual) => !isEqual)
-    ) {
-      throw new Error(
-        "One or more response row values don't match corresponding request value values"
-      );
-    }
-
-    const { sheet, startRow, endRow } = parseRange(assertValue(range));
-    if (sheetName !== sheet) {
-      throw new Error("Sheet names don't match");
-    }
-    if (startRow !== endRow) {
-      throw new Error("Start row doesn't match end row");
-    }
-
-    const updatedRow = valuesToRow(returnedRowValues, columns, startRow);
+    );
+    const updatedRow = valuesToRow(updatedRowValues, columns, updatedRowNumber);
     return { updatedRow };
   });
 }

@@ -1,7 +1,7 @@
-import { ColumnConstraints, Row, RowData } from "../../../types/row";
+import { ColumnConstraints, Row, RowData } from "../../../types/table";
 import { googleSpreadsheetId as spreadsheetId } from "../../../utils/config";
 import { sheets } from "./client";
-import { valuesToRow } from "./value";
+import { valuesToRow } from "./row";
 
 export async function openTable(
   sheetName: string

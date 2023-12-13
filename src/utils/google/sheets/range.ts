@@ -1,22 +1,4 @@
-import { Range, Row, RowData } from "../../../types/row";
-
-export function valuesToRow(
-  rowValues: any[],
-  columns: string[],
-  rowNumber: number
-): Row {
-  return rowValues.reduce(
-    (row, value, index) => {
-      row[columns[index]] = value;
-      return row;
-    },
-    { _rowNumber: rowNumber }
-  );
-}
-
-export function rowToValues(row: RowData, columns: string[]): any[] {
-  return columns.map((c) => row[c]);
-}
+import { Range } from "../../../types/table";
 
 export function parseRange(range: string): Range {
   const match = range.match(
