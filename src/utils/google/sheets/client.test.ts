@@ -38,8 +38,6 @@ test("utils/google/sheets/client", async (t) => {
     t.test(
       "is obtained by calling the Google sheets factory function",
       async (t) => {
-        console.log("2", new Date());
-
         t.equal(sheets, sheetsMock);
       }
     );

@@ -3,6 +3,7 @@ import { test } from "tap";
 import { StatusCodes } from "http-status-codes";
 import {
   BadRequestError,
+  ErrorWithData,
   ErrorWithStatusCode,
   ForbiddenError,
   NotFoundError,
@@ -12,6 +13,16 @@ import {
 } from "./error";
 
 test("utils/error", async (t) => {
+  t.test("ErrorWithData", async (t) => {
+    t.test("constructor creates expected error", async (t) => {
+      const data = { foo: "bar" };
+      const error = new ErrorWithData("Some message", data);
+
+      t.equal(error.message, `Some message {"foo":"bar"}`);
+      t.equal(error.data, data);
+    });
+  });
+
   t.test("ErrorWithStatusCode", async (t) => {
     t.test("constructor creates expected error", async (t) => {
       t.test("when message is provided", async (t) => {

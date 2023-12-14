@@ -1,6 +1,6 @@
-import { sheets_v4 } from "googleapis/build/src/apis/sheets/v4";
+import { sheets_v4 } from "googleapis";
 import { Row, RowData } from "../../../types/table";
-import { assertValue } from "../../error";
+import { ErrorWithData, assertValue } from "../../error";
 import { parseRange } from "./range";
 
 export function valuesToRow(
@@ -26,39 +26,46 @@ export function processUpdatedData(
   sheetName: string,
   submittedRowValues: any[]
 ): { updatedRowValues: any[]; updatedRowNumber: number } {
-  const { range, values } = updatedValueRange;
-  if (values?.length !== 1) {
-    throw new Error("Unexpected multiple rows updated");
-  }
-  const updatedRowValues = assertValue(values)[0];
-  if (
-    submittedRowValues
-      .map((value, index) => {
-        const returnedValue = updatedRowValues[index];
-        if (value === returnedValue) {
-          return true;
-        }
-        if (value === undefined && returnedValue === "") {
-          return true;
-        }
-        if (value === "" && returnedValue === undefined) {
-          return true;
-        }
-        return false;
-      })
-      .some((isEqual) => !isEqual)
-  ) {
+  const { range: _range, values: _values } = updatedValueRange;
+  const range = assertValue(_range, "Updated value range has empty range");
+  const values = assertValue(_values, "Updated value range has empty values");
+  if (values.length !== 1) {
     throw new Error(
-      "One or more response row values don't match corresponding request value values"
+      `Expected one row of values, but instead got ${values.length}`
+    );
+  }
+  const updatedRowValues = values[0];
+
+  const matches = submittedRowValues.map((submitted, index) => {
+    const updated = updatedRowValues[index];
+    if (submitted === updated) {
+      return true;
+    }
+    if (submitted === undefined && updated === "") {
+      return true;
+    }
+    if (submitted === "" && updated === undefined) {
+      return true;
+    }
+    return { submitted, updated };
+  });
+  if (matches.some((m) => m !== true)) {
+    throw new ErrorWithData(
+      "One or more updated row values don't match corresponding submitted values",
+      matches
     );
   }
 
-  const { sheet, startRow, endRow } = parseRange(assertValue(range));
+  const { sheet, startRow, endRow } = parseRange(range);
   if (sheetName !== sheet) {
-    throw new Error("Sheet names don't match");
+    throw new Error(
+      `Updated range sheet name '${sheet}' doesn't match submitted sheet name '${sheetName}'`
+    );
   }
   if (startRow !== endRow) {
-    throw new Error("Start row doesn't match end row");
+    throw new Error(
+      `Updated range start row (${startRow}) doesn't match end row (${endRow})`
+    );
   }
 
   return { updatedRowValues, updatedRowNumber: startRow };
