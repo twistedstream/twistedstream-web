@@ -1,16 +1,12 @@
-import {
-  GoogleAuth,
-  JSONClient,
-} from "google-auth-library/build/src/auth/googleauth";
-import { google } from "googleapis";
+import { GoogleAuth } from "google-auth-library";
 
 import {
   googleAuthClientEmail as client_email,
   googleAuthPrivateKey as private_key,
 } from "../config";
 
-export function buildAuth(scopes: string[]): GoogleAuth<JSONClient> {
-  return new google.auth.GoogleAuth({
+export function buildAuth(scopes: string[]): GoogleAuth {
+  return new GoogleAuth({
     credentials: {
       client_email,
       private_key,

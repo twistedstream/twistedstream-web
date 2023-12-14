@@ -2,6 +2,7 @@ import sinon from "sinon";
 import { test } from "tap";
 
 // test objects
+
 const generateToken = () => {};
 const doubleCsrfProtection = () => {};
 const doubleCsrfFake = sinon.fake.returns({
