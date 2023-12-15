@@ -29,7 +29,7 @@ export async function openTable(
   return { columns, rows };
 }
 
-export async function enforceConstraints(
+export function enforceConstraints(
   rows: Row[],
   testRow: RowData,
   constraints: ColumnConstraints
