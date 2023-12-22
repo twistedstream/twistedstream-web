@@ -250,3 +250,10 @@ export function verifyFido2SuccessResponse(
   test.notOk(json.errorMessage, "expected no FIDO error message");
   test.match(json, expectedData, "expected FIDO data");
 }
+
+/**
+ * Waits for the next Node.js event loop
+ */
+export async function waitForNextLoop() {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}

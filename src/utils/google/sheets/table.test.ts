@@ -4,7 +4,7 @@ import { test } from "tap";
 import { ColumnConstraints } from "../../../types/table";
 
 // test objects
-const getStub = sinon.stub();
+const getValuesStub = sinon.stub();
 const valuesToRowStub = sinon.stub();
 
 // helpers
@@ -18,7 +18,7 @@ function importModule(test: Tap.Test) {
       sheets: {
         spreadsheets: {
           values: {
-            get: getStub,
+            get: getValuesStub,
           },
         },
       },
@@ -43,7 +43,7 @@ test("utils/google/sheets/table", async (t) => {
         await openTable("bananas");
       } catch {}
 
-      t.match(getStub.firstCall.firstArg, {
+      t.match(getValuesStub.firstCall.firstArg, {
         spreadsheetId: "spreadsheet-id",
         range: "bananas",
         valueRenderOption: "UNFORMATTED_VALUE",
@@ -52,7 +52,7 @@ test("utils/google/sheets/table", async (t) => {
     });
 
     t.test("when no data exists, returns empty table", async (t) => {
-      getStub.resolves({ data: { values: undefined } });
+      getValuesStub.resolves({ data: { values: undefined } });
 
       const result = await openTable("bananas");
 
@@ -67,7 +67,7 @@ test("utils/google/sheets/table", async (t) => {
       ];
 
       t.beforeEach(async () => {
-        getStub.resolves({ data: { values: cloneDeep(values) } });
+        getValuesStub.resolves({ data: { values: cloneDeep(values) } });
       });
 
       t.test("converts each row of values to row objects", async (t) => {

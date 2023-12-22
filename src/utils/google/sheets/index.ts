@@ -13,6 +13,14 @@ import { sheets } from "./client";
 import { processUpdatedData, rowToValues, valuesToRow } from "./row";
 import { enforceConstraints, openTable } from "./table";
 
+const commonGoogleSheetsParams = {
+  spreadsheetId,
+  valueInputOption: "RAW",
+  includeValuesInResponse: true,
+  responseValueRenderOption: "UNFORMATTED_VALUE",
+  responseDateTimeRenderOption: "SERIAL_NUMBER",
+};
+
 const mutex = new Mutex();
 
 export async function countRows(sheetName: string): Promise<number> {
@@ -22,10 +30,13 @@ export async function countRows(sheetName: string): Promise<number> {
     spreadsheetId,
     range,
   });
-  const values = getResult.data.values || [];
+  const { values } = getResult.data;
 
-  // don't include header row
-  return values.length - 1;
+  return values
+    ? // don't include header row
+      values.length - 1
+    : // zero rows when no data
+      0;
 }
 
 export async function findRows(
@@ -57,7 +68,7 @@ export async function findKeyRows<T extends keyof any>(
   const distinctKeys = Array.from(new Set(keys));
 
   // find all rows with those keys
-  const { rows } = await findRows(sheetName, (r) =>
+  const rows = (await openTable(sheetName)).rows.filter((r) =>
     distinctKeys.includes(selector(r))
   );
 
@@ -84,13 +95,9 @@ export async function insertRow(
     // append row
     const rowValues = rowToValues(newRow, columns);
     const appendResult = await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: sheetName,
-      valueInputOption: "RAW",
+      ...commonGoogleSheetsParams,
       insertDataOption: "INSERT_ROWS",
-      includeValuesInResponse: true,
-      responseValueRenderOption: "UNFORMATTED_VALUE",
-      responseDateTimeRenderOption: "SERIAL_NUMBER",
+      range: sheetName,
       requestBody: {
         values: [rowValues],
       },
@@ -120,29 +127,25 @@ export async function updateRow(
   return mutex.runExclusive(async () => {
     const { columns, rows } = await openTable(sheetName);
 
-    // find row
-    const row = rows.find(predicate);
-    if (!row) {
+    // find existing row
+    const existingRow = rows.find(predicate);
+    if (!existingRow) {
       throw new Error("Row not found");
     }
 
     // update row values
     for (const key in rowUpdates) {
-      row[key] = rowUpdates[key];
+      existingRow[key] = rowUpdates[key];
     }
 
     // enforce constraints before update
-    enforceConstraints(rows, row, constraints);
+    enforceConstraints(rows, existingRow, constraints);
 
     // update row
-    const rowValues = rowToValues(row, columns);
+    const rowValues = rowToValues(existingRow, columns);
     const updateResult = await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: `${sheetName}!${row._rowNumber}:${row._rowNumber}`,
-      valueInputOption: "RAW",
-      includeValuesInResponse: true,
-      responseValueRenderOption: "UNFORMATTED_VALUE",
-      responseDateTimeRenderOption: "SERIAL_NUMBER",
+      ...commonGoogleSheetsParams,
+      range: `${sheetName}!${existingRow._rowNumber}:${existingRow._rowNumber}`,
       requestBody: {
         values: [rowValues],
       },
@@ -165,20 +168,22 @@ export async function deleteRow(
 ): Promise<void> {
   return mutex.runExclusive(async () => {
     const { rows } = await openTable(sheetName);
-    // find row
-    const row = rows.find(predicate);
-    if (!row) {
+
+    // find existing row
+    const existingRow = rows.find(predicate);
+    if (!existingRow) {
       throw new Error("Row not found");
     }
 
     // get sheet ID
     const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
-    const sheetId = spreadsheet.data.sheets?.find(
-      (sheet) => sheet.properties?.title === sheetName
-    )?.properties?.index;
-    if (sheetId === undefined) {
+    const sheet = assertValue(spreadsheet.data.sheets).find(
+      (sheet) => assertValue(sheet.properties).title === sheetName
+    );
+    if (!sheet) {
       throw new Error(`Sheet with name '${sheetName}' not found`);
     }
+    const sheetId = assertValue(sheet.properties).index;
 
     // delete the row
     await sheets.spreadsheets.batchUpdate({
@@ -190,8 +195,8 @@ export async function deleteRow(
               range: {
                 sheetId,
                 dimension: "ROWS",
-                startIndex: row._rowNumber - 1,
-                endIndex: row._rowNumber,
+                startIndex: existingRow._rowNumber - 1,
+                endIndex: existingRow._rowNumber,
               },
             },
           },
