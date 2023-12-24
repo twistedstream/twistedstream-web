@@ -105,7 +105,7 @@ export async function insertRow(
 
     // process and return inserted row
     const { updatedRowValues, updatedRowNumber } = processUpdatedData(
-      assertValue(appendResult.data.updates?.updatedData),
+      assertValue(assertValue(appendResult.data.updates).updatedData),
       sheetName,
       rowValues
     );
