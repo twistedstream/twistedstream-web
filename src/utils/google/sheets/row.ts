@@ -1,4 +1,4 @@
-import { sheets_v4 } from "googleapis";
+import { sheets_v4 } from "@googleapis/sheets";
 import { Row, RowData } from "../../../types/table";
 import { ErrorWithData, assertValue } from "../../error";
 import { parseRange } from "./range";

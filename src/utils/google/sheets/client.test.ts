@@ -13,8 +13,8 @@ const buildAuthFake = sinon.fake.returns(authMock);
 function importModule(test: Tap.Test) {
   return test.mock("./client", {
     // FIX: for some reason this mock makes this test file run very slow
-    googleapis: {
-      google: { sheets: sheetsFake },
+    "@googleapis/sheets": {
+      sheets: sheetsFake,
     },
     "../auth": {
       buildAuth: buildAuthFake,
