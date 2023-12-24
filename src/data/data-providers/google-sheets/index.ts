@@ -185,8 +185,7 @@ export class GoogleSheetsDataProvider implements IDataProvider {
     );
     assertValue(userRow, "User does not exist");
 
-    const credentialRow = credentialToRow(credential);
-    credentialRow.user_id = userID;
+    const credentialRow = credentialToRow(credential, userID);
 
     await insertRow(
       CREDENTIAL_SHEET_NAME,

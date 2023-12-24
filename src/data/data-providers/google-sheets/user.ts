@@ -10,7 +10,7 @@ export const USER_CONSTRAINTS: ColumnConstraints = {
 export function rowToUser(row: RowData): User {
   return {
     id: row.id,
-    created: DateTime.fromISO(row.created),
+    created: DateTime.fromISO(row.created, { zone: "utc" }),
     username: row.username,
     displayName: row.display_name,
     isAdmin: row.is_admin,

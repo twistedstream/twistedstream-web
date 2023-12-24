@@ -12,7 +12,7 @@ export function rowToCredential(
 ): RegisteredAuthenticator {
   return {
     credentialID: credentialRow.id,
-    created: DateTime.fromISO(credentialRow.created),
+    created: DateTime.fromISO(credentialRow.created, { zone: "utc" }),
     credentialPublicKey: credentialRow.public_key,
     counter: credentialRow.counter,
     aaguid: credentialRow.aaguid,
@@ -25,7 +25,10 @@ export function rowToCredential(
   };
 }
 
-export function credentialToRow(credential: Authenticator): RowData {
+export function credentialToRow(
+  credential: Authenticator,
+  userId: string
+): RowData {
   return {
     id: credential.credentialID,
     created: credential.created.toISO(),
@@ -35,5 +38,6 @@ export function credentialToRow(credential: Authenticator): RowData {
     device_type: credential.credentialDeviceType,
     is_backed_up: credential.credentialBackedUp,
     transports: credential.transports && credential.transports.join(","),
+    user_id: userId,
   };
 }

@@ -16,12 +16,12 @@ export function rowToInvite(
     id: inviteRow.id,
     sourceType: "invite",
     isAdmin: inviteRow.is_admin,
-    created: DateTime.fromISO(inviteRow.created),
+    created: DateTime.fromISO(inviteRow.created, { zone: "utc" }),
     createdBy: rowToUser(createdByRow),
     claimedBy: claimedByRow && rowToUser(claimedByRow),
     claimed:
       inviteRow.claimed && inviteRow.claimed.length > 0
-        ? DateTime.fromISO(inviteRow.claimed)
+        ? DateTime.fromISO(inviteRow.claimed, { zone: "utc" })
         : undefined,
   };
 }

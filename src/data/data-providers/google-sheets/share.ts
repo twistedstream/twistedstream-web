@@ -16,12 +16,12 @@ export function rowToShare(
     id: shareRow.id,
     sourceType: "share",
     isAdmin: shareRow.is_admin,
-    created: DateTime.fromISO(shareRow.created),
+    created: DateTime.fromISO(shareRow.created, { zone: "utc" }),
     createdBy: rowToUser(createdByRow),
     claimedBy: claimedByRow && rowToUser(claimedByRow),
     claimed:
       shareRow.claimed && shareRow.claimed.length > 0
-        ? DateTime.fromISO(shareRow.claimed)
+        ? DateTime.fromISO(shareRow.claimed, { zone: "utc" })
         : undefined,
     backingUrl: shareRow.backing_url,
     fileTitle: shareRow.file_title,

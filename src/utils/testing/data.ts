@@ -20,22 +20,28 @@ type TestShareOptions = {
 
 // reusable test objects
 
-export const testNowDate = DateTime.fromObject({
-  year: 2023,
-  month: 6,
-  day: 1,
-}).toUTC();
+export const testNowDate = DateTime.fromObject(
+  {
+    year: 2023,
+    month: 6,
+    day: 1,
+  },
+  { zone: "utc" }
+);
 
 export const testUser1Identifier: string = "123abc";
 
 export function testUser1(): User {
   return {
     id: testUser1Identifier,
-    created: DateTime.fromObject({
-      year: 2023,
-      month: 1,
-      day: 1,
-    }).toUTC(),
+    created: DateTime.fromObject(
+      {
+        year: 2023,
+        month: 1,
+        day: 1,
+      },
+      { zone: "utc" }
+    ),
     username: "bob",
     displayName: "Bob User",
     isAdmin: false,
@@ -47,11 +53,14 @@ export const testUser2Identifier: string = "abc123";
 export function testUser2(): User {
   return {
     id: testUser2Identifier,
-    created: DateTime.fromObject({
-      year: 2023,
-      month: 4,
-      day: 1,
-    }).toUTC(),
+    created: DateTime.fromObject(
+      {
+        year: 2023,
+        month: 4,
+        day: 1,
+      },
+      { zone: "utc" }
+    ),
     username: "jim",
     displayName: "Jim User",
     isAdmin: true,
@@ -69,11 +78,14 @@ const testCredential1PublicKey = base64.fromArrayBuffer(
 
 export function testCredential1(): Authenticator {
   return {
-    created: DateTime.fromObject({
-      year: 2023,
-      month: 2,
-      day: 1,
-    }).toUTC(),
+    created: DateTime.fromObject(
+      {
+        year: 2023,
+        month: 2,
+        day: 1,
+      },
+      { zone: "utc" }
+    ),
     credentialID: testCredential1Identifier,
     credentialPublicKey: testCredential1PublicKey,
     counter: 24,
@@ -95,11 +107,14 @@ const testCredential2PublicKey = base64.fromArrayBuffer(
 
 export function testCredential2(): Authenticator {
   return {
-    created: DateTime.fromObject({
-      year: 2023,
-      month: 3,
-      day: 1,
-    }).toUTC(),
+    created: DateTime.fromObject(
+      {
+        year: 2023,
+        month: 3,
+        day: 1,
+      },
+      { zone: "utc" }
+    ),
     credentialID: testCredential2Identifier,
     credentialPublicKey: testCredential2PublicKey,
     counter: 42,
@@ -110,17 +125,31 @@ export function testCredential2(): Authenticator {
   };
 }
 
-export function testInvite1(createdBy: User): Invite {
+export function testInvite1(createdBy: User, claimedBy?: User): Invite {
   return {
     id: "INVITE_1",
     sourceType: "invite",
     isAdmin: true,
-    created: DateTime.fromObject({
-      year: 2023,
-      month: 1,
-      day: 1,
-    }).toUTC(),
+    created: DateTime.fromObject(
+      {
+        year: 2023,
+        month: 1,
+        day: 1,
+      },
+      { zone: "utc" }
+    ),
     createdBy,
+    ...(claimedBy && {
+      claimed: DateTime.fromObject(
+        {
+          year: 2023,
+          month: 1,
+          day: 2,
+        },
+        { zone: "utc" }
+      ),
+      claimedBy,
+    }),
   };
 }
 
@@ -135,18 +164,24 @@ export function testShare1(
     id: "SHARE_1",
     sourceType: "share",
     isAdmin: false,
-    created: DateTime.fromObject({
-      year: 2023,
-      month: 1,
-      day: 1,
-    }).toUTC(),
-    createdBy,
-    ...(claimedBy && {
-      claimed: DateTime.fromObject({
+    created: DateTime.fromObject(
+      {
         year: 2023,
         month: 1,
-        day: 2,
-      }).toUTC(),
+        day: 1,
+      },
+      { zone: "utc" }
+    ),
+    createdBy,
+    ...(claimedBy && {
+      claimed: DateTime.fromObject(
+        {
+          year: 2023,
+          month: 1,
+          day: 2,
+        },
+        { zone: "utc" }
+      ),
       claimedBy,
     }),
     backingUrl: `https://example.com/${file.id}`,
@@ -167,18 +202,24 @@ export function testShare2(
     id: "SHARE_2",
     sourceType: "share",
     isAdmin: false,
-    created: DateTime.fromObject({
-      year: 2023,
-      month: 2,
-      day: 1,
-    }).toUTC(),
-    createdBy,
-    ...(claimedBy && {
-      claimed: DateTime.fromObject({
+    created: DateTime.fromObject(
+      {
         year: 2023,
         month: 2,
-        day: 2,
-      }).toUTC(),
+        day: 1,
+      },
+      { zone: "utc" }
+    ),
+    createdBy,
+    ...(claimedBy && {
+      claimed: DateTime.fromObject(
+        {
+          year: 2023,
+          month: 2,
+          day: 2,
+        },
+        { zone: "utc" }
+      ),
       claimedBy,
     }),
     backingUrl: `https://example.com/${file.id}`,
@@ -199,18 +240,24 @@ export function testShare3(
     id: "SHARE_3",
     sourceType: "share",
     isAdmin: false,
-    created: DateTime.fromObject({
-      year: 2023,
-      month: 3,
-      day: 1,
-    }).toUTC(),
-    createdBy,
-    ...(claimedBy && {
-      claimed: DateTime.fromObject({
+    created: DateTime.fromObject(
+      {
         year: 2023,
         month: 3,
-        day: 2,
-      }).toUTC(),
+        day: 1,
+      },
+      { zone: "utc" }
+    ),
+    createdBy,
+    ...(claimedBy && {
+      claimed: DateTime.fromObject(
+        {
+          year: 2023,
+          month: 3,
+          day: 2,
+        },
+        { zone: "utc" }
+      ),
       claimedBy,
     }),
     backingUrl: `https://example.com/${file.id}`,
@@ -231,18 +278,24 @@ export function testShare4(
     id: "SHARE_4",
     sourceType: "share",
     isAdmin: false,
-    created: DateTime.fromObject({
-      year: 2023,
-      month: 4,
-      day: 1,
-    }).toUTC(),
-    createdBy,
-    ...(claimedBy && {
-      claimed: DateTime.fromObject({
+    created: DateTime.fromObject(
+      {
         year: 2023,
         month: 4,
-        day: 2,
-      }).toUTC(),
+        day: 1,
+      },
+      { zone: "utc" }
+    ),
+    createdBy,
+    ...(claimedBy && {
+      claimed: DateTime.fromObject(
+        {
+          year: 2023,
+          month: 4,
+          day: 2,
+        },
+        { zone: "utc" }
+      ),
       claimedBy,
     }),
     backingUrl: `https://example.com/${file.id}`,
