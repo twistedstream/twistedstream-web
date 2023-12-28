@@ -4,8 +4,8 @@ import { test } from "tap";
 import { now } from "./time";
 
 test("utils/time", async (t) => {
-  test("now", async (t) => {
-    test("returns a date that is close to actual now", async (t) => {
+  t.test("now", async (t) => {
+    t.test("returns a date that is close to actual now", async (t) => {
       const delta = Duration.fromMillis(10);
       const lowerLimit = DateTime.now().minus(delta);
       const upperLimit = DateTime.now().plus(delta);
@@ -15,7 +15,7 @@ test("utils/time", async (t) => {
       t.ok(result < upperLimit);
     });
 
-    test("returns a UTC date", async (t) => {
+    t.test("returns a UTC date", async (t) => {
       const result = now();
       t.equal(result.toString(), result.toUTC().toString());
     });

@@ -17,6 +17,13 @@ export const twitterProfileUrl = <string>process.env.TWITTER_PROFILE_URL;
 export const githubProfileUrl = <string>process.env.GITHUB_PROFILE_URL;
 export const cookieSecret = <string>process.env.COOKIE_SECRET;
 export const csrfSecret = <string>process.env.CSRF_SECRET;
+
+export const googleSpreadsheetId = <string>process.env.GOOGLE_SPREADSHEET_ID;
+export const googleAuthClientEmail = <string>(
+  process.env.GOOGLE_AUTH_CLIENT_EMAIL
+);
+export const googleAuthPrivateKey = <string>process.env.GOOGLE_AUTH_PRIVATE_KEY;
+
 export const dataProviderName = <string>process.env.DATA_PROVIDER_NAME;
 export const fileProviderName = <string>process.env.FILE_PROVIDER_NAME;
 export const maxInviteLifetime = Duration.fromISO(

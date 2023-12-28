@@ -91,6 +91,30 @@ test("utils/config", async (t) => {
     });
   });
 
+  t.test("googleSpreadsheetId", async (t) => {
+    const { googleSpreadsheetId } = importModule(t);
+
+    t.test("is expected value", async (t) => {
+      t.equal(googleSpreadsheetId, "google-provider-spreadsheet-id");
+    });
+  });
+
+  t.test("googleAuthClientEmail", async (t) => {
+    const { googleAuthClientEmail } = importModule(t);
+
+    t.test("is expected value", async (t) => {
+      t.equal(googleAuthClientEmail, "google-client@example.com");
+    });
+  });
+
+  t.test("googleAuthPrivateKey", async (t) => {
+    const { googleAuthPrivateKey } = importModule(t);
+
+    t.test("is expected value", async (t) => {
+      t.equal(googleAuthPrivateKey, "google_Bananas!");
+    });
+  });
+
   t.test("dataProviderName", async (t) => {
     const { dataProviderName } = importModule(t);
 

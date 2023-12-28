@@ -66,7 +66,5 @@ export interface Share extends RegisterableSource {
   fileType: FileType;
   availableMediaTypes: MediaType[];
   toUsername?: string;
-  claimedBy?: User;
-  claimed?: DateTime;
   expireDuration?: Duration;
 }

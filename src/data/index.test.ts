@@ -17,6 +17,16 @@ class MockInMemoryDataProvider {
   isMock: boolean;
 }
 
+const googleSheetsDataProviderConstructorFake = sinon.fake();
+class MockGoogleSheetsDataProvider {
+  constructor(options: any) {
+    googleSheetsDataProviderConstructorFake(options);
+    this.isMock = true;
+  }
+
+  isMock: boolean;
+}
+
 const localFileProviderConstructorFake = sinon.fake();
 class MockLocalFileProvider {
   constructor() {
@@ -42,6 +52,9 @@ function importModule(test: Tap.Test, options: ImportModuleOptions = {}) {
     "../utils/logger": { logger },
     "./data-providers/in-memory": {
       InMemoryDataProvider: MockInMemoryDataProvider,
+    },
+    "./data-providers/google-sheets": {
+      GoogleSheetsDataProvider: MockGoogleSheetsDataProvider,
     },
     "./file-providers/local": {
       LocalFileProvider: MockLocalFileProvider,
@@ -85,6 +98,21 @@ test("data/index", async (t) => {
           invites: [],
           shares: [],
         });
+      });
+
+      t.test("if 'google-sheets' provider configured, create it", async (t) => {
+        const { getDataProvider } = importModule(t, {
+          dataProviderName: "google-sheets",
+        });
+
+        getDataProvider();
+
+        t.ok(googleSheetsDataProviderConstructorFake.called);
+        // constructor called with no args
+        t.equal(
+          googleSheetsDataProviderConstructorFake.firstCall.firstArg,
+          undefined
+        );
       });
 
       t.test(
