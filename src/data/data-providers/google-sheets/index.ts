@@ -258,7 +258,7 @@ export class GoogleSheetsDataProvider implements IDataProvider {
     if (shareRow) {
       const relatedUserIds = [
         shareRow.created_by,
-        ...(shareRow.claimed_by ?? []),
+        ...(shareRow.claimed_by ? [shareRow.claimed_by] : []),
       ];
       const { rowsByKey: userRowsById } = await findKeyRows(
         USER_SHEET_NAME,
@@ -281,7 +281,7 @@ export class GoogleSheetsDataProvider implements IDataProvider {
     );
 
     const relatedUserIds = shareRows.reduce(
-      (p, c) => [...p, c.created_by, ...(c.claimed_by ? [c.claimed_by] : [])],
+      (p, c) => [...p, c.created_by, c.claimed_by],
       <string[]>[]
     );
     const { rowsByKey: userRowsById } = await findKeyRows(
