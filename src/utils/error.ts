@@ -9,6 +9,16 @@ type ErrorHandlerData = {
 
 const uid = new ShortUniqueId({ length: 25 });
 
+export class ErrorWithData extends Error {
+  constructor(message: string, data: any) {
+    super(`${message} ${JSON.stringify(data)}`);
+
+    this.data = data;
+  }
+
+  readonly data: any;
+}
+
 export class ErrorWithStatusCode extends Error {
   constructor(
     statusCode: StatusCodes,
