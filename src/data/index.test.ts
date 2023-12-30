@@ -37,6 +37,16 @@ class MockLocalFileProvider {
   isMock: boolean;
 }
 
+const googleDriveFileProviderConstructorFake = sinon.fake();
+class MockGoogleDriveFileProvider {
+  constructor() {
+    googleDriveFileProviderConstructorFake();
+    this.isMock = true;
+  }
+
+  isMock: boolean;
+}
+
 // helpers
 
 type ImportModuleOptions = {
@@ -58,6 +68,9 @@ function importModule(test: Tap.Test, options: ImportModuleOptions = {}) {
     },
     "./file-providers/local": {
       LocalFileProvider: MockLocalFileProvider,
+    },
+    "./file-providers/google-drive": {
+      GoogleDriveFileProvider: MockGoogleDriveFileProvider,
     },
   });
 }
@@ -191,6 +204,20 @@ test("data/index", async (t) => {
 
         t.ok(localFileProviderConstructorFake.called);
         t.equal(localFileProviderConstructorFake.firstCall.args.length, 0);
+      });
+
+      t.test("if 'google-drive' provider configured, create it", async (t) => {
+        const { getFileProvider } = importModule(t, {
+          fileProviderName: "google-drive",
+        });
+
+        getFileProvider();
+
+        t.ok(googleDriveFileProviderConstructorFake.called);
+        t.equal(
+          googleDriveFileProviderConstructorFake.firstCall.args.length,
+          0
+        );
       });
 
       t.test(
