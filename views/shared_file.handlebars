@@ -32,10 +32,12 @@
           <h3>Pick a format to download</h3>
 
           {{#each downloadLinks}}
-          <a class="download_link" href="{{url}}">
-            <strong>{{media_description}}</strong>
-            (<code>.{{file_extension}}</code>)
-          </a>
+          <div>
+            <a class="download_link" href="{{url}}">
+              <strong>{{media_description}}</strong>
+              (<code>.{{file_extension}}</code>)
+            </a>
+          </div>
           {{/each}}
         </div>
       </div>
