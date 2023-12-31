@@ -42,13 +42,12 @@ export class LocalFileProvider implements IFileProvider {
     }
 
     const fileName = `${file.title}.${mediaType.extension}`;
-    const fileStream = getFileStream(fileName);
-    fileStream.on("open", () => {
-      destination.attachment(fileName);
-      fileStream.pipe(destination);
-    });
-    fileStream.on("error", (err) => {
+    destination.attachment(fileName);
+
+    const stream = getFileStream(fileName);
+    stream.on("error", (err) => {
       throw err;
     });
+    stream.pipe(destination);
   }
 }

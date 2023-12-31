@@ -152,7 +152,7 @@ test("services/share", async (t) => {
       fileProvider.getFileInfo.resolves(undefined);
 
       t.rejects(() => newShare({}, "https://example.com/doc1"), {
-        fieldMessage: "File not found",
+        fieldMessage: "File not found or invalid URL",
         type: "validation",
         entity: "Share",
         field: "backingUrl",

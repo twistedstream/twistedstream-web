@@ -116,15 +116,15 @@ test("data/data-providers/google-sheets/index", async (t) => {
 
           t.ok(logger.info.called);
         });
-      });
 
-      t.test("ensures that initialization only happens once", async (t) => {
-        await provider.initialize();
-        sinon.resetHistory();
+        t.test("ensures that initialization only happens once", async (t) => {
+          await provider.initialize();
+          sinon.resetHistory();
 
-        await provider.initialize();
+          await provider.initialize();
 
-        t.notOk(logger.info.called);
+          t.notOk(logger.info.called);
+        });
       });
 
       t.test("getUserCount", async (t) => {

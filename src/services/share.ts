@@ -49,7 +49,11 @@ export async function newShare(
   // get file info and make sure it exists
   const fileInfo = await getFileInfo(backingUrl);
   if (!fileInfo) {
-    throw new ValidationError("Share", "backingUrl", "File not found");
+    throw new ValidationError(
+      "Share",
+      "backingUrl",
+      "File not found or invalid URL"
+    );
   }
 
   // make sure to-user exists
