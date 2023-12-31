@@ -150,6 +150,18 @@ test("data/file-providers/local", async (t) => {
             await provider.initialize();
           });
 
+          t.test("attaches the file name to the server response", async (t) => {
+            try {
+              provider.sendFile(file, mediaType, destination);
+            } catch {}
+
+            t.ok(destination.attachment.called);
+            t.equal(
+              destination.attachment.firstCall.firstArg,
+              "Example Doc.doc"
+            );
+          });
+
           t.test("obtains a file stream", async (t) => {
             try {
               provider.sendFile(file, mediaType, destination);
@@ -162,67 +174,31 @@ test("data/file-providers/local", async (t) => {
           t.test("with the file stream", async (t) => {
             t.beforeEach(async () => {
               getFileStreamStub.returns(mockFileStream);
-
-              provider.sendFile(file, mediaType, destination);
-            });
-
-            t.test("handles the 'open' event", async (t) => {
-              t.ok(mockFileStream.on.called);
-              t.equal(mockFileStream.on.firstCall.args[0], "open");
-
-              t.test("the handler", async (t) => {
-                let handler: any;
-                t.beforeEach(async () => {
-                  handler = mockFileStream.on.firstCall.args[1];
-                });
-
-                t.test(
-                  "attaches the file name to the server response",
-                  async (t) => {
-                    handler();
-
-                    t.ok(destination.attachment.called);
-                    t.equal(
-                      destination.attachment.firstCall.firstArg,
-                      "Example Doc.doc"
-                    );
-                  }
-                );
-
-                t.test(
-                  "pipes the file stream to the server response",
-                  async (t) => {
-                    handler();
-
-                    t.ok(mockFileStream.pipe.called);
-                    t.equal(
-                      mockFileStream.pipe.firstCall.firstArg,
-                      destination
-                    );
-                  }
-                );
-              });
             });
 
             t.test("handles the 'error' event", async (t) => {
+              try {
+                provider.sendFile(file, mediaType, destination);
+              } catch {}
+
               t.ok(mockFileStream.on.called);
-              t.equal(mockFileStream.on.secondCall.args[0], "error");
-
-              t.test("the handler", async (t) => {
-                let handler: any;
-                t.beforeEach(async () => {
-                  handler = mockFileStream.on.secondCall.args[1];
-                });
-
-                t.test("throws the error", async (t) => {
-                  const error = new Error("BOOM!");
-
-                  t.throws(() => handler(error), {
-                    message: "BOOM!",
-                  });
-                });
-              });
+              t.equal(mockFileStream.on.firstCall.args[0], "error");
+              const handler = mockFileStream.on.firstCall.args[1];
+              const error = new Error("BOOM!");
+              t.throws(() => handler(error), error);
             });
+
+            t.test(
+              "pipes the file stream to the server response",
+              async (t) => {
+                try {
+                  provider.sendFile(file, mediaType, destination);
+                } catch {}
+
+                t.ok(mockFileStream.pipe.called);
+                t.equal(mockFileStream.pipe.firstCall.firstArg, destination);
+              }
+            );
           });
         });
       });

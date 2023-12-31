@@ -18,7 +18,9 @@ function importModule(test: Tap.Test) {
     "node:fs": { createReadStream: createReadStreamStub },
     "friendly-mimes": { resolveFileType: resolveFileTypeStub },
     "../../../utils/identifier": { unique: uniqueStub },
-    "../../../utils/file": { fileTypeFromMediaType: fileTypeFromMediaTypeStub },
+    "../../../utils/media-type": {
+      fileTypeFromMediaType: fileTypeFromMediaTypeStub,
+    },
   });
 }
 

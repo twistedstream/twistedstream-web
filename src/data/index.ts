@@ -5,6 +5,7 @@ import { dataProviderName, fileProviderName } from "../utils/config";
 import { logger } from "../utils/logger";
 import { GoogleSheetsDataProvider } from "./data-providers/google-sheets";
 import { InMemoryDataProvider } from "./data-providers/in-memory";
+import { GoogleDriveFileProvider } from "./file-providers/google-drive";
 import { LocalFileProvider } from "./file-providers/local";
 
 let dataProvider: IDataProvider;
@@ -44,7 +45,9 @@ export function getFileProvider(): IFileProvider {
         fileProvider = new LocalFileProvider();
         break;
 
-      // FUTURE: Google Drive data provider
+      case "google-drive":
+        fileProvider = new GoogleDriveFileProvider();
+        break;
     }
 
     assert(fileProvider, `Unsupported file provider name: ${fileProviderName}`);

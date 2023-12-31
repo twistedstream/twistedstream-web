@@ -40,6 +40,7 @@
   },
   "homepage": "https://github.com/twistedstream/twistedstream-web#readme",
   "dependencies": {
+    "@googleapis/drive": "^8.4.0",
     "@googleapis/sheets": "^5.0.5",
     "@hexagon/base64": "^1.1.26",
     "@simplewebauthn/server": "^7.2.0",
