@@ -115,6 +115,16 @@ test("utils/config", async (t) => {
     });
   });
 
+  t.test("googleAuthPrivateKey (base64)", async (t) => {
+    delete process.env.GOOGLE_AUTH_PRIVATE_KEY;
+    process.env.GOOGLE_AUTH_PRIVATE_KEY_BASE64 = "Z29vZ2xlX0JhbmFuYXMh";
+    const { googleAuthPrivateKey } = importModule(t);
+
+    t.test("is expected value", async (t) => {
+      t.equal(googleAuthPrivateKey, "google_Bananas!");
+    });
+  });
+
   t.test("dataProviderName", async (t) => {
     const { dataProviderName } = importModule(t);
 
