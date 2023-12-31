@@ -6,7 +6,7 @@ import { IFileProvider } from "../../types/data";
 import { FileInfo, MediaType } from "../../types/entity";
 import { assertValue } from "../../utils/error";
 import { drive } from "../../utils/google/drive/client";
-import { fileIdFromUrl } from "../../utils/google/drive/id";
+import { fileIdFromUrl } from "../../utils/google/drive/file";
 import { logger } from "../../utils/logger";
 import {
   fileTypeFromMediaType,
