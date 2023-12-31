@@ -6,8 +6,8 @@ import fs, { ReadStream } from "node:fs";
 import path from "node:path";
 import { FileInfo, MediaType } from "../../../types/entity";
 import { assertValue } from "../../../utils/error";
-import { fileTypeFromMediaType } from "../../../utils/file";
 import { unique } from "../../../utils/identifier";
+import { fileTypeFromMediaType } from "../../../utils/media-type";
 
 const BASE_URL = "https://example.com/";
 

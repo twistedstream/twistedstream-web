@@ -5,10 +5,13 @@ import { StatusCodes } from "http-status-codes";
 import { IFileProvider } from "../../types/data";
 import { FileInfo, MediaType } from "../../types/entity";
 import { assertValue } from "../../utils/error";
-import { fileTypeFromMediaType, mediaTypeFromMimeType } from "../../utils/file";
 import { drive } from "../../utils/google/drive/client";
 import { fileIdFromUrl } from "../../utils/google/drive/id";
 import { logger } from "../../utils/logger";
+import {
+  fileTypeFromMediaType,
+  mediaTypeFromMimeType,
+} from "../../utils/media-type";
 
 export class GoogleDriveFileProvider implements IFileProvider {
   private _initialized: boolean = false;

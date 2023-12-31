@@ -53,7 +53,7 @@ export function mediaTypeFromMimeType(mimeType: string): MediaType | undefined {
   try {
     mime = resolveMime(mimeType);
   } catch (err) {
-    logger.warn(err, "Unable to resolve mime data from mime type.");
+    logger.warn(err, "Unable to resolve mime data from mime type");
   }
   if (mime) {
     return {
