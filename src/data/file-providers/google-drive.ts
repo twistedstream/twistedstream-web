@@ -33,6 +33,10 @@ export class GoogleDriveFileProvider implements IFileProvider {
   }
 
   async getFileInfo(url: string): Promise<FileInfo | undefined> {
+    if (!this._initialized) {
+      throw new Error("Provider not initialized");
+    }
+
     const fileId = fileIdFromUrl(url);
     if (!fileId) {
       return;
@@ -55,14 +59,15 @@ export class GoogleDriveFileProvider implements IFileProvider {
     const mediaType = mediaTypeFromMimeType(assertValue(data.mimeType));
     if (!mediaType) {
       throw new Error(
-        `Google drive file (${fileId}) has an unknown mime type: ${data.mimeType}`
+        `Google Drive file (${fileId}) has an unknown media type: ${data.mimeType}`
       );
     }
 
+    const type = assertValue(fileTypeFromMediaType(mediaType));
     return {
       id: assertValue(data.id),
       title: assertValue(data.name),
-      type: assertValue(fileTypeFromMediaType(mediaType)),
+      type,
       availableMediaTypes: data.exportLinks
         ? Object.keys(data.exportLinks).reduce((p: MediaType[], c: string) => {
             const mediaType = mediaTypeFromMimeType(c);
@@ -75,21 +80,27 @@ export class GoogleDriveFileProvider implements IFileProvider {
     };
   }
 
+  // NOTE: caller does not need to await a Promise from sendFile
   async sendFile(file: FileInfo, mediaType: MediaType, destination: Response) {
+    if (!this._initialized) {
+      throw new Error("Provider not initialized");
+    }
+
     const { id: fileId } = file;
     const { name: mimeType } = mediaType;
 
-    drive.files
-      .export({ fileId, mimeType }, { responseType: "stream" })
-      .then((res) => {
-        const fileName = `${file.title}.${mediaType.extension}`;
-        destination.attachment(fileName);
+    const res = await drive.files.export(
+      { fileId, mimeType },
+      { responseType: "stream" }
+    );
 
-        const { data: stream } = res;
-        stream.on("error", (err) => {
-          throw err;
-        });
-        stream.pipe(destination);
-      });
+    const fileName = `${file.title}.${mediaType.extension}`;
+    destination.attachment(fileName);
+
+    const { data: stream } = res;
+    stream.on("error", (err) => {
+      throw err;
+    });
+    stream.pipe(destination);
   }
 }
