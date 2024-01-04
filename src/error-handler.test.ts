@@ -5,7 +5,7 @@ import request from "supertest";
 import { test } from "tap";
 
 import * as utilsError from "./utils/error";
-import { BadRequestError, UnauthorizedError } from "./utils/error";
+import { BadRequestError } from "./utils/error";
 import { createTestExpressApp } from "./utils/testing/unit";
 
 // test objects
@@ -35,9 +35,6 @@ test("(root): error handler", async (t) => {
       ...utilsError,
       buildErrorHandlerData: buildErrorHandlerDataStub,
     },
-    "./utils/auth": {
-      redirectToLogin: redirectToLoginStub,
-    },
   });
 
   t.test("builds error handler data using the thrown error", async (t) => {
@@ -55,31 +52,6 @@ test("(root): error handler", async (t) => {
 
     t.ok(buildErrorHandlerDataStub.called);
     t.equal(buildErrorHandlerDataStub.firstCall.firstArg, error);
-  });
-
-  t.test("401 errors", async (t) => {
-    t.test("redirects to login page", async (t) => {
-      let req: any = {};
-      let res: any = {};
-
-      buildErrorHandlerDataStub.returns({
-        statusCode: StatusCodes.UNAUTHORIZED,
-      });
-
-      const { app } = createTestExpressApp();
-      app.get("/foo", (_req: Request, _res: Response) => {
-        req = _req;
-        res = _res;
-        throw UnauthorizedError();
-      });
-      errorHandler(app);
-
-      await request(app).get("/foo");
-
-      t.ok(redirectToLoginStub.called);
-      t.equal(redirectToLoginStub.firstCall.args[0], req);
-      t.equal(redirectToLoginStub.firstCall.args[1], res);
-    });
   });
 
   t.test("404 errors", async (t) => {

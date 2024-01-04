@@ -21,23 +21,12 @@ const logger = {
   error: sinon.fake(),
 };
 
-const dataProvider = {
-  initialize: sinon.stub(),
-};
-const fileProvider = {
-  initialize: sinon.stub(),
-};
-
 const fs = {
   readFileSync: sinon.stub(),
 };
 const path = {
   resolve: sinon.stub(),
 };
-
-const initializeServicesStub = sinon.stub();
-
-const rpID = "example.com";
 
 // helpers
 
@@ -55,36 +44,15 @@ function importModule(
     "./utils/config": {
       environment,
       port,
-      rpID,
-      baseUrl: `${scheme}://${rpID}:${port}`,
+      baseUrl: `${scheme}://example.com:${port}`,
     },
     "./app": app,
     "./utils/logger": {
       logger,
     },
-    "./data": {
-      getDataProvider: () => dataProvider,
-      getFileProvider: () => fileProvider,
-    },
-    "./services": {
-      initializeServices: initializeServicesStub,
-    },
   });
 
   return server;
-}
-
-async function waitForServerListening() {
-  const wait = new Promise<void>((resolve, _reject) => {
-    httpServer.listen.callsFake(() => {
-      resolve();
-    });
-    httpsServer.listen.callsFake(() => {
-      resolve();
-    });
-  });
-
-  return wait;
 }
 
 // tests
@@ -95,57 +63,6 @@ test("server", async (t) => {
     sinon.resetHistory();
   });
 
-  t.test("Initialization before server starts listening", async (t) => {
-    function importServer() {
-      importModule(t, "production", 4242, "http");
-    }
-
-    t.test("Data provider has been initialized", async (t) => {
-      importServer();
-      await waitForServerListening();
-
-      t.ok(dataProvider.initialize.called);
-    });
-
-    t.test("File provider has been initialized", async (t) => {
-      importServer();
-      await waitForServerListening();
-
-      t.ok(fileProvider.initialize.called);
-    });
-
-    t.test("Services", async (t) => {
-      t.test("have been initialized", async (t) => {
-        importServer();
-        await waitForServerListening();
-
-        t.ok(initializeServicesStub.called);
-      });
-
-      t.test("logs the first invite, if returned", async (t) => {
-        initializeServicesStub.resolves({ id: "FIRST_INVITE" });
-
-        importServer();
-        await waitForServerListening();
-
-        t.ok(logger.info.called);
-        t.same(logger.info.firstCall.args[0], {
-          url: "http://example.com:4242/invites/FIRST_INVITE",
-        });
-        t.equal(logger.info.firstCall.args[1], "Root invite");
-      });
-
-      t.test("logs nothing if no first invite returned", async (t) => {
-        initializeServicesStub.resolves(undefined);
-
-        importServer();
-        await waitForServerListening();
-
-        t.notOk(logger.info.called);
-      });
-    });
-  });
-
   t.test("HTTP server", async (t) => {
     function importHttpServer() {
       return importModule(t, "production", 4242, "http");
@@ -153,7 +70,6 @@ test("server", async (t) => {
 
     t.test("is created using HTTP module and the express app", async (t) => {
       const server = importHttpServer();
-      await waitForServerListening();
 
       t.ok(http.createServer.called);
       t.equal(http.createServer.firstCall.firstArg, app);
@@ -162,7 +78,6 @@ test("server", async (t) => {
 
     t.test("listens on expected port", async (t) => {
       importHttpServer();
-      await waitForServerListening();
 
       t.ok(httpServer.listen.called);
       t.equal(httpServer.listen.firstCall.args[0], 4242);
@@ -170,7 +85,6 @@ test("server", async (t) => {
 
     t.test("logs when server is ready for requests", async (t) => {
       importHttpServer();
-      await waitForServerListening();
 
       t.ok(httpServer.listen.called);
       const cb = <Function>httpServer.listen.firstCall.args[1];
@@ -178,7 +92,6 @@ test("server", async (t) => {
 
       t.same(logger.info.firstCall.firstArg, {
         port: 4242,
-        rpID: "example.com",
         baseUrl: "http://example.com:4242",
       });
     });
@@ -198,7 +111,6 @@ test("server", async (t) => {
         fs.readFileSync.withArgs("/root/cert/dev.crt").returns("DEV_CERT");
 
         const server = importHttpsServer();
-        await waitForServerListening();
 
         t.ok(https.createServer.called);
         t.same(https.createServer.firstCall.args[0], {
@@ -212,7 +124,6 @@ test("server", async (t) => {
 
     t.test("listens on expected port", async (t) => {
       importHttpsServer();
-      await waitForServerListening();
 
       t.ok(httpsServer.listen.called);
       t.equal(httpsServer.listen.firstCall.args[0], 4433);
@@ -220,7 +131,6 @@ test("server", async (t) => {
 
     t.test("logs when server is ready for requests", async (t) => {
       importHttpsServer();
-      await waitForServerListening();
 
       t.ok(httpsServer.listen.called);
       const cb = <Function>httpsServer.listen.firstCall.args[1];
@@ -229,7 +139,6 @@ test("server", async (t) => {
       t.ok(logger.info.called);
       t.same(logger.info.firstCall.firstArg, {
         port: 4433,
-        rpID: "example.com",
         baseUrl: "https://example.com:4433",
       });
     });
