@@ -16,8 +16,9 @@ export const githubProfileUrl = <string>process.env.GITHUB_PROFILE_URL;
 
 // Package configuration
 
-/* istanbul ignore next */
+/* c8 ignore start */
 const packageDir = environment === "production" ? "../" : "../../";
+/* c8 ignore stop */
 const packagePath = `${packageDir}package.json`;
 const packageJson = require(packagePath);
 

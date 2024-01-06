@@ -1,5 +1,5 @@
 import sinon from "sinon";
-import { test } from "tap";
+import { test, Test } from "tap";
 
 // test objects
 
@@ -22,8 +22,8 @@ const errorHandlerFake = sinon.fake();
 
 // helpers
 
-function importModule(test: Tap.Test) {
-  const { default: app } = test.mock("./app", {
+function importModule(test: Test) {
+  const { default: app } = test.mockRequire("./app.ts", {
     express: expressFactoryFake,
     "express-pino-logger": expressPinoFake,
     "express-handlebars": {

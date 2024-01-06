@@ -1,6 +1,6 @@
 import sinon from "sinon";
 import request from "supertest";
-import { test } from "tap";
+import { test, Test } from "tap";
 
 import { StatusCodes } from "http-status-codes";
 import { createTestExpressApp } from "../utils/testing/unit";
@@ -18,25 +18,11 @@ const expressRouter = {
   get: sinon.fake(),
 };
 const routerFake = sinon.fake.returns(expressRouter);
-const capturePreAuthStateFake = sinon.fake();
-const signOutFake = sinon.fake();
-const getRegisterableStub = sinon.stub();
-const fido2Route = sinon.fake();
-const profileRoute = sinon.fake();
-const invitesRoute = sinon.fake();
-const sharesRoute = sinon.fake();
 
 // helpers
 
-function importModule(
-  test: Tap.Test,
-  {
-    mockExpress = false,
-    mockChildRoutes = false,
-    mockModules = false,
-  }: MockOptions = {}
-) {
-  const { default: router } = test.mock("./index", {
+function importModule(test: Test, { mockExpress = false }: MockOptions = {}) {
+  const { default: router } = test.mockRequire("./index", {
     ...(mockExpress && {
       express: {
         Router: routerFake,
@@ -47,7 +33,7 @@ function importModule(
   return router;
 }
 
-function createIndexTestExpressApp(test: Tap.Test) {
+function createIndexTestExpressApp(test: Test) {
   const router = importModule(test, {
     mockModules: true,
     mockChildRoutes: true,
