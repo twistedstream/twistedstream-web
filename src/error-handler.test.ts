@@ -29,7 +29,7 @@ test("(root): error handler", async (t) => {
     buildErrorHandlerDataStub.resetHistory();
   });
 
-  const { default: errorHandler } = t.mock("./error-handler", {
+  const { default: errorHandler } = t.mockRequire("./error-handler", {
     "./utils/logger": { logger },
     "./utils/error": {
       ...utilsError,
