@@ -1,8 +1,8 @@
-import { test } from "tap";
+import { test, Test } from "tap";
 
 // helpers
-function importModule(test: Tap.Test) {
-  return test.mock("./config", {
+function importModule(test: Test) {
+  return test.mockRequire("./config", {
     "../../package.json": {
       name: "test-package",
       version: "42.0",
