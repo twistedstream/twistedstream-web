@@ -55,7 +55,7 @@
     "@types/pino": "^7.0.5",
     "@types/sinon": "^10.0.13",
     "@types/supertest": "^2.0.12",
-    "nodemon": "^2.0.20",
+    "nodemon": "^3.0.2",
     "pino-pretty": "^10.2.0",
     "prettier": "^2.7.1",
     "sinon": "^14.0.1",
