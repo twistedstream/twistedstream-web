@@ -1,5 +1,5 @@
 import sinon from "sinon";
-import { test } from "tap";
+import { test, Test } from "tap";
 
 // test objects
 
@@ -31,12 +31,12 @@ const path = {
 // helpers
 
 function importModule(
-  test: Tap.Test,
+  test: Test,
   environment: "production" | "development",
   port: number,
   scheme: "http" | "https"
 ) {
-  const { default: server } = test.mock("./server", {
+  const { default: server } = test.mockRequire("./server", {
     http,
     https,
     fs,

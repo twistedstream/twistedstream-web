@@ -1,5 +1,5 @@
 import sinon from "sinon";
-import { test } from "tap";
+import { test, Test } from "tap";
 
 // test objects
 
@@ -11,8 +11,8 @@ const routes = {};
 
 // helpers
 
-function importModule(test: Tap.Test) {
-  const { default: website } = test.mock("./website", {
+function importModule(test: Test) {
+  const { default: website } = test.mockRequire("./website", {
     express: {
       Router: routerFake,
     },
