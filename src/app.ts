@@ -1,6 +1,6 @@
 import express, { Express } from "express";
 import { engine } from "express-handlebars";
-import expressPino from "express-pino-logger";
+import pinoHttp from "pino-http";
 
 import { DateTime } from "luxon";
 import errorHandler from "./error-handler";
@@ -11,7 +11,7 @@ import website from "./website";
 const app: Express = express();
 
 // App-level middleware
-app.use(expressPino({ logger }));
+app.use(pinoHttp({ logger }));
 
 app.use(express.static("public"));
 
