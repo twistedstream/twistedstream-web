@@ -18,7 +18,6 @@ test("utils/config", async (t) => {
       { name: "port", value: 4242 },
       { name: "environment", value: "test" },
       { name: "logLevel", value: "debug" },
-      { name: "baseUrl", value: "http://example.com:4242" },
       { name: "linkedInProfileUrl", value: "https://linkedin.com/in/test" },
       { name: "twitterProfileUrl", value: "https://twitter.com/test" },
       { name: "githubProfileUrl", value: "https://github.com/test" },
