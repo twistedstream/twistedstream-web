@@ -1,5 +1,5 @@
 // NOTE: The config import should always run first to load the environment
-import { baseUrl, environment, port } from "./utils/config";
+import { environment, port } from "./utils/config";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
@@ -30,13 +30,7 @@ if (environment === "production") {
 }
 
 server.listen(port, () => {
-  logger.info(
-    {
-      port,
-      baseUrl,
-    },
-    `${serverName} server started`
-  );
+  logger.info({ port }, `${serverName} server started`);
 });
 
 export default server;
