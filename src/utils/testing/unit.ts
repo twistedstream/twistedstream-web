@@ -1,4 +1,4 @@
-import express, { Express, NextFunction, Request, Response } from "express";
+import express, { Express, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import path from "path";
 import querystring from "querystring";
@@ -7,14 +7,6 @@ import { Response as SupertestResponse } from "supertest";
 // makes it so no need to try/catch errors in middleware
 import "express-async-errors";
 
-import { Authenticator, User } from "../../types/entity";
-import { AuthenticatedRequest } from "../../types/express";
-
-type AuthSetup = {
-  originalUrl: string;
-  activeUser: User;
-  activeCredential: Authenticator;
-};
 type MiddlewareSetup = (app: Express) => void;
 type ErrorHandlerSetup = {
   test: Tap.Test;
@@ -22,7 +14,6 @@ type ErrorHandlerSetup = {
   suppressErrorOutput?: boolean;
 };
 type TestExpressAppOptions = {
-  authSetup?: AuthSetup;
   middlewareSetup?: MiddlewareSetup;
   errorHandlerSetup?: ErrorHandlerSetup;
 };
@@ -35,7 +26,6 @@ type ExpressRequestExpectations = { url: string; method: "GET" | "POST" };
  * Creates an Express object that can be used for testing
  */
 export function createTestExpressApp({
-  authSetup,
   middlewareSetup,
   errorHandlerSetup,
 }: TestExpressAppOptions = {}): {
@@ -52,19 +42,6 @@ export function createTestExpressApp({
 
     cb(null, "ignored");
   });
-
-  if (authSetup) {
-    app.all(
-      "*",
-      (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
-        req.originalUrl = authSetup.originalUrl;
-        req.user = authSetup.activeUser;
-        req.credential = authSetup.activeCredential;
-
-        next();
-      }
-    );
-  }
 
   if (middlewareSetup) {
     middlewareSetup(app);
