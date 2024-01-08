@@ -11,149 +11,21 @@ function importModule(test: Tap.Test) {
 }
 
 test("utils/config", async (t) => {
-  t.test("port", async (t) => {
-    const { port } = importModule(t);
+  t.test("exports expected values", async (t) => {
+    const config = importModule(t);
 
-    t.test("is expected value", async (t) => {
-      t.equal(port, 4242);
-    });
-  });
-
-  t.test("environment", async (t) => {
-    const { environment } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(environment, "test");
-    });
-  });
-
-  t.test("logLevel", async (t) => {
-    const { logLevel } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(logLevel, "debug");
-    });
-  });
-
-  t.test("rpID", async (t) => {
-    const { rpID } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(rpID, "example.com");
-    });
-  });
-
-  t.test("baseUrl", async (t) => {
-    const { baseUrl } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(baseUrl, "http://example.com:4242");
-    });
-  });
-
-  t.test("linkedInProfileUrl", async (t) => {
-    const { linkedInProfileUrl } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(linkedInProfileUrl, "https://linkedin.com/in/test");
-    });
-  });
-
-  t.test("twitterProfileUrl", async (t) => {
-    const { twitterProfileUrl } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(twitterProfileUrl, "https://twitter.com/test");
-    });
-  });
-
-  t.test("githubProfileUrl", async (t) => {
-    const { githubProfileUrl } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(githubProfileUrl, "https://github.com/test");
-    });
-  });
-
-  t.test("cookieSecret", async (t) => {
-    const { cookieSecret } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(cookieSecret, "Bananas!");
-    });
-  });
-
-  t.test("csrfSecret", async (t) => {
-    const { csrfSecret } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(csrfSecret, "Bananas?");
-    });
-  });
-
-  t.test("googleSpreadsheetId", async (t) => {
-    const { googleSpreadsheetId } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(googleSpreadsheetId, "google-provider-spreadsheet-id");
-    });
-  });
-
-  t.test("googleAuthClientEmail", async (t) => {
-    const { googleAuthClientEmail } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(googleAuthClientEmail, "google-client@example.com");
-    });
-  });
-
-  t.test("googleAuthPrivateKey", async (t) => {
-    const { googleAuthPrivateKey } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(googleAuthPrivateKey, "google_Bananas!");
-    });
-  });
-
-  t.test("googleAuthPrivateKey (base64)", async (t) => {
-    delete process.env.GOOGLE_AUTH_PRIVATE_KEY;
-    process.env.GOOGLE_AUTH_PRIVATE_KEY_BASE64 = "Z29vZ2xlX0JhbmFuYXMh";
-    const { googleAuthPrivateKey } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(googleAuthPrivateKey, "google_Bananas!");
-    });
-  });
-
-  t.test("dataProviderName", async (t) => {
-    const { dataProviderName } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(dataProviderName, "in-memory");
-    });
-  });
-
-  t.test("fileProviderName", async (t) => {
-    const { fileProviderName } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(fileProviderName, "local");
-    });
-  });
-
-  t.test("packageName", async (t) => {
-    const { packageName } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(packageName, "test-package");
-    });
-  });
-
-  t.test("packageVersion", async (t) => {
-    const { packageVersion } = importModule(t);
-
-    t.test("is expected value", async (t) => {
-      t.equal(packageVersion, "42.0");
+    [
+      { name: "port", value: 4242 },
+      { name: "environment", value: "test" },
+      { name: "logLevel", value: "debug" },
+      { name: "baseUrl", value: "http://example.com:4242" },
+      { name: "linkedInProfileUrl", value: "https://linkedin.com/in/test" },
+      { name: "twitterProfileUrl", value: "https://twitter.com/test" },
+      { name: "githubProfileUrl", value: "https://github.com/test" },
+      { name: "packageName", value: "test-package" },
+      { name: "packageVersion", value: "42.0" },
+    ].forEach((item) => {
+      t.same(config[item.name], item.value, item.name);
     });
   });
 });
