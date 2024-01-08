@@ -44,7 +44,6 @@ function importModule(
     "./utils/config": {
       environment,
       port,
-      baseUrl: `${scheme}://example.com:${port}`,
     },
     "./app": app,
     "./utils/logger": {
@@ -92,7 +91,6 @@ test("server", async (t) => {
 
       t.same(logger.info.firstCall.firstArg, {
         port: 4242,
-        baseUrl: "http://example.com:4242",
       });
     });
   });
@@ -139,7 +137,6 @@ test("server", async (t) => {
       t.ok(logger.info.called);
       t.same(logger.info.firstCall.firstArg, {
         port: 4433,
-        baseUrl: "https://example.com:4433",
       });
     });
   });
