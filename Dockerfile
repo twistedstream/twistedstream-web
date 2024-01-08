@@ -21,8 +21,6 @@ COPY --from=build_stage /app/package-lock.json /app/
 COPY --from=build_stage /app/dist/ /app/
 COPY --from=build_stage /app/public/ /app/public/
 COPY --from=build_stage /app/views/ /app/views/
-# copy local file provider test files
-COPY --from=build_stage /app/src/data/file-providers/files/ /app/data/file-providers/files/
 RUN npm ci --omit dev
 
 EXPOSE 8000
