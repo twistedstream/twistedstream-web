@@ -1,6 +1,6 @@
 {
   "name": "twistedstream-web",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "private": true,
   "description": "The web app powering www.twistedstream.com",
   "main": "server.js",
