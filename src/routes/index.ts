@@ -1,5 +1,6 @@
 import { Request, Response, Router } from "express";
 import {
+  blogUrl,
   companyName,
   githubProfileUrl,
   linkedInProfileUrl,
@@ -13,6 +14,16 @@ const router = Router();
 router.get("/", (_req: Request, res: Response) => {
   res.render("home", {
     title: companyName,
+    links: [
+      ...(linkedInProfileUrl
+        ? [{ name: "LinkedIn", local_url: "/linkedin" }]
+        : []),
+      ...(twitterProfileUrl
+        ? [{ name: "Twitter (X)", local_url: "/twitter" }]
+        : []),
+      ...(githubProfileUrl ? [{ name: "GitHub", local_url: "/github" }] : []),
+      ...(blogUrl ? [{ name: "Blog", local_url: "/blog" }] : []),
+    ],
     poweredBys: [
       { name: "Node.js", url: "https://nodejs.org/" },
       { name: "TypeScript", url: "https://www.typescriptlang.org/" },
@@ -38,6 +49,10 @@ router.get("/twitter", (_req: Request, res: Response) => {
 
 router.get("/github", (_req: Request, res: Response) => {
   res.redirect(githubProfileUrl);
+});
+
+router.get("/blog", (_req: Request, res: Response) => {
+  res.redirect(blogUrl);
 });
 
 export default router;

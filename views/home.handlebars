@@ -13,17 +13,10 @@
       <div class="row mt-3">
         <div class="col text-center">
           <p class="h3">
-            <a href="/linkedin" target="_blank">LinkedIn</a>
-            |
-            <a href="/twitter" target="_blank">Twitter</a>
-            |
-            <a href="/github" target="_blank">GitHub</a>
-            |
-            <a href="/blog" target="_blank">Blog</a>
-            {{#if user}}
-            |
-            <a href="/shares"><i>Shares</i></a>
-            {{/if}}
+          {{#each links}}
+            <a href="{{local_url}}" target="_blank">{{name}}</a>
+            {{#unless @last}}|{{/unless}}  
+          {{/each}}
           </p>
         </div>
       </div>
