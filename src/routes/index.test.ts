@@ -8,6 +8,7 @@ import {
   companyName,
   githubProfileUrl,
   linkedInProfileUrl,
+  shareUrl,
   twitterProfileUrl,
 } from "../utils/config";
 import { createTestExpressApp } from "../utils/testing/unit";
@@ -20,6 +21,7 @@ type MockOptions = {
     twitterProfileUrl?: string;
     githubProfileUrl?: string;
     blogUrl?: string;
+    shareUrl?: string;
   };
 };
 
@@ -43,6 +45,7 @@ function importModule(
       twitterProfileUrl,
       githubProfileUrl,
       blogUrl,
+      shareUrl,
     },
   }: MockOptions = {}
 ) {
@@ -97,7 +100,7 @@ test("routes/index", async (t) => {
 
     t.same(
       expressRouter.get.getCalls().map((c) => c.firstArg),
-      ["/", "/linkedin", "/twitter", "/github", "/blog"]
+      ["/", "/linkedin", "/twitter", "/github", "/blog", "/share"]
     );
   });
 
@@ -107,6 +110,7 @@ test("routes/index", async (t) => {
       { name: "Twitter (X)", local_url: "/twitter" },
       { name: "GitHub", local_url: "/github" },
       { name: "Blog", local_url: "/blog" },
+      { name: "Share", local_url: "/share" },
     ];
 
     t.test("returns HTML with expected view state", async (t) => {
@@ -146,6 +150,7 @@ test("routes/index", async (t) => {
             twitterProfileUrl,
             githubProfileUrl,
             blogUrl,
+            shareUrl,
           },
         });
 
@@ -169,6 +174,7 @@ test("routes/index", async (t) => {
             twitterProfileUrl: undefined,
             githubProfileUrl,
             blogUrl,
+            shareUrl,
           },
         });
 
@@ -192,6 +198,7 @@ test("routes/index", async (t) => {
             twitterProfileUrl,
             githubProfileUrl: undefined,
             blogUrl,
+            shareUrl,
           },
         });
 
@@ -215,6 +222,7 @@ test("routes/index", async (t) => {
             twitterProfileUrl,
             githubProfileUrl,
             blogUrl: undefined,
+            shareUrl,
           },
         });
 
@@ -224,6 +232,30 @@ test("routes/index", async (t) => {
         t.same(
           options.links,
           [...allLinks].filter((l) => l.local_url !== "/blog")
+        );
+      }
+    );
+
+    t.test(
+      "when share config link it not set, returns HTML with expected view state",
+      async (t) => {
+        const { app, renderArgs } = createIndexTestExpressApp(t, {
+          config: {
+            companyName,
+            linkedInProfileUrl,
+            twitterProfileUrl,
+            githubProfileUrl,
+            blogUrl,
+            shareUrl: undefined,
+          },
+        });
+
+        await request(app).get("/");
+        const { options } = renderArgs;
+
+        t.same(
+          options.links,
+          [...allLinks].filter((l) => l.local_url !== "/share")
         );
       }
     );
@@ -270,6 +302,17 @@ test("routes/index", async (t) => {
 
       t.equal(response.status, StatusCodes.MOVED_TEMPORARILY);
       t.equal(response.headers.location, "https://example.com/blog");
+    });
+  });
+
+  t.test("GET /share", async (t) => {
+    t.test("returns expected redirect", async (t) => {
+      const { app } = createIndexTestExpressApp(t);
+
+      const response = await request(app).get("/share");
+
+      t.equal(response.status, StatusCodes.MOVED_TEMPORARILY);
+      t.equal(response.headers.location, "https://example.com/share");
     });
   });
 });

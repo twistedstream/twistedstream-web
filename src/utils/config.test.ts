@@ -22,6 +22,7 @@ test("utils/config", async (t) => {
       { name: "twitterProfileUrl", value: "https://twitter.com/test" },
       { name: "githubProfileUrl", value: "https://github.com/test" },
       { name: "blogUrl", value: "https://example.com/blog" },
+      { name: "shareUrl", value: "https://example.com/share" },
       { name: "packageName", value: "test-package" },
       { name: "packageVersion", value: "42.0" },
     ].forEach((item) => {
