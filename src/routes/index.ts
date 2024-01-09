@@ -4,6 +4,7 @@ import {
   companyName,
   githubProfileUrl,
   linkedInProfileUrl,
+  shareUrl,
   twitterProfileUrl,
 } from "../utils/config";
 
@@ -23,6 +24,7 @@ router.get("/", (_req: Request, res: Response) => {
         : []),
       ...(githubProfileUrl ? [{ name: "GitHub", local_url: "/github" }] : []),
       ...(blogUrl ? [{ name: "Blog", local_url: "/blog" }] : []),
+      ...(shareUrl ? [{ name: "Share", local_url: "/share" }] : []),
     ],
     poweredBys: [
       { name: "Node.js", url: "https://nodejs.org/" },
@@ -53,6 +55,10 @@ router.get("/github", (_req: Request, res: Response) => {
 
 router.get("/blog", (_req: Request, res: Response) => {
   res.redirect(blogUrl);
+});
+
+router.get("/share", (_req: Request, res: Response) => {
+  res.redirect(shareUrl);
 });
 
 export default router;
